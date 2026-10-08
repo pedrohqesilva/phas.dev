@@ -26,6 +26,9 @@ const swap = (html: string, name: string, inner: string) =>
   );
 
 export default defineConfig({
+  // 5173 is Vittz's and 5174 iFleetHub's: a port of its own keeps their logins and storage apart (same origin).
+  server: { port: 5180, strictPort: true },
+  preview: { port: 5181, strictPort: true },
   plugins: [
     {
       // Bake the head and the full portfolio content into index.html, for crawlers and no-JS visitors.
