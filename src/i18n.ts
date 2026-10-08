@@ -9,10 +9,10 @@ export const ui = {
       "montando /experiencia e /projetos",
       "pronto",
     ],
-    welcomeHint: ["Digite ", " ou clique em um comando acima."],
+    welcomeHint: ["Digite ", " ou clique em um ícone abaixo."],
     helpTitle: "Comandos disponíveis",
     helpKeys:
-      "Tab completa, ↑ ↓ navegam no histórico (ou rolam a saída enquanto ela aparece), Shift+↑ ↓ e PageUp/PageDown rolam, Esc mostra tudo, Ctrl+L limpa, 1 a 7 abrem as seções.",
+      "Tab completa, ↑ ↓ navegam no histórico (ou rolam a saída enquanto ela aparece), Shift+↑ ↓ e PageUp/PageDown rolam, Esc mostra tudo, Ctrl+L limpa a tela.",
     notFound: (cmd: string) => `comando não encontrado: ${cmd}`,
     tryHelp: "Digite ajuda para ver os comandos.",
     emptyExperience:
@@ -139,10 +139,10 @@ export const ui = {
       "mounting /experience and /projects",
       "ready",
     ],
-    welcomeHint: ["Type ", " or click a command above."],
+    welcomeHint: ["Type ", " or click an icon below."],
     helpTitle: "Available commands",
     helpKeys:
-      "Tab completes, ↑ ↓ browse history (or scroll the output while it streams), Shift+↑ ↓ and PageUp/PageDown scroll, Esc shows everything, Ctrl+L clears, 1 to 7 open sections.",
+      "Tab completes, ↑ ↓ browse history (or scroll the output while it streams), Shift+↑ ↓ and PageUp/PageDown scroll, Esc shows everything, Ctrl+L clears the screen.",
     notFound: (cmd: string) => `command not found: ${cmd}`,
     tryHelp: "Type help to see the commands.",
     emptyExperience: "Experience is being added. Meanwhile, see LinkedIn:",

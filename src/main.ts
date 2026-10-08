@@ -1,6 +1,6 @@
 import "@fontsource-variable/geist-mono";
 import { banner } from "./banner.ts";
-import { chips, resolve, tabIds, type Theme } from "./commands.ts";
+import { resolve, tabIds, type Theme } from "./commands.ts";
 import { profile, type Lang } from "./content.ts";
 import { cmd, h } from "./dom.ts";
 import { ui } from "./i18n.ts";
@@ -46,7 +46,6 @@ const term = new Terminal(
     setTheme,
     showSimple: () => setSimple(true),
     onCommand(id) {
-      markTab(id);
       // Every section ends with the way back to the icons, for visitors who never type.
       if (tabIds.includes(id) && id !== "help") {
         const t = ui[term.lang];
@@ -59,7 +58,7 @@ const term = new Terminal(
         );
       }
     },
-    onClear: () => markTab(""),
+    onClear: () => {},
     home,
   },
 );
@@ -71,8 +70,6 @@ function applyLang(lang: Lang) {
   document.title = `${profile.name}, ${profile.role[lang]}`;
   $("prompt-user").textContent = t.user;
   $("cmd").setAttribute("aria-label", t.inputLabel);
-  $("chips").replaceChildren(...chips(lang));
-  markTab(activeTab);
   $("lang-toggle").replaceChildren(
     icon("lang"),
     h("span", null, lang === "pt" ? "EN" : "PT"),
@@ -90,16 +87,6 @@ function applyLang(lang: Lang) {
   $("skip-link").textContent = t.skip;
   $("static-content").innerHTML = renderStatic(lang);
   applyThemeLabel();
-}
-
-let activeTab = "";
-
-/** Underlines the tab of the last section opened, like the current window in tmux; "" clears it. */
-function markTab(id: string) {
-  if (id && !tabIds.includes(id)) return;
-  activeTab = id;
-  for (const tab of $("chips").querySelectorAll<HTMLElement>("[data-id]"))
-    tab.toggleAttribute("aria-current", tab.dataset.id === id);
 }
 
 /** Switching language redraws the whole screen in it, including what was already there. */
@@ -146,30 +133,13 @@ function setSimple(on: boolean, push = true) {
 }
 addEventListener("popstate", () => setSimple(isSimplePath(), false));
 
-// Top bar and chips run real commands, so visitors learn the terminal by clicking.
-for (const id of ["chips", "lang-toggle", "theme-toggle"])
+// The top bar buttons run real commands, so visitors learn the terminal by clicking.
+for (const id of ["lang-toggle", "theme-toggle"])
   $(id).addEventListener("click", (e) => {
     const target = (e.target as HTMLElement).closest<HTMLElement>("[data-cmd]");
     if (!target) return;
     term.type(target.dataset.cmd!);
   });
-// With an empty prompt, 1-6 open the matching tab (no command starts with a digit).
-$("cmd").addEventListener("keydown", (e) => {
-  const input = e.currentTarget as HTMLInputElement;
-  if (
-    input.value ||
-    e.ctrlKey ||
-    e.metaKey ||
-    e.altKey ||
-    !/^[1-9]$/.test(e.key)
-  )
-    return;
-  const tab =
-    $("chips").querySelectorAll<HTMLElement>("[data-cmd]")[Number(e.key) - 1];
-  if (!tab) return;
-  e.preventDefault();
-  term.type(tab.dataset.cmd!);
-});
 $("brand-mark").replaceChildren(icon("terminal"));
 $("simple-toggle").addEventListener("click", () => setSimple(true));
 $("back-terminal").addEventListener("click", () => setSimple(false));
@@ -204,8 +174,8 @@ function renderWelcome() {
   const t = ui[term.lang];
   term.print(
     banner(),
-    h("p", { class: "title" }, profile.name),
-    h("p", { class: "muted" }, profile.role[term.lang]),
+    // The role sits beside the name on wide screens and drops below it on phones (CSS).
+    h("p", { class: "title welcome-name" }, profile.name, h("span", { class: "welcome-role" }, profile.role[term.lang])),
     h(
       "p",
       null,
