@@ -359,14 +359,15 @@ const sections: Record<string, (ctx: Ctx) => void> = {
   },
 
   stack({ lang, print }) {
+    // One block per group: its name, then each technology as a tag, easier to scan than a comma list.
     print(
-      h(
-        "dl",
-        { class: "pairs" },
-        ...stack.flatMap((g) => [
-          h("dt", null, g.group[lang]),
-          h("dd", null, g.items.join(", ")),
-        ]),
+      ...stack.map((g) =>
+        h(
+          "div",
+          { class: "stack-group" },
+          h("p", { class: "stack-title" }, g.group[lang]),
+          h("p", { class: "tags" }, ...g.items.map((item) => h("span", { class: "tag" }, item))),
+        ),
       ),
     );
   },

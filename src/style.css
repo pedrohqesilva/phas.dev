@@ -921,3 +921,34 @@ html:not(.js) .back {
 .block .para + p:not(.para) {
   margin-top: 10px;
 }
+
+/* Stack: each group's name, then its technologies as tags. */
+.stack-group + .stack-group {
+  margin-top: 12px;
+}
+.stack-title {
+  color: var(--muted);
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px !important;
+}
+.tag {
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--fg);
+  font-size: 0.9em;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.static .stack-title {
+  margin: 0;
+}
+@media print {
+  .tag {
+    border-color: #c8c8c8;
+  }
+}

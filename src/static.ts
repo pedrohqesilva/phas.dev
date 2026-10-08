@@ -66,12 +66,12 @@ export function renderStatic(lang: Lang): string {
 <section id="sobre"><h2>${iconSvg("about")}${t.sectionAbout}</h2><p>${esc(profile.summary[lang])}</p><p>${esc(profile.now[lang])}</p><p>${esc(profile.extra[lang])}</p></section>
 <section id="experiencia"><h2>${iconSvg("experience")}${t.sectionExperience}</h2>${jobs}</section>
 <section id="projetos"><h2>${iconSvg("projects")}${t.sectionProjects}</h2>${projs}</section>
-<section id="stack"><h2>${iconSvg("stack")}${t.sectionStack}</h2><dl>${stack
+<section id="stack"><h2>${iconSvg("stack")}${t.sectionStack}</h2>${stack
     .map(
       (g) =>
-        `<dt>${esc(g.group[lang])}</dt><dd>${g.items.map(esc).join(", ")}</dd>`,
+        `<div class="stack-group"><p class="stack-title">${esc(g.group[lang])}</p><p class="tags">${g.items.map((i) => `<span class="tag">${esc(i)}</span>`).join("")}</p></div>`,
     )
-    .join("")}</dl></section>
+    .join("")}</section>
 <section id="formacao"><h2>${iconSvg("education")}${t.sectionEducation}</h2>${education
     .map(
       (c) =>
