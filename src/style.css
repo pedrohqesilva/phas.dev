@@ -1016,3 +1016,8 @@ html:not(.js) .back {
 .static .job-role {
   margin: 2px 0 0;
 }
+
+/* Education: languages and certifications come after the course timeline, with some air. */
+.stack-group.after-timeline {
+  margin-top: 22px;
+}

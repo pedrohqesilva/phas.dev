@@ -79,11 +79,11 @@ export function renderStatic(lang: Lang): string {
 <section id="formacao"><h2>${iconSvg("education")}${t.sectionEducation}</h2>${education
     .map(
       (c) =>
-        `<article><h3>${esc(c.degree[lang])}</h3><p class="meta">${esc(c.school)}, ${c.period}</p></article>`,
+        `<article class="job"><h3 class="job-head">${esc(c.school)} <span class="meta">${c.period}</span></h3><p class="job-role">${esc(c.degree[lang])}</p></article>`,
     )
     .join("\n")}
-<article><h3>${t.languagesTitle}</h3><ul>${languages.map((l) => `<li>${esc(l[lang])}</li>`).join("")}</ul></article>
-<article><h3>${t.certsTitle}</h3><ul>${certifications.map((c) => `<li>${esc(c)}</li>`).join("")}</ul></article></section>
+<div class="stack-group after-timeline"><p class="stack-title">${t.languagesTitle}</p>${tags(languages.map((l) => l[lang]))}</div>
+<div class="stack-group"><p class="stack-title">${t.certsTitle}</p>${tags(certifications)}</div></section>
 <section id="contato"><h2>${iconSvg("contact")}${t.sectionContact}</h2><ul>
   <li>${iconSvg("email")}<a href="mailto:${profile.email}">${profile.email}</a></li>
   ${profile.links

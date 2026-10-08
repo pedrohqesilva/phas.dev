@@ -372,32 +372,23 @@ const sections: Record<string, (ctx: Ctx) => void> = {
   },
 
   education({ lang, t, print }) {
+    // Courses on the same timeline as the jobs; languages and certifications as tag groups, like the stack.
     print(
       ...education.map((c) =>
         h(
           "div",
-          { class: "entry" },
-          h("p", { class: "title" }, c.degree[lang]),
-          h(
-            "p",
-            null,
-            c.school,
-            h("span", { class: "muted" }, `, ${c.period}`),
-          ),
+          { class: "entry job" },
+          h("p", { class: "job-head" }, h("span", { class: "title" }, c.school), h("span", { class: "muted" }, c.period)),
+          h("p", { class: "job-role" }, c.degree[lang]),
         ),
       ),
       h(
         "div",
-        { class: "entry" },
-        h("p", { class: "title" }, t.languagesTitle),
-        h("ul", null, ...languages.map((l) => h("li", null, l[lang]))),
+        { class: "stack-group after-timeline" },
+        h("p", { class: "stack-title" }, t.languagesTitle),
+        tags(languages.map((l) => l[lang])),
       ),
-      h(
-        "div",
-        { class: "entry" },
-        h("p", { class: "title" }, t.certsTitle),
-        h("ul", null, ...certifications.map((c) => h("li", null, c))),
-      ),
+      h("div", { class: "stack-group" }, h("p", { class: "stack-title" }, t.certsTitle), tags(certifications)),
     );
   },
 

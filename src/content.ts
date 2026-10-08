@@ -319,36 +319,31 @@ export const education: Course[] = [
   {
     school: "Universidade FUMEC",
     degree: {
-      pt: "Mestrado, Sistemas de Informação e Gestão do Conhecimento",
-      en: "MSc, Information Systems and Knowledge Management",
+      pt: "Mestrado em Sistemas de Informação e Gestão do Conhecimento",
+      en: "MSc in Information Systems and Knowledge Management",
     },
     period: "2021 - 2022",
   },
   {
     school: "Universidade FUMEC",
-    degree: {
-      pt: "Bacharelado, Ciência da Computação",
-      en: "BSc, Computer Science",
-    },
+    degree: { pt: "Bacharelado em Ciência da Computação", en: "BSc in Computer Science" },
     period: "2017 - 2020",
   },
   {
     school: "Colégio COTEMIG",
-    degree: {
-      pt: "Técnico em Tecnologia da Informação",
-      en: "IT technical high school",
-    },
+    degree: { pt: "Ensino Médio e Técnico em Tecnologia da Informação", en: "High school and IT technical degree" },
     period: "2014 - 2016",
   },
 ];
 
 export const languages: L[] = [
-  { pt: "Português, nativo", en: "Portuguese, native" },
-  { pt: "Inglês, profissional", en: "English, full professional" },
+  { pt: "Português (nativo)", en: "Portuguese (native)" },
+  { pt: "Inglês (profissional)", en: "English (full professional)" },
 ];
 
 export const certifications = [
   "Software Architecture: Domain-Driven Design",
   "Software Architecture Foundations",
   "Fundamentos do Scrum",
+  "Oral and Written Communication in English (Advanced)",
 ];
