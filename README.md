@@ -33,6 +33,7 @@
 
 > [!TIP]
 > Open [phas.dev](https://phas.dev) and type `help`. Or don't type at all: every command is clickable, and the icons at the top do the rest.
+> Living in a terminal already? Try `curl phas.dev` (or `curl phas.dev/en`).
 
 ## ✨ Highlights
 

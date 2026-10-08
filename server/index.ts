@@ -33,6 +33,7 @@ const TYPES: Record<string, string> = {
   ".xml": "application/xml; charset=utf-8",
   ".webmanifest": "application/manifest+json",
   ".md": "text/markdown; charset=utf-8",
+  ".ans": "text/plain; charset=utf-8",
 };
 
 /**
@@ -57,6 +58,9 @@ const ROUTES: Record<string, string> = {
 };
 
 type File = { body: Buffer; gzip: Buffer | null; type: string };
+
+/** Command-line HTTP clients: they get the resume as coloured text instead of the page. */
+const TERMINAL_UA = /^(curl|Wget|HTTPie|xh)\//i;
 
 function loadDist(): Map<string, File> {
   const files = new Map<string, File>();
@@ -187,6 +191,24 @@ function serveStatic(req: IncomingMessage, res: ServerResponse) {
     return;
   }
   const route = ROUTES[path.replace(/(.)\/$/, "$1").toLowerCase()];
+  // `curl phas.dev`: a terminal asking for a page gets the resume in colour, in the page's language.
+  if (route && TERMINAL_UA.test(String(req.headers["user-agent"] ?? ""))) {
+    const ansi = files.get(
+      route === "/en.html" || route === "/resume.html"
+        ? "/resume.ans"
+        : "/curriculo.ans",
+    );
+    if (ansi) {
+      res.writeHead(200, {
+        "Content-Type": ansi.type,
+        // Never kept at the edge: the same address is a web page for everyone else.
+        "Cache-Control": "no-store",
+        ...SECURITY_HEADERS,
+      });
+      res.end(req.method === "HEAD" ? undefined : ansi.body);
+      return;
+    }
+  }
   const asset = route ? undefined : files.get(path);
   // Unknown address: the terminal still opens (it may be an old link), but with a 404 status for robots.
   const file = asset ?? files.get(route ?? "/index.html");

@@ -1,7 +1,7 @@
 // The PHAS logo: "ANSI Shadow" block letters drawn as SVG instead of text, so the
 // double-line shadow joins cleanly in any browser and font. Next to it, a pixel server rack.
 
-const ART = `
+export const ART = `
 ██████╗ ██╗  ██╗ █████╗ ███████╗
 ██╔══██╗██║  ██║██╔══██╗██╔════╝
 ██████╔╝███████║███████║███████╗

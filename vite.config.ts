@@ -5,6 +5,7 @@ import { relative, resolve } from "node:path";
 import { defineConfig } from "vite";
 import { attachGames } from "./server/games.ts";
 import { handleScores } from "./server/scores.ts";
+import { resumeAnsi } from "./src/ansi.ts";
 import { ui } from "./src/i18n.ts";
 import { manifest, serviceWorker } from "./src/pwa.ts";
 import {
@@ -68,6 +69,9 @@ export default defineConfig({
           "resume.md": resumeMarkdown("en"),
           "curriculo.md": resumeMarkdown("pt"),
           "humans.txt": humansTxt(),
+          // `curl phas.dev`: the server answers terminals with these.
+          "curriculo.ans": resumeAnsi("pt"),
+          "resume.ans": resumeAnsi("en"),
         };
         for (const [name, body] of Object.entries(files))
           writeFileSync(resolve(dist, name), body);

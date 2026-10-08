@@ -36,7 +36,11 @@ jobs:
           for i in $(seq 1 20); do curl -fs localhost:8080/health && break; sleep 0.5; done
           test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/resume)" = 200
           test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/nao-existe)" = 404
-          curl -sI localhost:8080/ | grep -qi '^content-security-policy:'
+          curl -sI -A Mozilla/5.0 localhost:8080/ | grep -qi '^content-security-policy:'
+          curl -sI -A Mozilla/5.0 localhost:8080/ | grep -qi '^content-type: text/html'
+          # `curl phas.dev`: terminals get the resume as coloured text.
+          curl -sI localhost:8080/ | grep -qi '^content-type: text/plain'
+          curl -s localhost:8080/en | grep -q 'Senior Software Engineer'
 
   # The production image, built and started as Railway runs it: catches a file the image leaves out.
   docker:
