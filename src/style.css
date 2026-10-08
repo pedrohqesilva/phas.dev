@@ -952,3 +952,10 @@ html:not(.js) .back {
     border-color: #c8c8c8;
   }
 }
+
+/* Tags under a job or project: a little air above, after the bullets. */
+.entry .tags,
+.project .tags,
+.static article .tags {
+  margin-top: 8px !important;
+}

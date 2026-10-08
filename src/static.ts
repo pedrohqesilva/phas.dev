@@ -22,6 +22,9 @@ const esc = (s: string) =>
       ]!,
   );
 
+const tags = (items: string[]) =>
+  `<p class="tags">${items.map((i) => `<span class="tag">${esc(i)}</span>`).join("")}</p>`;
+
 const a = (url: string, label: string) =>
   `<a href="${esc(url)}" rel="noopener" target="_blank">${esc(label)}</a>`;
 
@@ -37,6 +40,7 @@ export function renderStatic(lang: Lang): string {
   <p class="meta">${esc(j.period[lang])}, ${esc(j.place[lang])}</p>
   ${j.about ? `<p>${esc(j.about[lang])}</p>` : ""}
   <ul>${j.bullets.map((b) => `<li>${esc(b[lang])}</li>`).join("")}</ul>
+  ${j.stack ? tags(j.stack) : ""}
 </article>`,
         )
         .join("\n")
@@ -52,7 +56,7 @@ export function renderStatic(lang: Lang): string {
     <p class="tagline">"${esc(p.tagline[lang])}"</p>
     <p>${esc(p.description[lang])}</p>
     <ul>${p.highlights.map((x) => `<li>${esc(x[lang])}</li>`).join("")}</ul>
-    <p class="meta">${p.stack.map(esc).join(", ")}</p>
+    ${tags(p.stack)}
   </div>
 </article>`,
     )
@@ -69,7 +73,7 @@ export function renderStatic(lang: Lang): string {
 <section id="stack"><h2>${iconSvg("stack")}${t.sectionStack}</h2>${stack
     .map(
       (g) =>
-        `<div class="stack-group"><p class="stack-title">${esc(g.group[lang])}</p><p class="tags">${g.items.map((i) => `<span class="tag">${esc(i)}</span>`).join("")}</p></div>`,
+        `<div class="stack-group"><p class="stack-title">${esc(g.group[lang])}</p>${tags(g.items)}</div>`,
     )
     .join("")}</section>
 <section id="formacao"><h2>${iconSvg("education")}${t.sectionEducation}</h2>${education

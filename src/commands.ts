@@ -283,6 +283,9 @@ const linkOf = (label: string) =>
   profile.links.find((l) => l.label === label)!.url;
 const projectUrl = (name: string) => projects.find((p) => p.name === name)!.url;
 
+/** Technologies as tags, the same look everywhere (stack, jobs, projects). */
+const tags = (items: string[]) => h("p", { class: "tags" }, ...items.map((item) => h("span", { class: "tag" }, item)));
+
 const sections: Record<string, (ctx: Ctx) => void> = {
   about({ lang, print }) {
     print(
@@ -319,7 +322,7 @@ const sections: Record<string, (ctx: Ctx) => void> = {
           muted(`${j.period[lang]}, ${j.place[lang]}`),
           j.about && line(j.about[lang]),
           h("ul", null, ...j.bullets.map((b) => h("li", null, b[lang]))),
-          j.stack && muted(j.stack.join(", ")),
+          j.stack && tags(j.stack),
         ),
       ),
     );
@@ -351,7 +354,7 @@ const sections: Record<string, (ctx: Ctx) => void> = {
             h("p", { class: "tagline" }, `"${p.tagline[lang]}"`),
             line(p.description[lang]),
             h("ul", null, ...p.highlights.map((x) => h("li", null, x[lang]))),
-            muted(p.stack.join(", ")),
+            tags(p.stack),
           ),
         ),
       ),
@@ -366,7 +369,7 @@ const sections: Record<string, (ctx: Ctx) => void> = {
           "div",
           { class: "stack-group" },
           h("p", { class: "stack-title" }, g.group[lang]),
-          h("p", { class: "tags" }, ...g.items.map((item) => h("span", { class: "tag" }, item))),
+          tags(g.items),
         ),
       ),
     );
