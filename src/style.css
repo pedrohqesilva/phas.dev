@@ -795,9 +795,23 @@ html:not(.js) .back {
   .static .stack-group {
     break-inside: avoid;
   }
+  /* Projects are long: they may continue on the next page, but never mid-line of a highlight and never
+     with the header (name, role, pitch) left behind. */
+  .static article.has-logo {
+    break-inside: auto;
+  }
+  .static article.has-logo :is(p, li, .tags) {
+    break-inside: avoid;
+  }
+  .static article.has-logo :is(.job-head, .job-role, .job-role + p) {
+    break-after: avoid;
+  }
   /* A title never ends a page alone: it goes over with what it introduces. */
-  .static h2,
-  .static .stack-title {
+  .static h2 {
+    break-after: avoid;
+  }
+  /* Nor does a stack line start a page alone. */
+  .static #stack .stack-group:nth-last-of-type(2) {
     break-after: avoid;
   }
   /* Timeline markers and logos are drawn with backgrounds, which print drops unless told otherwise. */
@@ -945,6 +959,30 @@ html:not(.js) .back {
 @media print {
   .tag {
     border-color: #c8c8c8;
+  }
+  /* On paper the stack and languages are plain lines, the group on the left and its items after it,
+     so they take a few lines instead of a page. */
+  .static .stack-group {
+    display: grid;
+    grid-template-columns: 19ch minmax(0, 1fr);
+    gap: 0 2ch;
+    margin-top: 3pt;
+  }
+  .static .stack-group.after-timeline {
+    margin-top: 14pt;
+  }
+  .static .stack-group .tags {
+    gap: 0 1ch;
+    margin: 0 !important;
+  }
+  .static .stack-group .tag {
+    padding: 0;
+    border: 0;
+    font-size: inherit;
+    line-height: inherit;
+  }
+  .static .stack-group .tag:not(:last-child)::after {
+    content: ",";
   }
 }
 

@@ -43,8 +43,10 @@ export interface Project {
   /** Brand mark served from /public. */
   logo: string;
   url: string;
+  /** Since when, like a job's period. */
+  period: L;
+  /** Where it stands; closes the context line. */
   status: L;
-  /** What I did on it, in one line. */
   role: L;
   tagline: L;
   description: L;
@@ -161,8 +163,8 @@ export const experience: Job[] = [
         en: "Brought unit and integration tests into CI/CD, running on every delivery.",
       },
       {
-        pt: "Entrego funcionalidades novas e evoluo sistemas legados, de ponta a ponta.",
-        en: "Ship new features and evolve legacy systems, end to end.",
+        pt: "Desenvolvo microsserviços e Backend for Frontends na AWS (Lambda, ECS, RDS), do desenho à produção.",
+        en: "Build microservices and Backends for Frontends on AWS (Lambda, ECS, RDS), from design to production.",
       },
     ],
     stack: [".NET", "EF Core", "AWS", "Docker", "Serilog", "OpenTelemetry", "TDD", "DDD"],
@@ -244,8 +246,8 @@ export const experience: Job[] = [
     },
     bullets: [
       {
-        pt: "Desenvolvi módulos estratégicos do banco digital, num time internacional.",
-        en: "Built core modules of the digital bank, in an international team.",
+        pt: "Desenvolvi módulos do banco digital em .NET Core, com TDD, num time distribuído entre países.",
+        en: "Built modules of the digital bank in .NET Core, test-first, in a team spread across countries.",
       },
       {
         pt: "Participei das decisões de arquitetura: microsserviços e micro front-ends.",
@@ -275,7 +277,7 @@ export const experience: Job[] = [
   {
     slug: "tce",
     company: "Tribunal de Contas de Minas Gerais",
-    role: { pt: "Desenvolvedor Júnior → Analista Desenvolvedor Sênior", en: "Junior Developer → Senior Developer Analyst" },
+    role: { pt: "Desenvolvedor Júnior → Analista Desenvolvedor Sênior", en: "Junior Developer → Senior Software Developer" },
     period: { pt: "ago 2017 - mai 2020", en: "Aug 2017 - May 2020" },
     place: { pt: "Belo Horizonte", en: "Belo Horizonte" },
     about: {
@@ -328,7 +330,7 @@ export const experience: Job[] = [
           },
         },
         {
-          title: { pt: "Analista Desenvolvedor Sênior", en: "Senior Developer Analyst" },
+          title: { pt: "Analista Desenvolvedor Sênior", en: "Senior Software Developer" },
           period: { pt: "set 2019 - mai 2020", en: "Sep 2019 - May 2020" },
           text: {
             pt: "Desenvolvi funcionalidades numa arquitetura hexagonal, do entendimento da tarefa à entrega, em contato constante com os usuários.",
@@ -389,12 +391,13 @@ export const projects: Project[] = [
     name: "Vittz",
     logo: "/projects/vittz.svg",
     url: "https://vittz.com.br",
-    status: { pt: "Em produção com clínicas beta", en: "In production with beta clinics" },
-    role: { pt: "Produto meu, do conceito ao código.", en: "My own product, from concept to code." },
+    period: { pt: "fev 2026 - atual", en: "Feb 2026 - present" },
+    status: { pt: "Em produção com clínicas beta.", en: "In production with beta clinics." },
+    role: { pt: "CEO & Founder", en: "CEO & Founder" },
     tagline: { pt: "Cuidar de gente, não de planilha.", en: "Care for people, not spreadsheets." },
     description: {
-      pt: "Sistema de gestão para clínicas pequenas e profissionais autônomos, começando pela odontologia. Agenda, prontuário, financeiro, estoque e WhatsApp num lugar só, em tempo real, na web e no celular.",
-      en: "Management system for small clinics and solo practitioners, starting with dentistry. Scheduling, health records, billing, inventory and WhatsApp in one place, in real time, on the web and on mobile.",
+      pt: "Gestão para clínicas pequenas e profissionais autônomos, começando pela odontologia: agenda, prontuário, financeiro, estoque e WhatsApp num lugar só.",
+      en: "Management for small clinics and solo practitioners, starting with dentistry: scheduling, health records, billing, inventory and WhatsApp in one place.",
     },
     highlights: [
       {
@@ -428,12 +431,13 @@ export const projects: Project[] = [
     name: "iFleetHub",
     logo: "/projects/ifleethub.svg",
     url: "https://ifleethub.com.br",
-    status: { pt: "Em produção com transportadoras beta", en: "In production with beta trucking companies" },
-    role: { pt: "Produto meu, do conceito ao código.", en: "My own product, from concept to code." },
+    period: { pt: "abr 2026 - atual", en: "Apr 2026 - present" },
+    status: { pt: "Em produção com transportadoras beta.", en: "In production with beta trucking companies." },
+    role: { pt: "CEO & Founder", en: "CEO & Founder" },
     tagline: { pt: "Menos planilha. Mais estrada.", en: "Less spreadsheet. More road." },
     description: {
-      pt: "A torre de controle da transportadora: cada caminhão no mapa em tempo real e cada carga acompanhada até a entrega. Para a equipe de operação no escritório e para o motorista na estrada, na web e no celular.",
-      en: "A control tower for trucking companies: every truck on a live map and every load tracked until delivery. For the operations team in the office and the driver on the road, on the web and on mobile.",
+      pt: "A torre de controle da transportadora: cada caminhão no mapa e cada carga acompanhada até a entrega, do escritório à estrada.",
+      en: "A control tower for trucking companies: every truck on the map and every load tracked until delivery, from the office to the road.",
     },
     highlights: [
       {

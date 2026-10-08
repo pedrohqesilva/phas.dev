@@ -356,7 +356,7 @@ const sections: Record<string, (ctx: Ctx) => void> = {
   },
 
   projects({ lang, print }) {
-    // The same timeline as the jobs: the logo is the marker, then name and status, my role, the pitch,
+    // The same timeline as the jobs: the logo is the marker, then name and period, my role, the pitch,
     // the highlights and the stack.
     print(
       ...projects.map((p) =>
@@ -364,9 +364,9 @@ const sections: Record<string, (ctx: Ctx) => void> = {
           "div",
           { class: "entry job has-logo" },
           h("img", { class: "job-logo", src: p.logo, alt: "", width: "18", height: "18" }),
-          h("p", { class: "job-head" }, h("span", { class: "title" }, link(p.url, p.name)), h("span", { class: "muted" }, p.status[lang])),
+          h("p", { class: "job-head" }, h("span", { class: "title" }, link(p.url, p.name)), h("span", { class: "muted" }, p.period[lang])),
           h("p", { class: "job-role" }, p.role[lang]),
-          h("p", { class: "muted" }, h("em", null, p.tagline[lang]), ` ${p.description[lang]}`),
+          h("p", { class: "muted" }, h("em", null, p.tagline[lang]), ` ${p.description[lang]} ${p.status[lang]}`),
           h("ul", null, ...p.highlights.map((x) => highlight(x[lang]))),
           tags(p.stack),
         ),
