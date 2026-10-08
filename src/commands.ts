@@ -406,7 +406,7 @@ export const commands: Command[] = [
             const c = commands.find((x) => x.id === id)!;
             return h(
               "button",
-              { type: "button", class: "tile", "data-cmd": c.names[lang][0] },
+              { type: "button", class: "tile", "data-cmd": c.names[lang][0], "data-id": id },
               icon(id === "game" ? "game" : c.icon!, 28),
               h("span", null, label(id)),
             );

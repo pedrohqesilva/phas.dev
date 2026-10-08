@@ -837,3 +837,10 @@ html:not(.js) .back {
     margin-left: 0;
   }
 }
+
+/* Phones: no Contact tile in the start menu (GitHub and LinkedIn have their own). */
+@media (max-width: 640px) {
+  .tile[data-id="contact"] {
+    display: none;
+  }
+}
