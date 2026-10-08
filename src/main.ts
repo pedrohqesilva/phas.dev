@@ -50,7 +50,13 @@ const term = new Terminal(
       // Every section ends with the way back to the icons, for visitors who never type.
       if (tabIds.includes(id) && id !== "help") {
         const t = ui[term.lang];
-        term.print(h("p", { class: "back-home" }, cmd(term.lang === "pt" ? "inicio" : "start", `← ${t.backHome}`)));
+        term.print(
+          h(
+            "p",
+            { class: "back-home" },
+            cmd(term.lang === "pt" ? "inicio" : "start", `← ${t.backHome}`),
+          ),
+        );
       }
     },
     onClear: () => markTab(""),
@@ -62,6 +68,7 @@ function applyLang(lang: Lang) {
   const t = ui[lang];
   term.lang = lang;
   root.lang = lang === "pt" ? "pt-BR" : "en";
+  document.title = `${profile.name}, ${profile.role[lang]}`;
   $("prompt-user").textContent = t.user;
   $("cmd").setAttribute("aria-label", t.inputLabel);
   $("chips").replaceChildren(...chips(lang));
@@ -95,10 +102,11 @@ function markTab(id: string) {
     tab.toggleAttribute("aria-current", tab.dataset.id === id);
 }
 
+/** Switching language redraws the whole screen in it, including what was already there. */
 function setLang(lang: Lang) {
   store.set("lang", lang);
   applyLang(lang);
-  term.print(h("p", { class: "muted" }, ui[lang].langSet));
+  term.relocalize();
 }
 
 function applyThemeLabel() {
@@ -121,12 +129,17 @@ function setTheme(theme: Theme) {
 
 /** `/simples` (or `/simple`) is the simple version's own address, so it can be shared or bookmarked. */
 const SIMPLE_PATHS = ["/simples", "/simple"];
-const isSimplePath = () => SIMPLE_PATHS.includes(location.pathname.replace(/\/$/, ""));
+const isSimplePath = () =>
+  SIMPLE_PATHS.includes(location.pathname.replace(/\/$/, ""));
 
 function setSimple(on: boolean, push = true) {
   root.classList.toggle("simple", on);
   if (push && on !== isSimplePath())
-    history.pushState(null, "", on ? (term.lang === "pt" ? "/simples" : "/simple") : "/");
+    history.pushState(
+      null,
+      "",
+      on ? (term.lang === "pt" ? "/simples" : "/simple") : "/",
+    );
   if (on) $("static").focus();
   else term.focus();
 }
@@ -168,6 +181,17 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** The welcome screen: banner, name, role and the hint, as after boot. */
 function welcome() {
+  renderWelcome();
+  term.remember(renderWelcome);
+}
+
+/** Boot lines in their finished state, for a redraw in another language. */
+function renderBootDone() {
+  for (const line of ui[term.lang].boot)
+    term.printNow(h("p", { class: "boot" }, h("span", { class: "ok" }, "[ ok ]"), " ", line));
+}
+
+function renderWelcome() {
   const t = ui[term.lang];
   term.print(
     banner(),
@@ -206,13 +230,18 @@ async function boot() {
 
   // One step at a time, like a real boot: the line appears pending, waits, flips to ok, then the next.
   for (const line of t.boot) {
-    const status = h("span", { class: fast ? "ok" : "ok waiting" }, fast ? "[ ok ]" : "[ .. ]");
+    const status = h(
+      "span",
+      { class: fast ? "ok" : "ok waiting" },
+      fast ? "[ ok ]" : "[ .. ]",
+    );
     term.printNow(h("p", { class: "boot" }, status, " ", line));
     if (!fast) await sleep(260 + Math.random() * 240);
     status.textContent = "[ ok ]";
     status.classList.remove("waiting");
     if (!fast) await sleep(90);
   }
+  term.remember(renderBootDone);
 
   welcome();
 

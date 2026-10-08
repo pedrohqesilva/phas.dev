@@ -1,4 +1,11 @@
-import { complete, normalize, resolve, type Ctx, type Theme } from "./commands.ts";
+import {
+  complete,
+  normalize,
+  resolve,
+  translateCommand,
+  type Ctx,
+  type Theme,
+} from "./commands.ts";
 import type { Lang } from "./content.ts";
 import { cmd, h, join, type Child } from "./dom.ts";
 import { ui } from "./i18n.ts";
@@ -45,6 +52,12 @@ export class Terminal {
 
   // Streaming output: units waiting to be shown.
   private queue: Element[] = [];
+  /**
+   * What is on screen since the last clear, so it can be redrawn in another language: commands as typed,
+   * and render functions for blocks printed outside a command (boot lines, welcome).
+   */
+  private transcript: (string | (() => void))[] = [];
+  private replaying = false;
   private streaming = false;
 
   constructor(
@@ -76,7 +89,8 @@ export class Terminal {
       e.preventDefault();
       // Enter accepts the inline suggestion when what was typed isn't a command on its own.
       const typed = input.value;
-      const value = this.suggestion && !resolve(typed.trim()) ? this.suggestion : typed;
+      const value =
+        this.suggestion && !resolve(typed.trim()) ? this.suggestion : typed;
       input.value = "";
       this.syncCursor();
       this.run(value);
@@ -112,7 +126,12 @@ export class Terminal {
     const matches =
       at === value.length && value ? complete(value, this.lang) : [];
     const typed = normalize(value);
-    this.suggestion = matches.length === 1 && matches[0] !== typed && matches[0].startsWith(typed) ? matches[0] : "";
+    this.suggestion =
+      matches.length === 1 &&
+      matches[0] !== typed &&
+      matches[0].startsWith(typed)
+        ? matches[0]
+        : "";
     const ghost = this.suggestion.slice(value.length);
 
     before.textContent = value.slice(0, at);
@@ -180,9 +199,36 @@ export class Terminal {
   /** Empties the screen, prompt echo included, and leaves only the bar and the prompt at the top. */
   clear() {
     this.queue = [];
+    this.transcript = [];
     this.out.replaceChildren();
     this.screen.scrollTop = 0;
     this.hooks.onClear();
+  }
+
+  /** Records a block printed outside a command, with how to print it again. */
+  remember(render: () => void) {
+    this.transcript.push(render);
+  }
+
+  /** Redraws everything on screen in the current language, at once, without repeating side effects. */
+  relocalize() {
+    const items = this.transcript;
+    this.queue = [];
+    this.transcript = [];
+    this.out.replaceChildren();
+    this.replaying = true;
+    try {
+      for (const item of items) {
+        if (typeof item === "string") this.run(translateCommand(item, this.lang));
+        else {
+          item();
+          this.transcript.push(item);
+        }
+      }
+    } finally {
+      this.replaying = false;
+    }
+    this.flush();
   }
 
   private scrollToEnd() {
@@ -197,15 +243,18 @@ export class Terminal {
 
   /** Scrolls the output by a few lines (arrows) or a page. */
   private scrollBy(lines: number) {
-    const lineHeight = parseFloat(getComputedStyle(this.screen).lineHeight) || 24;
-    this.screen.scrollBy({ top: lines * lineHeight, behavior: reducedMotion ? "auto" : "smooth" });
+    const lineHeight =
+      parseFloat(getComputedStyle(this.screen).lineHeight) || 24;
+    this.screen.scrollBy({
+      top: lines * lineHeight,
+      behavior: reducedMotion ? "auto" : "smooth",
+    });
   }
 
   private reveal(u: Element) {
     u.classList.remove("pending");
     u.classList.add("revealed");
   }
-
 
   private async pump() {
     if (this.streaming) return;
@@ -221,13 +270,16 @@ export class Terminal {
     this.streaming = false;
   }
 
-
   run(raw: string, echo = true) {
     const input = raw.trim();
-    this.flush();
-    if (echo) this.echo(raw);
+    // A command typed while redrawing must not redraw again (`lang en` itself is in the transcript).
+    if (!this.replaying) this.flush();
+    if (echo) {
+      this.echo(raw);
+      this.transcript.push(raw);
+    }
     if (!input) return;
-    if (this.history.at(-1) !== input) this.history.push(input);
+    if (!this.replaying && this.history.at(-1) !== input) this.history.push(input);
     this.cursor = this.history.length;
 
     const [name, ...args] = input.split(/\s+/);
@@ -261,12 +313,14 @@ export class Terminal {
       history: this.history,
       print: (...c) => this.print(...c),
       clear: () => this.clear(),
-      home: () => this.hooks.home(),
-      setLang: (l) => this.hooks.setLang(l),
-      setTheme: (t) => this.hooks.setTheme(t),
-      showSimple: () => this.hooks.showSimple(),
+      // While redrawing, the switches only print what they printed the first time.
+      home: () => !this.replaying && this.hooks.home(),
+      setLang: (l) => (this.replaying ? this.print(h("p", { class: "muted" }, ui[l].langSet)) : this.hooks.setLang(l)),
+      setTheme: (t) => !this.replaying && this.hooks.setTheme(t),
+      showSimple: () => !this.replaying && this.hooks.showSimple(),
       run: (i) => this.run(i),
       focus: () => this.focus(),
+      replaying: this.replaying,
     };
   }
 
@@ -279,7 +333,11 @@ export class Terminal {
     // Shift+arrows and PageUp/PageDown always scroll.
     const reading = !input.value && this.queue.length > 0;
     const arrow = e.key === "ArrowUp" || e.key === "ArrowDown";
-    if ((arrow && (reading || e.shiftKey)) || e.key === "PageUp" || e.key === "PageDown") {
+    if (
+      (arrow && (reading || e.shiftKey)) ||
+      e.key === "PageUp" ||
+      e.key === "PageDown"
+    ) {
       e.preventDefault();
       const down = e.key === "ArrowDown" || e.key === "PageDown";
       const page = Math.max(3, Math.floor(this.screen.clientHeight / 24) - 2);
@@ -314,7 +372,11 @@ export class Terminal {
       return;
     }
 
-    if (e.key === "ArrowRight" && this.suggestion && input.selectionStart === input.value.length) {
+    if (
+      e.key === "ArrowRight" &&
+      this.suggestion &&
+      input.selectionStart === input.value.length
+    ) {
       e.preventDefault();
       input.value = `${this.suggestion} `;
       return;

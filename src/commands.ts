@@ -29,6 +29,8 @@ export interface Ctx {
   showSimple(): void;
   run(input: string): void;
   focus(): void;
+  /** True while the screen is being redrawn in another language: print, but don't act again. */
+  replaying: boolean;
 }
 
 interface Command {
@@ -55,24 +57,41 @@ const line = (...children: Child[]) => h("p", null, ...children);
 const muted = (...children: Child[]) => h("p", { class: "muted" }, ...children);
 const title = (text: string) => h("p", { class: "title" }, text);
 /** Opens a URL in a new tab and leaves a clickable link behind in case the popup is blocked. */
-function open(url: string, { t, print }: Ctx) {
+function open(url: string, { t, print, replaying }: Ctx) {
   print(line(t.opening, " ", link(url)));
+  if (replaying) return;
   if (url.startsWith("mailto:")) location.href = url;
   else window.open(url, "_blank", "noopener");
 }
 
-const isEasy = (mode?: string) => ["facil", "easy", "wrap"].includes(normalize(mode ?? ""));
+const isEasy = (mode?: string) =>
+  ["facil", "easy", "wrap"].includes(normalize(mode ?? ""));
 
 /** Full-screen Snake; back on the terminal it reports the best round. Easy: the walls wrap around. */
-function startSnake({ t, print, focus }: Ctx, easy = false) {
-  playSnake({ title: easy ? t.snakeEasyTitle : "Snake", help: t.snakeHelp, start: t.gameStart, exit: t.gameExit, paused: t.gamePaused, resume: t.gameResume, score: t.gameScore, best: t.gameBest }, (best) => {
-    print(muted(t.snakeOver(best)));
-    focus();
-  }, { wrap: easy });
+function startSnake({ t, print, focus, replaying }: Ctx, easy = false) {
+  if (replaying) return;
+  playSnake(
+    {
+      title: easy ? t.snakeEasyTitle : "Snake",
+      help: t.snakeHelp,
+      start: t.gameStart,
+      exit: t.gameExit,
+      paused: t.gamePaused,
+      resume: t.gameResume,
+      score: t.gameScore,
+      best: t.gameBest,
+    },
+    (best) => {
+      print(muted(t.snakeOver(best)));
+      focus();
+    },
+    { wrap: easy },
+  );
 }
 
 /** Full-screen Space Invaders; back on the terminal it reports the best score. */
-function startInvaders({ t, print, focus }: Ctx) {
+function startInvaders({ t, print, focus, replaying }: Ctx) {
+  if (replaying) return;
   playInvaders(
     {
       title: "Space Invaders",
@@ -147,11 +166,22 @@ const sections: Record<string, (ctx: Ctx) => void> = {
         h(
           "div",
           { class: "project" },
-          h("img", { class: "project-logo", src: p.logo, alt: "", width: "44", height: "44" }),
+          h("img", {
+            class: "project-logo",
+            src: p.logo,
+            alt: "",
+            width: "44",
+            height: "44",
+          }),
           h(
             "div",
             null,
-            h("p", { class: "title" }, link(p.url, p.name), h("span", { class: "at" }, ` ${p.url.replace("https://", "")}`)),
+            h(
+              "p",
+              { class: "title" },
+              link(p.url, p.name),
+              h("span", { class: "at" }, ` ${p.url.replace("https://", "")}`),
+            ),
             muted(p.status[lang]),
             h("p", { class: "tagline" }, `"${p.tagline[lang]}"`),
             line(p.description[lang]),
@@ -183,7 +213,12 @@ const sections: Record<string, (ctx: Ctx) => void> = {
           "div",
           { class: "entry" },
           h("p", { class: "title" }, c.degree[lang]),
-          h("p", null, c.school, h("span", { class: "muted" }, `, ${c.period}`)),
+          h(
+            "p",
+            null,
+            c.school,
+            h("span", { class: "muted" }, `, ${c.period}`),
+          ),
         ),
       ),
       h(
@@ -277,7 +312,10 @@ export const commands: Command[] = [
   {
     id: "menu",
     names: { pt: ["inicio", "menu", "start"], en: ["start", "menu"] },
-    desc: { pt: "ícones para navegar sem saber os comandos", en: "icons to browse without knowing the commands" },
+    desc: {
+      pt: "ícones para navegar sem saber os comandos",
+      en: "icons to browse without knowing the commands",
+    },
     icon: "simple",
     run(_, { lang, t, print }) {
       // Navigation only (no theme, language or view switches): each tile is a command, typed on click.
@@ -336,14 +374,20 @@ export const commands: Command[] = [
   },
   {
     id: "stack",
-    names: { pt: ["stack", "tecnologias", "skills"], en: ["stack", "skills", "technologies"] },
+    names: {
+      pt: ["stack", "tecnologias", "skills"],
+      en: ["stack", "skills", "technologies"],
+    },
     desc: { pt: "tecnologias que uso", en: "technologies I use" },
     icon: "stack",
     run: (_, ctx) => sections.stack(ctx),
   },
   {
     id: "education",
-    names: { pt: ["formacao", "educacao", "estudos"], en: ["education", "studies"] },
+    names: {
+      pt: ["formacao", "educacao", "estudos"],
+      en: ["education", "studies"],
+    },
     desc: { pt: "formação e idiomas", en: "education and languages" },
     icon: "education",
     run: (_, ctx) => sections.education(ctx),
@@ -385,7 +429,10 @@ export const commands: Command[] = [
   },
   {
     id: "email",
-    names: { pt: ["email", "e-mail", "correio"], en: ["email", "e-mail", "mail"] },
+    names: {
+      pt: ["email", "e-mail", "correio"],
+      en: ["email", "e-mail", "mail"],
+    },
     desc: { pt: "escreve um e-mail para mim", en: "writes me an email" },
     icon: "email",
     run: (_, ctx) => open(`mailto:${profile.email}`, ctx),
@@ -393,16 +440,20 @@ export const commands: Command[] = [
   {
     id: "cv",
     names: { pt: ["curriculo", "cv"], en: ["resume", "cv"] },
-    desc: { pt: "currículo para imprimir ou salvar em PDF", en: "printable resume, save as PDF" },
+    desc: {
+      pt: "currículo para imprimir ou salvar em PDF",
+      en: "printable resume, save as PDF",
+    },
     icon: "cv",
-    run(_, { t, print }) {
+    run(_, ctx) {
+      const { t, print } = ctx;
       if (profile.cv) {
         print(line(t.cvOpen, " ", link(profile.cv, profile.cv)));
         return void window.open(profile.cv, "_blank", "noopener");
       }
       // No PDF yet: the print stylesheet turns the simple version into a resume.
       print(line(t.cvPrint));
-      setTimeout(() => window.print(), 400);
+      if (!ctx.replaying) setTimeout(() => window.print(), 400);
     },
   },
   {
@@ -421,14 +472,27 @@ export const commands: Command[] = [
             { class: "pairs" },
             h("dt", null, cmd(`${name("game", ctx.lang)} snake`, "snake")),
             h("dd", null, ctx.t.snakeDesc),
-            h("dt", null, cmd(`${name("game", ctx.lang)} snake ${ctx.lang === "pt" ? "facil" : "easy"}`, `snake ${ctx.lang === "pt" ? "facil" : "easy"}`)),
+            h(
+              "dt",
+              null,
+              cmd(
+                `${name("game", ctx.lang)} snake ${ctx.lang === "pt" ? "facil" : "easy"}`,
+                `snake ${ctx.lang === "pt" ? "facil" : "easy"}`,
+              ),
+            ),
             h("dd", null, ctx.t.snakeEasyDesc),
-            h("dt", null, cmd(`${name("game", ctx.lang)} invaders`, "invaders")),
+            h(
+              "dt",
+              null,
+              cmd(`${name("game", ctx.lang)} invaders`, "invaders"),
+            ),
             h("dd", null, ctx.t.invadersDesc),
           ),
         );
-      if (game === "snake" || game === "cobrinha") return startSnake(ctx, isEasy(mode));
-      if (["invaders", "space", "spaceinvaders", "nave"].includes(game)) return startInvaders(ctx);
+      if (game === "snake" || game === "cobrinha")
+        return startSnake(ctx, isEasy(mode));
+      if (["invaders", "space", "spaceinvaders", "nave"].includes(game))
+        return startInvaders(ctx);
       ctx.print(muted(ctx.t.gameUsage(arg)));
     },
   },
@@ -483,7 +547,10 @@ export const commands: Command[] = [
   {
     id: "home",
     names: { pt: ["home", "reset"], en: ["home", "reset"] },
-    desc: { pt: "volta ao início, com a tela limpa", en: "back to the start, screen cleared" },
+    desc: {
+      pt: "volta ao início, com a tela limpa",
+      en: "back to the start, screen cleared",
+    },
     icon: "terminal",
     run: (_, { home }) => home(),
   },
@@ -584,6 +651,19 @@ export const commands: Command[] = [
   },
 ];
 
+/** The same command line with the command's name in `lang` (`sobre` → `about`), for a redraw. */
+export function translateCommand(raw: string, lang: Lang): string {
+  const [name, ...args] = raw.trim().split(/\s+/);
+  const command = name ? resolve(name) : undefined;
+  if (!command) return raw;
+  const typed = normalize(name);
+  const other: Lang = lang === "pt" ? "en" : "pt";
+  // Keep what was typed when it already reads as this language; translate the other one's main name.
+  const foreign = !command.names[lang].includes(typed) || (command.names[other][0] === typed && command.names[lang][0] !== typed);
+  if (!foreign) return raw;
+  return [command.names[lang][0], ...args].join(" ");
+}
+
 export function resolve(input: string): Command | undefined {
   const n = normalize(input);
   return commands.find((c) => c.names.pt.includes(n) || c.names.en.includes(n));
@@ -603,7 +683,10 @@ export function complete(prefix: string, lang: Lang): string[] {
     const rest = p.slice(space + 1);
     const command = resolve(word);
     if (!command?.args || rest.includes(" ")) return [];
-    return command.args(lang).filter((a) => normalize(a).startsWith(rest)).map((a) => `${word} ${a}`);
+    return command
+      .args(lang)
+      .filter((a) => normalize(a).startsWith(rest))
+      .map((a) => `${word} ${a}`);
   }
   const hits = commands.filter((c) =>
     [...c.names.pt, ...c.names.en].some((n) => n.startsWith(p)),
@@ -618,7 +701,18 @@ export function complete(prefix: string, lang: Lang): string[] {
 }
 
 /** The start menu's tiles, in reading order. */
-export const menuIds = ["about", "experience", "projects", "stack", "education", "contact", "cv", "game", "github", "linkedin"];
+export const menuIds = [
+  "about",
+  "experience",
+  "projects",
+  "stack",
+  "education",
+  "contact",
+  "cv",
+  "game",
+  "github",
+  "linkedin",
+];
 
 /** Commands shown as clickable chips above the terminal, in the current language. */
 export const tabIds = [
