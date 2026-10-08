@@ -448,7 +448,11 @@ html:not(.js) .back {
 .bar-actions button,
 .brand,
 .static .back,
-.static h2,
+.static h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .pairs dt {
   display: inline-flex;
   align-items: center;
@@ -764,6 +768,10 @@ html:not(.js) .back {
     font-size: 10.5pt;
     line-height: 1.45;
   }
+  /* The first-paint colours in index.html sit on :root and would print dark with background graphics on. */
+  :root {
+    background: #fff !important;
+  }
   html.js .term,
   .skip,
   .static .back,
@@ -783,8 +791,20 @@ html:not(.js) .back {
     margin-top: 18pt;
   }
   .static article,
-  .static h2 {
+  .static h2,
+  .static .stack-group {
     break-inside: avoid;
+  }
+  /* A title never ends a page alone: it goes over with what it introduces. */
+  .static h2,
+  .static .stack-title {
+    break-after: avoid;
+  }
+  /* Timeline markers and logos are drawn with backgrounds, which print drops unless told otherwise. */
+  .job::before,
+  .job-logo {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .static a {
     color: inherit;

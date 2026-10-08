@@ -90,7 +90,7 @@ export function renderStatic(lang: Lang): string {
   ${profile.links
     .map(
       (l) =>
-        `<li>${iconSvg(l.label.toLowerCase() as IconName)}${a(l.url, l.label)}</li>`,
+        `<li>${iconSvg(l.label.toLowerCase() as IconName)}${a(l.url, l.url.replace(/^https?:\/\/(www\.)?/, ""))}</li>`,
     )
     .join("\n  ")}
 </ul></section>`;
