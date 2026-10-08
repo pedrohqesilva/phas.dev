@@ -84,11 +84,11 @@ export const profile = {
   } satisfies L,
   now: {
     pt: "Na Paysign, defino a base das novas APIs e os padrões técnicos da empresa. Por conta própria, criei sozinho dois SaaS, ambos em produção com clientes beta: o Vittz, para clínicas, e o iFleetHub, para transportadoras. Antes, ajudei a construir um banco digital no Canadá e plataformas do varejo brasileiro.",
-    en: "At Paysign I define the foundation of new APIs and the company's technical standards. On my own, I built two SaaS products, both in production with beta customers: Vittz, for clinics, and iFleetHub, for trucking companies. Before that, I helped build a digital bank in Canada and platforms for Brazilian retail.",
+    en: "At Paysign I define the foundation of new APIs and the company's technical standards. On my own, I built two SaaS products, both live with beta customers: Vittz, for clinics, and iFleetHub, for trucking companies. Before that, I helped build a digital bank in Canada and platforms for Brazilian retail.",
   } satisfies L,
   extra: {
     pt: "Prefiro soluções simples de evoluir: DDD, monólito modular e Vertical Slice quando bastam, microsserviços quando são necessários. Uso IA no dia a dia e dentro dos produtos (assistentes com dados reais, transcrição, MCP) e gosto de ensinar quem está começando.",
-    en: "I prefer solutions that stay easy to evolve: DDD, modular monoliths and Vertical Slice when they are enough, microservices when they are needed. I use AI every day and inside the products (assistants on real data, transcription, MCP), and I enjoy teaching people who are starting out.",
+    en: "I prefer solutions that stay easy to evolve: DDD, modular monoliths and Vertical Slice when they are enough, microservices when they are needed. I use AI every day and inside the products (assistants grounded in real data, transcription, MCP), and I enjoy mentoring people who are just starting out.",
   } satisfies L,
   email: "pedro@phas.dev",
   links: [
@@ -159,15 +159,15 @@ export const experience: Job[] = [
       },
       {
         pt: "Criei o SharedKernel, pacote NuGet que padroniza logs, erros, validações e entidades DDD em toda a empresa.",
-        en: "Created SharedKernel, a NuGet package that standardises logging, errors, validation and DDD entities across the company.",
+        en: "Created SharedKernel, a NuGet package that standardizes logging, errors, validation and DDD entities across the company.",
       },
       {
         pt: "Levei testes unitários e de integração para o CI/CD, rodando a cada entrega.",
-        en: "Brought unit and integration tests into CI/CD, running on every delivery.",
+        en: "Brought unit and integration tests into CI/CD, running on every deploy.",
       },
       {
         pt: "Desenvolvo microsserviços e Backend for Frontends na AWS (Lambda, ECS, RDS), do desenho à produção.",
-        en: "Build microservices and Backends for Frontends on AWS (Lambda, ECS, RDS), from design to production.",
+        en: "Built microservices and Backends for Frontends on AWS (Lambda, ECS, RDS), from design to production.",
       },
     ],
     stack: [".NET", "EF Core", "AWS", "Docker", "Serilog", "OpenTelemetry", "TDD", "DDD"],
@@ -179,7 +179,7 @@ export const experience: Job[] = [
       bullets: [
         {
           pt: "O SharedKernel padroniza logs com Serilog e OpenTelemetry, tratamento de erros, validações, objetos de valor, entidades DDD e filas.",
-          en: "SharedKernel standardises logging with Serilog and OpenTelemetry, error handling, validation, value objects, DDD entities and queues.",
+          en: "SharedKernel standardizes logging with Serilog and OpenTelemetry, error handling, validation, value objects, DDD entities and queues.",
         },
         {
           pt: "Microsserviços e Backend for Frontends na AWS: Lambda, EC2, ECS, RDS e CloudWatch.",
@@ -211,14 +211,14 @@ export const experience: Job[] = [
       },
       {
         pt: "Trabalhei em microsserviços integrados por REST e filas, com Azure Functions escaladas sob demanda por agendamentos e eventos.",
-        en: "Worked on microservices connected by REST and queues, with Azure Functions scaled on demand by schedules and events.",
+        en: "Worked on microservices connected by REST and queues, with Azure Functions scaling on demand from schedules and events.",
       },
     ],
     stack: [".NET", "Azure Functions", "KEDA", "Kafka", "Azure DevOps", "Docker"],
     details: {
       intro: {
         pt: "O DoMeuJeito é a plataforma colaborativa de listas da Riachuelo, para casamentos, chás de bebê e outras celebrações. Trabalhei na sua evolução, numa arquitetura de microsserviços.",
-        en: "DoMeuJeito is Riachuelo's collaborative list platform, for weddings, baby showers and other celebrations. I worked on evolving it, on a microservices architecture.",
+        en: "DoMeuJeito is Riachuelo's collaborative list platform, for weddings, baby showers and other celebrations. I helped evolve it, on a microservices architecture.",
       },
       bullets: [
         {
@@ -245,12 +245,12 @@ export const experience: Job[] = [
     place: { pt: "Belo Horizonte", en: "Belo Horizonte" },
     about: {
       pt: "Grupo financeiro canadense, que estava criando o seu banco digital.",
-      en: "Canadian financial group, which was building its digital bank.",
+      en: "Canadian financial group building its own digital bank.",
     },
     bullets: [
       {
         pt: "Desenvolvi módulos do banco digital em .NET Core, com TDD, num time distribuído entre países.",
-        en: "Built modules of the digital bank in .NET Core, test-first, in a team spread across countries.",
+        en: "Built modules of the digital bank in .NET Core, test-first, on a team spread across countries.",
       },
       {
         pt: "Participei das decisões de arquitetura: microsserviços e micro front-ends.",
@@ -285,7 +285,7 @@ export const experience: Job[] = [
     place: { pt: "Belo Horizonte", en: "Belo Horizonte" },
     about: {
       pt: "O tribunal que fiscaliza as contas públicas do estado. De júnior a sênior em dois anos.",
-      en: "The court that audits the state's public accounts. From junior to senior in two years.",
+      en: "The state audit court of Minas Gerais, which oversees public spending. Junior to senior in two years.",
     },
     bullets: [
       {
@@ -313,7 +313,7 @@ export const experience: Job[] = [
           period: { pt: "ago 2017 - jul 2018", en: "Aug 2017 - Jul 2018" },
           text: {
             pt: "Na migração do sistema núcleo, tirei regras de negócio guardadas em procedures do banco e levei para código .NET limpo e organizado.",
-            en: "On the core system migration, I moved business rules stored in database procedures into clean, well-organised .NET code.",
+            en: "On the core system migration, I moved business rules stored in database procedures into clean, well-organized .NET code.",
           },
         },
         {
@@ -346,18 +346,18 @@ export const experience: Job[] = [
   },
   {
     slug: "estagios",
-    company: "ASPPrev e Athos Negócios",
+    company: "ASPPrev & Athos Negócios",
     role: { pt: "Estagiário", en: "Intern" },
     period: { pt: "jan 2017 - ago 2017", en: "Jan 2017 - Aug 2017" },
     place: { pt: "Belo Horizonte", en: "Belo Horizonte" },
     bullets: [
       {
         pt: "ASPPrev: manutenção e modelagem do banco do sistema de contabilidade.",
-        en: "ASPPrev: maintained and modelled the accounting system's database.",
+        en: "ASPPrev: maintained and modeled the accounting system's database.",
       },
       {
         pt: "Athos Negócios: funcionalidades num ERP para associações de seguro e rastreamento veicular.",
-        en: "Athos Negócios: built features for an ERP serving insurance associations and vehicle tracking.",
+        en: "Athos Negócios: built features for an ERP used by vehicle insurance and tracking associations.",
       },
     ],
     stack: ["PostgreSQL", ".NET WebForms", "SQL Server"],
@@ -372,7 +372,7 @@ export const experience: Job[] = [
           period: { pt: "jul 2017 - ago 2017", en: "Jul 2017 - Aug 2017" },
           text: {
             pt: "Manutenção, análise e modelagem do banco do sistema de contabilidade, e apoio aos colegas com queries SQL.",
-            en: "Maintained, analysed and modelled the accounting system's database, and helped colleagues with SQL queries.",
+            en: "Maintained, analyzed and modeled the accounting system's database, and helped colleagues with SQL queries.",
           },
         },
         {
@@ -380,7 +380,7 @@ export const experience: Job[] = [
           period: { pt: "jan 2017 - jun 2017", en: "Jan 2017 - Jun 2017" },
           text: {
             pt: "Funcionalidades novas e manutenção num ERP para associações de seguro e rastreamento veicular.",
-            en: "New features and maintenance on an ERP for insurance associations and vehicle tracking.",
+            en: "New features and maintenance on an ERP for vehicle insurance and tracking associations.",
           },
         },
       ],
@@ -395,7 +395,7 @@ export const projects: Project[] = [
     logo: "/projects/vittz.svg",
     url: "https://vittz.com.br",
     period: { pt: "fev 2026 - atual", en: "Feb 2026 - present" },
-    status: { pt: "Em produção com clínicas beta.", en: "In production with beta clinics." },
+    status: { pt: "Em produção com clínicas beta.", en: "Live with beta clinics." },
     role: { pt: "CEO & Founder", en: "CEO & Founder" },
     tagline: { pt: "Cuidar de gente, não de planilha.", en: "Care for people, not spreadsheets." },
     summary: {
@@ -413,11 +413,11 @@ export const projects: Project[] = [
       },
       {
         pt: "Gestão completa num lugar só: agenda, prontuário, odontograma, orçamentos, financeiro com repasse por profissional e estoque com importação de NF-e.",
-        en: "The whole clinic in one place: scheduling, health records, odontogram, quotes, finance with per-professional payouts and inventory with invoice import.",
+        en: "The whole clinic in one place: scheduling, health records, odontogram, treatment quotes, finance with per-professional payouts and inventory with NF-e invoice import.",
       },
       {
         pt: "Feito para o Brasil: WhatsApp nos dois sentidos, assinatura digital ICP-Brasil, auditoria LGPD e cobrança por PIX e boleto na conta da própria clínica.",
-        en: "Built for Brazil: two-way WhatsApp, ICP-Brasil digital signatures, an LGPD audit trail and PIX and boleto charges straight to the clinic's own account.",
+        en: "Built for Brazil: two-way WhatsApp, ICP-Brasil digital signatures, an LGPD (Brazil's GDPR) audit trail and PIX and boleto charges straight to the clinic's own account.",
       },
     ],
     description: {
@@ -447,7 +447,7 @@ export const projects: Project[] = [
       },
       {
         pt: "Por dentro: multi-tenant, tempo real com Convex e front-end organizado em Feature-Sliced Design.",
-        en: "Under the hood: multi-tenant, real time with Convex and a front end organised with Feature-Sliced Design.",
+        en: "Under the hood: multi-tenant, real time with Convex and a front end organized with Feature-Sliced Design.",
       },
     ],
     stack: ["TypeScript", "React", "Vite", "Convex", "Expo", "Vercel AI SDK", "OpenAI", "Claude", "Railway"],
@@ -457,12 +457,12 @@ export const projects: Project[] = [
     logo: "/projects/ifleethub.svg",
     url: "https://ifleethub.com.br",
     period: { pt: "abr 2026 - atual", en: "Apr 2026 - present" },
-    status: { pt: "Em produção com transportadoras beta.", en: "In production with beta trucking companies." },
+    status: { pt: "Em produção com transportadoras beta.", en: "Live with beta trucking companies." },
     role: { pt: "CEO & Founder", en: "CEO & Founder" },
     tagline: { pt: "Menos planilha. Mais estrada.", en: "Less spreadsheet. More road." },
     summary: {
       pt: "Sistema para transportadoras: frota e cargas acompanhadas em tempo real, do escritório à estrada.",
-      en: "System for trucking companies: fleet and loads tracked in real time, from the office to the road.",
+      en: "Transportation management system for trucking companies: fleet and loads tracked in real time, from the office to the road.",
     },
     bullets: [
       {
@@ -532,7 +532,7 @@ export const education: Course[] = [
   },
   {
     school: "Colégio COTEMIG",
-    degree: { pt: "Ensino Médio e Técnico em Tecnologia da Informação", en: "High school and IT technical degree" },
+    degree: { pt: "Ensino Médio e Técnico em Tecnologia da Informação", en: "High school with an IT technical diploma" },
     period: "2014 - 2016",
   },
 ];
