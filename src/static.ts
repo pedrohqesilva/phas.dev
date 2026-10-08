@@ -62,6 +62,11 @@ export function renderStatic(lang: Lang): string {
   <button type="button" class="download" data-download aria-label="${esc(t.downloadLabel)}">${iconSvg("cv")}${esc(t.download)}</button>
   <h1>${esc(profile.name)}</h1>
   <p class="role">${esc(profile.role[lang])}, ${esc(profile.location[lang])}</p>
+  <p class="print-contact">${[
+    `<a href="mailto:${profile.email}">${profile.email}</a>`,
+    a("https://phas.dev", "phas.dev"),
+    ...profile.links.map((l) => a(l.url, l.url.replace(/^https?:\/\/(www\.)?/, ""))),
+  ].join(" · ")}</p>
 </header>
 <section id="sobre"><h2>${iconSvg("about")}${t.sectionAbout}</h2><p>${esc(profile.summary[lang])}</p><p>${esc(profile.now[lang])}</p><p>${esc(profile.extra[lang])}</p></section>
 <section id="experiencia"><h2>${iconSvg("experience")}${t.sectionExperience}</h2>${jobs}</section>

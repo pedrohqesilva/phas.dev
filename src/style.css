@@ -745,6 +745,18 @@ html:not(.js) .back {
   opacity: 0.7;
 }
 
+/* On paper the contact goes under the name, where a resume keeps it; on screen it has its own section. */
+.static .print-contact {
+  display: none;
+}
+@media print {
+  .static .print-contact {
+    display: block;
+    margin: 4pt 0 0;
+    font-size: 9.5pt;
+  }
+}
+
 /* Print (and the `curriculo` command): the simple version becomes a one-column resume. */
 /* Zero page margin leaves the browser no room for its own header and footer (date, title, URL);
    the margins move into the page padding, cloned on every printed page. */
@@ -768,11 +780,22 @@ html:not(.js) .back {
     font-size: 10.5pt;
     line-height: 1.45;
   }
+  /* Bullets a step smaller than the headings around them: the same content in fewer pages. */
+  .static article li,
+  .static article p.meta,
+  .static .stack-group {
+    font-size: 9.5pt;
+    line-height: 1.4;
+  }
+  .static article .tag {
+    font-size: 8pt;
+  }
   /* The first-paint colours in index.html sit on :root and would print dark with background graphics on. */
   :root {
     background: #fff !important;
   }
   html.js .term,
+  .static #contato,
   .skip,
   .static .back,
   .static .download {
@@ -783,12 +806,15 @@ html:not(.js) .back {
   }
   .static {
     max-width: none;
-    padding: 14mm 16mm;
+    padding: 12mm 15mm;
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
   }
   .static section {
-    margin-top: 18pt;
+    margin-top: 14pt;
+  }
+  .static article.job + article.job {
+    margin-top: 14pt;
   }
   .static article,
   .static h2,

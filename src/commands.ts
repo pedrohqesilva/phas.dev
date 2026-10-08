@@ -286,6 +286,28 @@ const projectUrl = (name: string) => projects.find((p) => p.name === name)!.url;
 const tags = (items: string[]) => h("p", { class: "tags" }, ...items.map((item) => h("span", { class: "tag" }, item)));
 
 /** One job in full: the summary's head, the longer context, the role steps, every point and the whole stack. */
+/** A project on the jobs' timeline: logo as the marker, name and period, my role, then `body`. */
+function projectEntry(p: (typeof projects)[number], lang: Lang, ...body: (Node | string | false | undefined)[]): HTMLElement {
+  return h(
+    "div",
+    { class: "entry job has-logo" },
+    h("img", { class: "job-logo", src: p.logo, alt: "", width: "18", height: "18" }),
+    h("p", { class: "job-head" }, h("span", { class: "title" }, link(p.url, p.name)), h("span", { class: "muted" }, p.period[lang])),
+    h("p", { class: "job-role" }, p.role[lang]),
+    ...body,
+  );
+}
+
+/** Everything about a project: the pitch and every labelled highlight. */
+const projectInFull = (p: (typeof projects)[number], lang: Lang) =>
+  projectEntry(
+    p,
+    lang,
+    h("p", { class: "muted" }, h("em", null, p.tagline[lang]), ` ${p.description[lang]} ${p.status[lang]}`),
+    h("ul", null, ...p.highlights.map((x) => highlight(x[lang]))),
+    tags(p.stack),
+  );
+
 function jobInFull(j: (typeof experience)[number], lang: Lang): HTMLElement {
   const d = j.details!;
   return h(
@@ -355,20 +377,18 @@ const sections: Record<string, (ctx: Ctx) => void> = {
     );
   },
 
-  projects({ lang, print }) {
-    // The same timeline as the jobs: the logo is the marker, then name and period, my role, the pitch,
-    // the highlights and the stack.
+  projects({ lang, t, print }) {
+    // The same timeline as the jobs: the logo is the marker, then name and period, my role, what it is,
+    // the short list and the stack; `projetos vittz` has the rest.
     print(
       ...projects.map((p) =>
-        h(
-          "div",
-          { class: "entry job has-logo" },
-          h("img", { class: "job-logo", src: p.logo, alt: "", width: "18", height: "18" }),
-          h("p", { class: "job-head" }, h("span", { class: "title" }, link(p.url, p.name)), h("span", { class: "muted" }, p.period[lang])),
-          h("p", { class: "job-role" }, p.role[lang]),
-          h("p", { class: "muted" }, h("em", null, p.tagline[lang]), ` ${p.description[lang]} ${p.status[lang]}`),
-          h("ul", null, ...p.highlights.map((x) => highlight(x[lang]))),
+        projectEntry(
+          p,
+          lang,
+          h("p", { class: "muted" }, `${p.summary[lang]} ${p.status[lang]}`),
+          h("ul", null, ...p.bullets.map((b) => h("li", null, b[lang]))),
           tags(p.stack),
+          h("p", { class: "more" }, cmd(`${name("projects", lang)} ${normalize(p.name)}`, `+ ${t.moreDetails}`)),
         ),
       ),
     );
@@ -557,7 +577,15 @@ export const commands: Command[] = [
     names: { pt: ["projetos", "portfolio"], en: ["projects", "portfolio"] },
     desc: { pt: "projetos em destaque", en: "featured projects" },
     icon: "projects",
-    run: (_, ctx) => sections.projects(ctx),
+    // `projetos vittz` shows that project in full.
+    args: () => projects.map((p) => normalize(p.name)),
+    run([arg], ctx) {
+      const which = normalize(arg ?? "");
+      if (!which) return sections.projects(ctx);
+      const project = projects.find((p) => normalize(p.name).startsWith(which));
+      if (!project) return ctx.print(muted(ctx.t.projectNotFound(arg)));
+      ctx.print(projectInFull(project, ctx.lang));
+    },
   },
   {
     id: "stack",
