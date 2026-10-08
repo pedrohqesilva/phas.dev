@@ -948,11 +948,15 @@ html:not(.js) .back {
   color: #8e8a83;
   font-size: 13px;
 }
-.game-menu-option[aria-selected="true"] {
+.game-menu-option:focus-visible {
+  /* The highlight below already marks the focused mode. */
+  outline: none;
+}
+.game-menu-option.selected {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
-.game-menu-option[aria-selected="true"] .label::before {
+.game-menu-option.selected .label::before {
   content: "> ";
   color: var(--accent);
 }

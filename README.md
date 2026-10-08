@@ -76,7 +76,7 @@
     </td>
     <td valign="top">
       <h3>📱 Feels native on a phone</h3>
-      The prompt rides above the keyboard, Back closes what you opened, and swipes steer the games.
+      Installable and works offline. The prompt rides above the keyboard, Back closes what you opened, and swipes steer the games.
     </td>
   </tr>
 </table>
@@ -212,6 +212,7 @@ src/
   main.ts           boot, routes, language and theme
   static.ts         the plain resume (also the print version)
   seo.ts            head tags, JSON-LD, sitemap, robots, llms.txt
+  pwa.ts            manifest and service worker (offline mode)
   fun.ts            the hidden commands
   games/            the games: *-sim.ts are the rules, shared with the server
 server/

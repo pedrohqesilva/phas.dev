@@ -49,15 +49,20 @@ export function openGameMenu(
   const overlay = document.createElement("div");
   overlay.className = "game game-menu";
   overlay.setAttribute("role", "dialog");
-  overlay.setAttribute("aria-label", title);
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "game-menu-title");
 
   const panel = document.createElement("div");
   panel.className = "game-menu-panel";
   const heading = document.createElement("p");
   heading.className = "game-menu-title";
+  heading.id = "game-menu-title";
+  // Plain buttons in a labelled group: the highlighted one also has the focus, so a screen reader
+  // reads each mode (and its hint) as ↑ ↓ move through them.
   const list = document.createElement("div");
   list.className = "game-menu-list";
-  list.setAttribute("role", "listbox");
+  list.setAttribute("role", "group");
+  list.setAttribute("aria-labelledby", heading.id);
   const keys = document.createElement("p");
   keys.className = "game-menu-keys";
   keys.textContent = texts.keys;
@@ -88,7 +93,7 @@ export function openGameMenu(
     error: HTMLElement;
   } | null = null;
 
-  function show(level: { title: string; options: MenuOption[] }) {
+  function show(level: { title: string; options: MenuOption[] }, at = 0) {
     closeForm();
     heading.textContent = level.title;
     list.replaceChildren();
@@ -96,7 +101,6 @@ export function openGameMenu(
       const row = document.createElement("button");
       row.type = "button";
       row.className = "game-menu-option";
-      row.setAttribute("role", "option");
       const label = document.createElement("span");
       label.className = "label";
       label.textContent = option.label + (option.submenu ? " ›" : "");
@@ -108,11 +112,12 @@ export function openGameMenu(
         select(i);
         pick();
       });
-      row.addEventListener("mouseenter", () => !form && select(i));
+      row.addEventListener("mouseenter", () => !form && select(i, false));
+      row.addEventListener("focus", () => select(i, false));
       list.append(row);
       return row;
     });
-    select(0);
+    select(at);
   }
 
   function push(level: { title: string; options: MenuOption[] }) {
@@ -120,12 +125,11 @@ export function openGameMenu(
     show(level);
   }
 
-  function select(i: number) {
+  function select(i: number, focus = true) {
     const n = rows.length;
     selected = (i + n) % n;
-    rows.forEach((row, k) =>
-      row.setAttribute("aria-selected", String(k === selected)),
-    );
+    rows.forEach((row, k) => row.classList.toggle("selected", k === selected));
+    if (focus && !form) rows[selected].focus();
   }
 
   function close() {
@@ -236,6 +240,7 @@ export function openGameMenu(
     }
     const error = document.createElement("span");
     error.className = "error";
+    error.setAttribute("aria-live", "polite");
     el.append(error);
     rows[selected].after(el);
     form = { option, el, values, controls, focus: 0, error };
@@ -279,10 +284,18 @@ export function openGameMenu(
     if (e.key === "Escape") {
       stop();
       // Esc closes the settings first, then goes back a level, then leaves.
-      if (form) return closeForm();
+      if (form) {
+        closeForm();
+        return select(selected);
+      }
       if (stack.length > 1) {
-        stack.pop();
-        return show(stack.at(-1)!);
+        // Back on the option that opened the list.
+        const closed = stack.pop()!;
+        const level = stack.at(-1)!;
+        return show(
+          level,
+          level.options.findIndex((o) => o.submenu === closed.options),
+        );
       }
       return leave();
     }

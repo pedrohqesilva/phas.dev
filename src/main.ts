@@ -292,8 +292,15 @@ async function boot() {
     history.replaceState(null, "", pathFor("home", term.lang));
     term.run(`${term.lang === "pt" ? "jogos" : "games"} ${game}`);
   } else if (!runQuery() && !runHash()) startMenu();
+  if (!navigator.onLine) offlineNote();
   term.focus();
 }
+
+/** Without a connection, one line says what still works. */
+function offlineNote() {
+  term.print(h("p", { class: "muted" }, ui[term.lang].offline));
+}
+addEventListener("offline", offlineNote);
 
 /**
  * Deep links: #projetos runs that command; #coop-ABCD (a co-op invite) joins that Space Invaders room.
@@ -369,3 +376,9 @@ applyLang(initialLang);
 if (currentPath() === "/" && initialLang === "en")
   history.replaceState(null, "", "/en" + location.search + location.hash);
 boot();
+
+// Offline mode (src/pwa.ts): only the built site has a service worker.
+if (import.meta.env.PROD && "serviceWorker" in navigator)
+  addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });

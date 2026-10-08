@@ -9,6 +9,7 @@
     <!--head-->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <!-- First paint already in the site's colours: no white flash before the stylesheet arrives. -->
     <style>
       :root {
@@ -109,12 +110,12 @@
       </main>
     </div>
 
-    <div class="static" id="static" tabindex="-1">
+    <main class="static" id="static" tabindex="-1">
       <button type="button" class="back" id="back-terminal">
         voltar ao terminal
       </button>
       <div id="static-content"><!--static--></div>
-    </div>
+    </main>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

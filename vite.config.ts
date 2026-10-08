@@ -1,10 +1,12 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import type { Server } from "node:http";
-import { resolve } from "node:path";
+import { relative, resolve } from "node:path";
 import { defineConfig } from "vite";
 import { attachGames } from "./server/games.ts";
 import { handleScores } from "./server/scores.ts";
 import { ui } from "./src/i18n.ts";
+import { manifest, serviceWorker } from "./src/pwa.ts";
 import {
   humansTxt,
   llmsFullTxt,
@@ -69,6 +71,26 @@ export default defineConfig({
         };
         for (const [name, body] of Object.entries(files))
           writeFileSync(resolve(dist, name), body);
+
+        // Offline mode: the manifest, then a service worker that keeps the pages (fetched by address) and
+        // the files they use; not the ones only robots and sharing read.
+        writeFileSync(resolve(dist, "manifest.webmanifest"), manifest());
+        const all = readdirSync(dist, { recursive: true, withFileTypes: true })
+          .filter((f) => f.isFile())
+          .map((f) => "/" + relative(dist, resolve(f.parentPath, f.name)));
+        const keep = all.filter(
+          (f) =>
+            /\.(js|css|woff2|svg|png|webmanifest)$/.test(f) &&
+            f !== "/og.png" &&
+            f !== "/sw.js",
+        );
+        const version = createHash("sha256");
+        for (const f of all.filter((f) => keep.includes(f) || f.endsWith(".html")).sort())
+          version.update(f).update(readFileSync(resolve(dist, f.slice(1))));
+        writeFileSync(
+          resolve(dist, "sw.js"),
+          serviceWorker(version.digest("hex").slice(0, 12), keep.sort()),
+        );
       },
     },
     {
@@ -79,6 +101,11 @@ export default defineConfig({
         // The leaderboards' API too, so solo games can post scores in development.
         server.middlewares.use((req, res, next) => {
           const path = new URL(req.url ?? "/", "http://x").pathname;
+          if (path === "/manifest.webmanifest") {
+            res.setHeader("Content-Type", "application/manifest+json");
+            res.end(manifest());
+            return;
+          }
           if (!handleScores(req, res, path, "dev")) next();
         });
         if (server.httpServer)

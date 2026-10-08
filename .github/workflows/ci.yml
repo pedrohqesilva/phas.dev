@@ -27,7 +27,7 @@ jobs:
       - run: pnpm build
       - name: Built pages and SEO files are there
         run: |
-          for f in index.html en.html curriculo.html resume.html robots.txt sitemap.xml llms.txt resume.md curriculo.md; do
+          for f in index.html en.html curriculo.html resume.html robots.txt sitemap.xml llms.txt resume.md curriculo.md sw.js manifest.webmanifest; do
             test -s "dist/$f" || { echo "missing dist/$f"; exit 1; }
           done
       - name: Server starts and answers

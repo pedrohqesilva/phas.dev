@@ -76,7 +76,7 @@
     </td>
     <td valign="top">
       <h3>📱 Parece nativo no celular</h3>
-      O prompt fica acima do teclado, o Voltar fecha o que você abriu e os jogos se controlam deslizando.
+      Instalável e funciona offline. O prompt fica acima do teclado, o Voltar fecha o que você abriu e os jogos se controlam deslizando.
     </td>
   </tr>
 </table>
@@ -212,6 +212,7 @@ src/
   main.ts           inicialização, rotas, idioma e tema
   static.ts         o currículo simples (também a versão de impressão)
   seo.ts            head, JSON-LD, sitemap, robots, llms.txt
+  pwa.ts            manifest e service worker (modo offline)
   fun.ts            os comandos escondidos
   games/            os jogos: *-sim.ts são as regras, compartilhadas com o servidor
 server/
