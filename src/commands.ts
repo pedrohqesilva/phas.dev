@@ -283,16 +283,36 @@ const linkOf = (label: string) =>
 const projectUrl = (name: string) => projects.find((p) => p.name === name)!.url;
 
 /** Technologies as tags, the same look everywhere (stack, jobs, projects). */
-const tags = (items: string[]) => h("p", { class: "tags" }, ...items.map((item) => h("span", { class: "tag" }, item)));
+const tags = (items: string[]) =>
+  h(
+    "p",
+    { class: "tags" },
+    ...items.map((item) => h("span", { class: "tag" }, item)),
+  );
 
 /** One job in full: the summary's head, the longer context, the role steps, every point and the whole stack. */
 /** A project on the jobs' timeline: logo as the marker, name and period, my role, then `body`. */
-function projectEntry(p: (typeof projects)[number], lang: Lang, ...body: (Node | string | false | undefined)[]): HTMLElement {
+function projectEntry(
+  p: (typeof projects)[number],
+  lang: Lang,
+  ...body: (Node | string | false | undefined)[]
+): HTMLElement {
   return h(
     "div",
     { class: "entry job has-logo" },
-    h("img", { class: "job-logo", src: p.logo, alt: "", width: "18", height: "18" }),
-    h("p", { class: "job-head" }, h("span", { class: "title" }, link(p.url, p.name)), h("span", { class: "muted" }, p.period[lang])),
+    h("img", {
+      class: "job-logo",
+      src: p.logo,
+      alt: "",
+      width: "18",
+      height: "18",
+    }),
+    h(
+      "p",
+      { class: "job-head" },
+      h("span", { class: "title" }, link(p.url, p.name)),
+      h("span", { class: "muted" }, p.period[lang]),
+    ),
     h("p", { class: "job-role" }, p.role[lang]),
     ...body,
   );
@@ -303,7 +323,12 @@ const projectInFull = (p: (typeof projects)[number], lang: Lang) =>
   projectEntry(
     p,
     lang,
-    h("p", { class: "muted" }, h("em", null, p.tagline[lang]), ` ${p.description[lang]} ${p.status[lang]}`),
+    h(
+      "p",
+      { class: "muted" },
+      h("em", null, p.tagline[lang]),
+      ` ${p.description[lang]} ${p.status[lang]}`,
+    ),
     h("ul", null, ...p.highlights.map((x) => highlight(x[lang]))),
     tags(p.stack),
   );
@@ -313,19 +338,40 @@ function jobInFull(j: (typeof experience)[number], lang: Lang): HTMLElement {
   return h(
     "div",
     { class: "entry job" },
-    h("p", { class: "job-head" }, h("span", { class: "title" }, j.company), h("span", { class: "muted" }, j.period[lang])),
-    h("p", { class: "job-role" }, j.role[lang], h("span", { class: "muted" }, `, ${j.place[lang]}`)),
+    h(
+      "p",
+      { class: "job-head" },
+      h("span", { class: "title" }, j.company),
+      h("span", { class: "muted" }, j.period[lang]),
+    ),
+    h(
+      "p",
+      { class: "job-role" },
+      j.role[lang],
+      h("span", { class: "muted" }, `, ${j.place[lang]}`),
+    ),
     j.about && muted(j.about[lang]),
     h("p", { class: "para" }, d.intro[lang]),
     ...(d.steps ?? []).map((step) =>
       h(
         "div",
         { class: "step" },
-        h("p", { class: "step-head" }, step.title[lang], h("span", { class: "muted" }, ` ${step.period[lang]}`)),
+        h(
+          "p",
+          { class: "step-head" },
+          step.title[lang],
+          h("span", { class: "muted" }, ` ${step.period[lang]}`),
+        ),
         h("p", null, step.text[lang]),
       ),
     ),
-    h("ul", null, ...[...j.bullets, ...(d.bullets ?? [])].map((b) => h("li", null, b[lang]))),
+    h(
+      "ul",
+      null,
+      ...[...j.bullets, ...(d.bullets ?? [])].map((b) =>
+        h("li", null, b[lang]),
+      ),
+    ),
     tags(d.stack ?? j.stack ?? []),
   );
 }
@@ -334,7 +380,12 @@ function jobInFull(j: (typeof experience)[number], lang: Lang): HTMLElement {
 function highlight(text: string): HTMLElement {
   const cut = text.indexOf(": ");
   if (cut < 0 || cut > 40) return h("li", null, text);
-  return h("li", null, h("strong", null, text.slice(0, cut + 1)), text.slice(cut + 1));
+  return h(
+    "li",
+    null,
+    h("strong", null, text.slice(0, cut + 1)),
+    text.slice(cut + 1),
+  );
 }
 
 const sections: Record<string, (ctx: Ctx) => void> = {
@@ -365,13 +416,31 @@ const sections: Record<string, (ctx: Ctx) => void> = {
         h(
           "div",
           { class: "entry job" },
-          h("p", { class: "job-head" }, h("span", { class: "title" }, j.company), h("span", { class: "muted" }, j.period[lang])),
-          h("p", { class: "job-role" }, j.role[lang], h("span", { class: "muted" }, `, ${j.place[lang]}`)),
+          h(
+            "p",
+            { class: "job-head" },
+            h("span", { class: "title" }, j.company),
+            h("span", { class: "muted" }, j.period[lang]),
+          ),
+          h(
+            "p",
+            { class: "job-role" },
+            j.role[lang],
+            h("span", { class: "muted" }, `, ${j.place[lang]}`),
+          ),
           j.about && muted(j.about[lang]),
           h("ul", null, ...j.bullets.map((b) => h("li", null, b[lang]))),
           j.stack && tags(j.stack),
           // The longer version is one click (or `experiencia <slug>`) away.
-          j.details && h("p", { class: "more" }, cmd(`${name("experience", lang)} ${j.slug}`, `+ ${t.moreDetails}`)),
+          j.details &&
+            h(
+              "p",
+              { class: "more" },
+              cmd(
+                `${name("experience", lang)} ${j.slug}`,
+                `+ ${t.moreDetails}`,
+              ),
+            ),
         ),
       ),
     );
@@ -388,7 +457,14 @@ const sections: Record<string, (ctx: Ctx) => void> = {
           h("p", { class: "muted" }, `${p.summary[lang]} ${p.status[lang]}`),
           h("ul", null, ...p.bullets.map((b) => h("li", null, b[lang]))),
           tags(p.stack),
-          h("p", { class: "more" }, cmd(`${name("projects", lang)} ${normalize(p.name)}`, `+ ${t.moreDetails}`)),
+          h(
+            "p",
+            { class: "more" },
+            cmd(
+              `${name("projects", lang)} ${normalize(p.name)}`,
+              `+ ${t.moreDetails}`,
+            ),
+          ),
         ),
       ),
     );
@@ -415,7 +491,12 @@ const sections: Record<string, (ctx: Ctx) => void> = {
         h(
           "div",
           { class: "entry job" },
-          h("p", { class: "job-head" }, h("span", { class: "title" }, c.school), h("span", { class: "muted" }, c.period)),
+          h(
+            "p",
+            { class: "job-head" },
+            h("span", { class: "title" }, c.school),
+            h("span", { class: "muted" }, c.period),
+          ),
           h("p", { class: "job-role" }, c.degree[lang]),
         ),
       ),
@@ -566,8 +647,14 @@ export const commands: Command[] = [
       const which = normalize(arg ?? "");
       if (!which) return sections.experience(ctx);
       if (["completa", "full", "tudo", "all"].includes(which))
-        return ctx.print(...experience.filter((j) => j.details).map((j) => jobInFull(j, ctx.lang)));
-      const job = experience.find((j) => j.slug === which || normalize(j.company).startsWith(which));
+        return ctx.print(
+          ...experience
+            .filter((j) => j.details)
+            .map((j) => jobInFull(j, ctx.lang)),
+        );
+      const job = experience.find(
+        (j) => j.slug === which || normalize(j.company).startsWith(which),
+      );
       if (!job?.details) return ctx.print(muted(ctx.t.jobNotFound(arg)));
       ctx.print(jobInFull(job, ctx.lang));
     },

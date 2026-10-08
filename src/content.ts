@@ -100,10 +100,20 @@ export const profile = {
 };
 
 export const stack: StackGroup[] = [
-  { group: { pt: "Linguagens", en: "Languages" }, items: ["C#", "TypeScript", "JavaScript", "SQL"] },
+  {
+    group: { pt: "Linguagens", en: "Languages" },
+    items: ["C#", "TypeScript", "JavaScript", "SQL"],
+  },
   {
     group: { pt: "Backend", en: "Backend" },
-    items: [".NET", "ASP.NET Core", "Entity Framework", "Dapper", "Hangfire", "Node.js"],
+    items: [
+      ".NET",
+      "ASP.NET Core",
+      "Entity Framework",
+      "Dapper",
+      "Hangfire",
+      "Node.js",
+    ],
   },
   {
     group: { pt: "Frontend e mobile", en: "Frontend and mobile" },
@@ -111,16 +121,45 @@ export const stack: StackGroup[] = [
   },
   {
     group: { pt: "Arquitetura", en: "Architecture" },
-    items: ["DDD", "Microservices", "Modular Monolith", "Vertical Slice", "Hexagonal", "Event-driven", "SAGA"],
+    items: [
+      "DDD",
+      "Microservices",
+      "Modular Monolith",
+      "Vertical Slice",
+      "Hexagonal",
+      "Event-driven",
+      "SAGA",
+    ],
   },
   {
     group: { pt: "Dados", en: "Data" },
-    items: ["SQL Server", "PostgreSQL", "Oracle PL/SQL", "MySQL", "MongoDB", "CosmosDB", "DynamoDB", "Redis", "Convex"],
+    items: [
+      "SQL Server",
+      "PostgreSQL",
+      "Oracle PL/SQL",
+      "MySQL",
+      "MongoDB",
+      "CosmosDB",
+      "DynamoDB",
+      "Redis",
+      "Convex",
+    ],
   },
-  { group: { pt: "Mensageria", en: "Messaging" }, items: ["Kafka", "RabbitMQ", "Azure Service Bus", "WebSocket"] },
+  {
+    group: { pt: "Mensageria", en: "Messaging" },
+    items: ["Kafka", "RabbitMQ", "Azure Service Bus", "WebSocket"],
+  },
   {
     group: { pt: "Nuvem e infra", en: "Cloud and infra" },
-    items: ["Azure", "AWS", "GCP", "Docker", "Kubernetes", "Railway", "Cloudflare"],
+    items: [
+      "Azure",
+      "AWS",
+      "GCP",
+      "Docker",
+      "Kubernetes",
+      "Railway",
+      "Cloudflare",
+    ],
   },
   {
     group: { pt: "Observabilidade", en: "Observability" },
@@ -128,24 +167,51 @@ export const stack: StackGroup[] = [
   },
   {
     group: { pt: "Autenticação", en: "Authentication" },
-    items: ["OAuth2 / OIDC", "IdentityServer", "Keycloak", "Okta", "WorkOS", "JWT"],
+    items: [
+      "OAuth2 / OIDC",
+      "IdentityServer",
+      "Keycloak",
+      "Okta",
+      "WorkOS",
+      "JWT",
+    ],
   },
   {
     group: { pt: "Qualidade e CI/CD", en: "Quality and CI/CD" },
-    items: ["xUnit (TDD)", "Cucumber (BDD)", "TestCafe", "SonarQube", "GitHub Actions", "Azure DevOps"],
+    items: [
+      "xUnit (TDD)",
+      "Cucumber (BDD)",
+      "TestCafe",
+      "SonarQube",
+      "GitHub Actions",
+      "Azure DevOps",
+    ],
   },
   {
     group: { pt: "IA", en: "AI" },
-    items: ["OpenAI", "Claude", "Gemini", "Vercel AI SDK", "MCP", "Claude Code"],
+    items: [
+      "OpenAI",
+      "Claude",
+      "Gemini",
+      "Vercel AI SDK",
+      "MCP",
+      "Claude Code",
+    ],
   },
-  { group: { pt: "Ferramentas", en: "Tools" }, items: ["Visual Studio", "Swagger", "n8n", "Jira"] },
+  {
+    group: { pt: "Ferramentas", en: "Tools" },
+    items: ["Visual Studio", "Swagger", "n8n", "Jira"],
+  },
 ];
 
 export const experience: Job[] = [
   {
     slug: "paysign",
     company: "Paysign",
-    role: { pt: "Engenheiro de Software Sênior", en: "Senior Software Engineer" },
+    role: {
+      pt: "Engenheiro de Software Sênior",
+      en: "Senior Software Engineer",
+    },
     period: { pt: "dez 2021 - atual", en: "Dec 2021 - present" },
     place: { pt: "remoto, EUA", en: "remote, US" },
     about: {
@@ -170,7 +236,16 @@ export const experience: Job[] = [
         en: "Built microservices and Backends for Frontends on AWS (Lambda, ECS, RDS), from design to production.",
       },
     ],
-    stack: [".NET", "EF Core", "AWS", "Docker", "Serilog", "OpenTelemetry", "TDD", "DDD"],
+    stack: [
+      ".NET",
+      "EF Core",
+      "AWS",
+      "Docker",
+      "Serilog",
+      "OpenTelemetry",
+      "TDD",
+      "DDD",
+    ],
     details: {
       intro: {
         pt: "Trabalho direto com um cliente do setor financeiro: ajudo a desenhar os projetos novos, defino a arquitetura e crio os pacotes e padrões de código que os times da empresa usam. Também entrego funcionalidades de ponta a ponta, em sistemas novos e legados.",
@@ -191,13 +266,32 @@ export const experience: Job[] = [
         },
         { pt: "Scrum com Jira.", en: "Scrum with Jira." },
       ],
-      stack: [".NET", "EF Core", "AWS Lambda", "EC2", "ECS", "RDS", "CloudWatch", "Docker", "Serilog", "OpenTelemetry", "NuGet", "TDD", "DDD", "BFF", "Jira"],
+      stack: [
+        ".NET",
+        "EF Core",
+        "AWS Lambda",
+        "EC2",
+        "ECS",
+        "RDS",
+        "CloudWatch",
+        "Docker",
+        "Serilog",
+        "OpenTelemetry",
+        "NuGet",
+        "TDD",
+        "DDD",
+        "BFF",
+        "Jira",
+      ],
     },
   },
   {
     slug: "riachuelo",
     company: "Lojas Riachuelo",
-    role: { pt: "Engenheiro de Software Sênior", en: "Senior Software Engineer" },
+    role: {
+      pt: "Engenheiro de Software Sênior",
+      en: "Senior Software Engineer",
+    },
     period: { pt: "mar 2021 - nov 2021", en: "Mar 2021 - Nov 2021" },
     place: { pt: "Brasil", en: "Brazil" },
     about: {
@@ -214,7 +308,14 @@ export const experience: Job[] = [
         en: "Worked on microservices connected by REST and queues, with Azure Functions scaling on demand from schedules and events.",
       },
     ],
-    stack: [".NET", "Azure Functions", "KEDA", "Kafka", "Azure DevOps", "Docker"],
+    stack: [
+      ".NET",
+      "Azure Functions",
+      "KEDA",
+      "Kafka",
+      "Azure DevOps",
+      "Docker",
+    ],
     details: {
       intro: {
         pt: "O DoMeuJeito é a plataforma colaborativa de listas da Riachuelo, para casamentos, chás de bebê e outras celebrações. Trabalhei na sua evolução, numa arquitetura de microsserviços.",
@@ -234,7 +335,20 @@ export const experience: Job[] = [
           en: "Backends for Frontends, TDD and DDD; Scrum and CI/CD on Azure DevOps.",
         },
       ],
-      stack: [".NET", "EF Core", "Azure Functions", "KEDA", "Kafka", "Azure Storage", "Azure Queues", "Azure DevOps", "Docker", "TDD", "DDD", "BFF"],
+      stack: [
+        ".NET",
+        "EF Core",
+        "Azure Functions",
+        "KEDA",
+        "Kafka",
+        "Azure Storage",
+        "Azure Queues",
+        "Azure DevOps",
+        "Docker",
+        "TDD",
+        "DDD",
+        "BFF",
+      ],
     },
   },
   {
@@ -272,15 +386,31 @@ export const experience: Job[] = [
           pt: "Microsserviços e micro front-ends rodando em Kubernetes no Google Cloud.",
           en: "Microservices and micro front-ends running on Kubernetes on Google Cloud.",
         },
-        { pt: "Scrum, com o time distribuído entre países.", en: "Scrum, with the team spread across countries." },
+        {
+          pt: "Scrum, com o time distribuído entre países.",
+          en: "Scrum, with the team spread across countries.",
+        },
       ],
-      stack: [".NET", "EF Core", "GCP", "Kubernetes", "Docker", "TDD", "DDD", "Micro front-ends", "Scrum"],
+      stack: [
+        ".NET",
+        "EF Core",
+        "GCP",
+        "Kubernetes",
+        "Docker",
+        "TDD",
+        "DDD",
+        "Micro front-ends",
+        "Scrum",
+      ],
     },
   },
   {
     slug: "tce",
     company: "Tribunal de Contas de Minas Gerais",
-    role: { pt: "Desenvolvedor Júnior → Analista Desenvolvedor Sênior", en: "Junior Developer → Senior Software Developer" },
+    role: {
+      pt: "Desenvolvedor Júnior → Analista Desenvolvedor Sênior",
+      en: "Junior Developer → Senior Software Developer",
+    },
     period: { pt: "ago 2017 - mai 2020", en: "Aug 2017 - May 2020" },
     place: { pt: "Belo Horizonte", en: "Belo Horizonte" },
     about: {
@@ -301,7 +431,14 @@ export const experience: Job[] = [
         en: "Took part in moving the core system to a hexagonal architecture, from proposal to delivery.",
       },
     ],
-    stack: [".NET", "Angular", "Oracle PL/SQL", "TDD", "BDD (Cucumber)", "Azure DevOps"],
+    stack: [
+      ".NET",
+      "Angular",
+      "Oracle PL/SQL",
+      "TDD",
+      "BDD (Cucumber)",
+      "Azure DevOps",
+    ],
     details: {
       intro: {
         pt: "Quase três anos no tribunal, passando por quatro cargos. Comecei tirando regras de negócio do banco de dados e terminei desenvolvendo numa arquitetura hexagonal moderna, sempre próximo dos usuários.",
@@ -333,7 +470,10 @@ export const experience: Job[] = [
           },
         },
         {
-          title: { pt: "Analista Desenvolvedor Sênior", en: "Senior Software Developer" },
+          title: {
+            pt: "Analista Desenvolvedor Sênior",
+            en: "Senior Software Developer",
+          },
           period: { pt: "set 2019 - mai 2020", en: "Sep 2019 - May 2020" },
           text: {
             pt: "Desenvolvi funcionalidades numa arquitetura hexagonal, do entendimento da tarefa à entrega, em contato constante com os usuários.",
@@ -341,7 +481,20 @@ export const experience: Job[] = [
           },
         },
       ],
-      stack: [".NET Framework", ".NET Core", "EF 6", "EF Core", "Angular", "jQuery", "Oracle PL/SQL", "TDD", "BDD (Cucumber)", "Hexagonal", "Azure DevOps", "Scrum"],
+      stack: [
+        ".NET Framework",
+        ".NET Core",
+        "EF 6",
+        "EF Core",
+        "Angular",
+        "jQuery",
+        "Oracle PL/SQL",
+        "TDD",
+        "BDD (Cucumber)",
+        "Hexagonal",
+        "Azure DevOps",
+        "Scrum",
+      ],
     },
   },
   {
@@ -368,7 +521,10 @@ export const experience: Job[] = [
       },
       steps: [
         {
-          title: { pt: "ASPPrev, estágio em banco de dados", en: "ASPPrev, database intern" },
+          title: {
+            pt: "ASPPrev, estágio em banco de dados",
+            en: "ASPPrev, database intern",
+          },
           period: { pt: "jul 2017 - ago 2017", en: "Jul 2017 - Aug 2017" },
           text: {
             pt: "Manutenção, análise e modelagem do banco do sistema de contabilidade, e apoio aos colegas com queries SQL.",
@@ -376,7 +532,10 @@ export const experience: Job[] = [
           },
         },
         {
-          title: { pt: "Athos Negócios, estágio em desenvolvimento web", en: "Athos Negócios, web development intern" },
+          title: {
+            pt: "Athos Negócios, estágio em desenvolvimento web",
+            en: "Athos Negócios, web development intern",
+          },
           period: { pt: "jan 2017 - jun 2017", en: "Jan 2017 - Jun 2017" },
           text: {
             pt: "Funcionalidades novas e manutenção num ERP para associações de seguro e rastreamento veicular.",
@@ -395,9 +554,15 @@ export const projects: Project[] = [
     logo: "/projects/vittz.svg",
     url: "https://vittz.com.br",
     period: { pt: "fev 2026 - atual", en: "Feb 2026 - present" },
-    status: { pt: "Em produção com clínicas beta.", en: "Live with beta clinics." },
+    status: {
+      pt: "Em produção com clínicas beta.",
+      en: "Live with beta clinics.",
+    },
     role: { pt: "CEO & Founder", en: "CEO & Founder" },
-    tagline: { pt: "Cuidar de gente, não de planilha.", en: "Care for people, not spreadsheets." },
+    tagline: {
+      pt: "Cuidar de gente, não de planilha.",
+      en: "Care for people, not spreadsheets.",
+    },
     summary: {
       pt: "Sistema de gestão para clínicas pequenas, do agendamento ao financeiro, começando pela odontologia.",
       en: "Management system for small clinics, from scheduling to finance, starting with dentistry.",
@@ -450,16 +615,32 @@ export const projects: Project[] = [
         en: "Under the hood: multi-tenant, real time with Convex and a front end organized with Feature-Sliced Design.",
       },
     ],
-    stack: ["TypeScript", "React", "Vite", "Convex", "Expo", "Vercel AI SDK", "OpenAI", "Claude", "Railway"],
+    stack: [
+      "TypeScript",
+      "React",
+      "Vite",
+      "Convex",
+      "Expo",
+      "Vercel AI SDK",
+      "OpenAI",
+      "Claude",
+      "Railway",
+    ],
   },
   {
     name: "iFleetHub",
     logo: "/projects/ifleethub.svg",
     url: "https://ifleethub.com.br",
     period: { pt: "abr 2026 - atual", en: "Apr 2026 - present" },
-    status: { pt: "Em produção com transportadoras beta.", en: "Live with beta trucking companies." },
+    status: {
+      pt: "Em produção com transportadoras beta.",
+      en: "Live with beta trucking companies.",
+    },
     role: { pt: "CEO & Founder", en: "CEO & Founder" },
-    tagline: { pt: "Menos planilha. Mais estrada.", en: "Less spreadsheet. More road." },
+    tagline: {
+      pt: "Menos planilha. Mais estrada.",
+      en: "Less spreadsheet. More road.",
+    },
     summary: {
       pt: "Sistema para transportadoras: frota e cargas acompanhadas em tempo real, do escritório à estrada.",
       en: "Transportation management system for trucking companies: fleet and loads tracked in real time, from the office to the road.",
@@ -512,7 +693,18 @@ export const projects: Project[] = [
         en: "Under the hood: one monorepo for web, app and site, multi-tenant and real time with Convex.",
       },
     ],
-    stack: ["TypeScript", "React", "Vite", "Convex", "Expo", "MapLibre", "WorkOS", "OpenAI Whisper", "Turborepo", "Railway"],
+    stack: [
+      "TypeScript",
+      "React",
+      "Vite",
+      "Convex",
+      "Expo",
+      "MapLibre",
+      "WorkOS",
+      "OpenAI Whisper",
+      "Turborepo",
+      "Railway",
+    ],
   },
 ];
 
@@ -527,12 +719,18 @@ export const education: Course[] = [
   },
   {
     school: "Universidade FUMEC",
-    degree: { pt: "Bacharelado em Ciência da Computação", en: "BSc in Computer Science" },
+    degree: {
+      pt: "Bacharelado em Ciência da Computação",
+      en: "BSc in Computer Science",
+    },
     period: "2017 - 2020",
   },
   {
     school: "Colégio COTEMIG",
-    degree: { pt: "Ensino Médio e Técnico em Tecnologia da Informação", en: "High school with an IT technical diploma" },
+    degree: {
+      pt: "Ensino Médio e Técnico em Tecnologia da Informação",
+      en: "High school with an IT technical diploma",
+    },
     period: "2014 - 2016",
   },
 ];

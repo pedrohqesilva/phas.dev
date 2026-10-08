@@ -65,7 +65,9 @@ export function renderStatic(lang: Lang): string {
   <p class="print-contact">${[
     `<a href="mailto:${profile.email}">${profile.email}</a>`,
     a("https://phas.dev", "phas.dev"),
-    ...profile.links.map((l) => a(l.url, l.url.replace(/^https?:\/\/(www\.)?/, ""))),
+    ...profile.links.map((l) =>
+      a(l.url, l.url.replace(/^https?:\/\/(www\.)?/, "")),
+    ),
   ].join(" · ")}</p>
 </header>
 <section id="sobre"><h2>${iconSvg("about")}${t.sectionAbout}</h2><p>${esc(profile.summary[lang])}</p><p>${esc(profile.now[lang])}</p><p>${esc(profile.extra[lang])}</p></section>

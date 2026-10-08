@@ -1,7 +1,8 @@
 import type { Lang } from "./content.ts";
 
 /** On a phone the hints talk about tapping and swiping, not keys and clicks. False at build time (no DOM). */
-const touch = typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
+const touch =
+  typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
 
 export const ui = {
   pt: {
@@ -12,7 +13,12 @@ export const ui = {
       "montando /experiencia e /projetos",
       "pronto",
     ],
-    welcomeHint: ["Digite ", touch ? " ou toque em um ícone abaixo." : " ou clique em um ícone abaixo."],
+    welcomeHint: [
+      "Digite ",
+      touch
+        ? " ou toque em um ícone abaixo."
+        : " ou clique em um ícone abaixo.",
+    ],
     helpTitle: "Comandos disponíveis",
     helpKeys: touch
       ? "Toque num comando para rodá-lo."
@@ -39,11 +45,17 @@ export const ui = {
     coopJoinDesc: "recebeu um código de 4 letras? Digite e entre na sala.",
     nicknamePlaceholder: "seu apelido (opcional), Enter para jogar",
     roomPlaceholder: "código da sala, ex.: ABCD",
-    gameMenuKeys: touch ? "Toque num modo para jogar." : "↑ ↓ escolhem, Enter começa, Esc volta ao terminal",
-    menuTitle: touch ? "Por onde começar? Toque em um ícone." : "Por onde começar? Clique em um ícone.",
+    gameMenuKeys: touch
+      ? "Toque num modo para jogar."
+      : "↑ ↓ escolhem, Enter começa, Esc volta ao terminal",
+    menuTitle: touch
+      ? "Por onde começar? Toque em um ícone."
+      : "Por onde começar? Clique em um ícone.",
     menuHint: "Ou digite um comando. ajuda lista todos.",
     cvLabel: "Currículo",
-    snakeDesc: touch ? "a cobrinha clássica. Deslize o dedo para virar." : "a cobrinha clássica. Setas, WASD ou deslize; Esc pausa.",
+    snakeDesc: touch
+      ? "a cobrinha clássica. Deslize o dedo para virar."
+      : "a cobrinha clássica. Setas, WASD ou deslize; Esc pausa.",
     snakeEasyDesc:
       "a mesma cobrinha, mas as paredes atravessam: bom para começar.",
     snakeEasyTitle: "Snake (fácil)",
@@ -155,7 +167,10 @@ export const ui = {
       "mounting /experience and /projects",
       "ready",
     ],
-    welcomeHint: ["Type ", touch ? " or tap an icon below." : " or click an icon below."],
+    welcomeHint: [
+      "Type ",
+      touch ? " or tap an icon below." : " or click an icon below.",
+    ],
     helpTitle: "Available commands",
     helpKeys: touch
       ? "Tap a command to run it."
@@ -181,11 +196,17 @@ export const ui = {
     coopJoinDesc: "got a 4-letter code? Type it to join the room.",
     nicknamePlaceholder: "your nickname (optional), Enter to play",
     roomPlaceholder: "room code, e.g. ABCD",
-    gameMenuKeys: touch ? "Tap a mode to play." : "↑ ↓ choose, Enter starts, Esc goes back to the terminal",
-    menuTitle: touch ? "Where to start? Tap an icon." : "Where to start? Click an icon.",
+    gameMenuKeys: touch
+      ? "Tap a mode to play."
+      : "↑ ↓ choose, Enter starts, Esc goes back to the terminal",
+    menuTitle: touch
+      ? "Where to start? Tap an icon."
+      : "Where to start? Click an icon.",
     menuHint: "Or type a command. help lists them all.",
     cvLabel: "Resume",
-    snakeDesc: touch ? "the classic snake. Swipe to turn." : "the classic snake. Arrows, WASD or swipe; Esc pauses.",
+    snakeDesc: touch
+      ? "the classic snake. Swipe to turn."
+      : "the classic snake. Arrows, WASD or swipe; Esc pauses.",
     snakeEasyDesc:
       "the same snake, but the walls wrap around: good to start with.",
     snakeEasyTitle: "Snake (easy)",

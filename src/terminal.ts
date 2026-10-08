@@ -15,7 +15,10 @@ interface Hooks {
   setTheme(theme: Theme): void;
   showSimple(): void;
   /** A command ran: its id, its run number (as on its echo line) and the line as typed. */
-  onCommand(id: string, run: { n: number; input: string; replaying: boolean }): void;
+  onCommand(
+    id: string,
+    run: { n: number; input: string; replaying: boolean },
+  ): void;
   /** The screen was cleared: nothing is open any more. */
   onClear(): void;
   /** Back to the welcome screen. */
@@ -220,7 +223,10 @@ export class Terminal {
     const line = this.out.querySelector<HTMLElement>(`.echo[data-run="${n}"]`);
     if (!line) return false;
     this.flush();
-    this.screen.scrollTop += line.getBoundingClientRect().top - this.screen.getBoundingClientRect().top - 8;
+    this.screen.scrollTop +=
+      line.getBoundingClientRect().top -
+      this.screen.getBoundingClientRect().top -
+      8;
     return true;
   }
 
@@ -324,7 +330,10 @@ export class Terminal {
     this.printNow(
       h(
         "p",
-        { class: "echo", "data-run": run === undefined ? undefined : String(run) },
+        {
+          class: "echo",
+          "data-run": run === undefined ? undefined : String(run),
+        },
         h("span", { class: "prompt" }, this.prompt),
         " ",
         text,

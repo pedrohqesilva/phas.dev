@@ -1,7 +1,7 @@
 // phas.dev server: the static site (dist/) and the game WebSocket (/ws) on one port.
 // Static files are read once at startup and kept in memory, gzipped when that helps. Hashed assets are
-// cached for a year; everything else is revalidated. Unknown paths fall back to index.html, so /simples
-// and other client routes work on reload.
+// cached for a year; everything else is revalidated. Each page address gets its own built HTML (see ROUTES);
+// unknown paths still get the terminal, with a 404 status.
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import {
   createServer,
@@ -27,6 +27,26 @@ const TYPES: Record<string, string> = {
   ".txt": "text/plain; charset=utf-8",
   ".xml": "application/xml",
   ".webmanifest": "application/manifest+json",
+  ".md": "text/markdown; charset=utf-8",
+};
+
+/**
+ * Addresses that are pages of the app, and the built HTML each one gets: every language and view has its own
+ * file (head, content and language baked in). Anything else that is not a file is a real 404.
+ */
+const ROUTES: Record<string, string> = {
+  "/": "/index.html",
+  "/en": "/en.html",
+  "/curriculo": "/curriculo.html",
+  "/resume": "/resume.html",
+  // Older and alternative addresses of the resume; their canonical link points at the two above.
+  "/simples": "/curriculo.html",
+  "/cv": "/curriculo.html",
+  "/simple": "/resume.html",
+  // Games open straight away over the terminal.
+  "/snake": "/index.html",
+  "/cobrinha": "/index.html",
+  "/invaders": "/index.html",
 };
 
 type File = { body: Buffer; gzip: Buffer | null; type: string };
@@ -73,16 +93,19 @@ function serveStatic(req: IncomingMessage, res: ServerResponse) {
     res.writeHead(200, { "Content-Type": "text/plain" }).end("ok");
     return;
   }
-  const file =
-    files.get(path === "/" ? "/index.html" : path) ?? files.get("/index.html");
+  const route = ROUTES[path.replace(/(.)\/$/, "$1").toLowerCase()];
+  const asset = route ? undefined : files.get(path);
+  // Unknown address: the terminal still opens (it may be an old link), but with a 404 status for robots.
+  const file = asset ?? files.get(route ?? "/index.html");
   if (!file) {
     res.writeHead(404).end();
     return;
   }
+  const status = asset || route ? 200 : 404;
   const gzip =
     file.gzip && /\bgzip\b/.test(String(req.headers["accept-encoding"] ?? ""));
   const body = gzip ? file.gzip! : file.body;
-  res.writeHead(200, {
+  res.writeHead(status, {
     "Content-Type": file.type,
     "Content-Length": body.length,
     "Cache-Control": path.startsWith("/assets/")

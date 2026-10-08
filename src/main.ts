@@ -6,6 +6,7 @@ import { profile, type Lang } from "./content.ts";
 import { cmd, h } from "./dom.ts";
 import { ui } from "./i18n.ts";
 import { icon } from "./icons.ts";
+import { pageTitle, pathFor } from "./seo.ts";
 import { renderStatic } from "./static.ts";
 import { Terminal } from "./terminal.ts";
 
@@ -30,7 +31,22 @@ const store = {
   },
 };
 
+const currentPath = () => location.pathname.replace(/(.)\/$/, "$1").toLowerCase();
+
+/** Addresses that fix the language: each page exists in both, and the address says which one it is. */
+const PATH_LANG: Record<string, Lang> = {
+  "/en": "en",
+  "/resume": "en",
+  "/simple": "en",
+  "/curriculo": "pt",
+  "/simples": "pt",
+};
+/** Robots read each address in its own language: no guessing from their browser settings. */
+const isBot = /bot|crawl|spider|slurp|preview|headless|lighthouse/i.test(navigator.userAgent);
+
 const initialLang: Lang =
+  PATH_LANG[currentPath()] ??
+  (isBot ? "pt" : null) ??
   (store.get("lang") as Lang | null) ??
   (navigator.language.toLowerCase().startsWith("pt") ? "pt" : "en");
 const initialTheme: Theme =
@@ -60,7 +76,7 @@ function applyLang(lang: Lang) {
   const t = ui[lang];
   term.lang = lang;
   root.lang = lang === "pt" ? "pt-BR" : "en";
-  document.title = `${profile.name}, ${profile.role[lang]}`;
+  document.title = pageTitle(lang, root.classList.contains("simple") ? "resume" : "home");
   $("prompt-user").textContent = t.user;
   $("cmd").setAttribute("aria-label", t.inputLabel);
   $("lang-toggle").replaceChildren(
@@ -87,7 +103,14 @@ function setLang(lang: Lang) {
   store.set("lang", lang);
   applyLang(lang);
   term.relocalize();
+  // The address follows: /curriculo ⇄ /resume, / ⇄ /en (games and other addresses stay put).
+  if (isSimplePath() || HOME_PATHS.includes(currentPath()))
+    history.replaceState(history.state, "", pagePath() + location.search + location.hash);
 }
+
+const HOME_PATHS = ["/", "/en"];
+/** This view's address in the current language. */
+const pagePath = () => pathFor(root.classList.contains("simple") ? "resume" : "home", term.lang);
 
 function applyThemeLabel() {
   const current = (root.dataset.theme as Theme) ?? initialTheme;
@@ -110,17 +133,12 @@ function setTheme(theme: Theme) {
 /** `/simples` (or `/simple`) is the simple version's own address, so it can be shared or bookmarked. */
 // /curriculo, /resume and /cv are the same page: the simple version is the resume (and prints as one).
 const SIMPLE_PATHS = ["/simples", "/simple", "/curriculo", "/resume", "/cv"];
-const isSimplePath = () =>
-  SIMPLE_PATHS.includes(location.pathname.replace(/\/$/, "").toLowerCase());
+const isSimplePath = () => SIMPLE_PATHS.includes(currentPath());
 
 function setSimple(on: boolean, push = true) {
   root.classList.toggle("simple", on);
-  if (push && on !== isSimplePath())
-    history.pushState(
-      null,
-      "",
-      on ? (term.lang === "pt" ? "/simples" : "/simple") : "/",
-    );
+  document.title = pageTitle(term.lang, on ? "resume" : "home");
+  if (push && on !== isSimplePath()) history.pushState(null, "", pagePath());
   if (on) $("static").focus();
   else term.focus();
 }
@@ -132,7 +150,8 @@ addEventListener("popstate", (e) => {
   if (handleBack()) return;
   // The simple version has its own address.
   const simple = isSimplePath();
-  if (simple !== root.classList.contains("simple")) return setSimple(simple, false);
+  if (simple !== root.classList.contains("simple"))
+    return setSimple(simple, false);
   // Sections: back to the previous one on screen (run again if it was cleared), or to the top.
   const state = e.state as { run?: number; cmd?: string } | null;
   if (!state?.run) return term.scrollToTop();
@@ -222,8 +241,7 @@ const GAME_PATHS: Record<string, string> = {
   "/cobrinha": "snake",
   "/invaders": "invaders",
 };
-const gameFromPath = () =>
-  GAME_PATHS[location.pathname.replace(/\/$/, "").toLowerCase()];
+const gameFromPath = () => GAME_PATHS[currentPath()];
 
 async function boot() {
   const t = ui[term.lang];
@@ -254,7 +272,7 @@ async function boot() {
   // Deep links: phas.dev/#projetos runs that command after boot.
   if (game) {
     // The game opens over the terminal; leaving it lands on the home address.
-    history.replaceState(null, "", "/");
+    history.replaceState(null, "", pathFor("home", term.lang));
     term.run(`${term.lang === "pt" ? "jogos" : "games"} ${game}`);
   } else if (!runQuery() && !runHash()) startMenu();
   term.focus();
@@ -306,7 +324,8 @@ if (viewport) {
   const fitViewport = () => {
     root.style.setProperty("--app-height", `${viewport.height}px`);
     root.style.setProperty("--app-top", `${viewport.offsetTop}px`);
-    if (document.activeElement === prompt) screen.scrollTop = screen.scrollHeight;
+    if (document.activeElement === prompt)
+      screen.scrollTop = screen.scrollHeight;
   };
   viewport.addEventListener("resize", fitViewport);
   viewport.addEventListener("scroll", fitViewport);
@@ -319,7 +338,10 @@ if (viewport) {
 }
 
 root.dataset.theme = initialTheme;
-applyLang(initialLang);
 // /simples opens straight on the simple version; the terminal boots behind it.
 if (isSimplePath()) setSimple(true, false);
+applyLang(initialLang);
+// The home address shows its language too: a visitor reading in English lands on /en.
+if (currentPath() === "/" && initialLang === "en")
+  history.replaceState(null, "", "/en" + location.search + location.hash);
 boot();
