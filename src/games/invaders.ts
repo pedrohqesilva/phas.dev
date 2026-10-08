@@ -334,10 +334,11 @@ function draw(
   }
 }
 
-/** Solo: the simulation runs here. `onExit` gets the best score of the session. */
+/** Solo: the simulation runs here. `onExit` gets the best score of the session, `onRound` each game's score. */
 export function playInvaders(
   texts: InvadersTexts,
   onExit: (best: number) => void,
+  onRound?: (score: number) => void,
 ) {
   const st = createInvaders(1);
   const pad = controls();
@@ -353,6 +354,7 @@ export function playInvaders(
   });
   // The first wave starts when the tutorial is dismissed, with its banner.
   let begun = false;
+  let wasOver = false;
 
   shell.loop((now, dt) => {
     if (shell.started && !begun) {
@@ -369,6 +371,8 @@ export function playInvaders(
           now - Math.max(0, left - 16),
           Math.min(16, left),
         );
+    if (st.over && !wasOver) onRound?.(st.score);
+    wasOver = st.over;
     draw(shell, f, viewInvaders(st, now), texts, now);
   });
 }

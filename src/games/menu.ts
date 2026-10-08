@@ -9,6 +9,8 @@ export interface MenuOption {
   /** Asks for a text before starting; `required` refuses an empty one, `valid` checks it. */
   input?: {
     placeholder: string;
+    /** What the field starts with (the nickname used last time). */
+    value?: string;
     maxLength: number;
     required?: boolean;
     valid?: (value: string) => boolean;
@@ -122,6 +124,7 @@ export function openGameMenu(
     const field = document.createElement("input");
     field.type = "text";
     field.placeholder = option.input.placeholder;
+    field.value = option.input.value ?? "";
     field.maxLength = option.input.maxLength;
     field.autocapitalize = "off";
     field.spellcheck = false;

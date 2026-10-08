@@ -3,6 +3,7 @@ import type { Server } from "node:http";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import { attachGames } from "./server/games.ts";
+import { handleScores } from "./server/scores.ts";
 import { ui } from "./src/i18n.ts";
 import {
   humansTxt,
@@ -75,6 +76,11 @@ export default defineConfig({
       // Not exclusive: Vite's hot-reload socket shares the server.
       name: "games",
       configureServer(server) {
+        // The leaderboards' API too, so solo games can post scores in development.
+        server.middlewares.use((req, res, next) => {
+          const path = new URL(req.url ?? "/", "http://x").pathname;
+          if (!handleScores(req, res, path, "dev")) next();
+        });
         if (server.httpServer)
           attachGames(server.httpServer as Server, { exclusive: false });
       },

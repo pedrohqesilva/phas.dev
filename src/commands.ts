@@ -26,6 +26,13 @@ import {
 } from "./games/invaders.ts";
 import { openGameMenu } from "./games/menu.ts";
 import { cleanName, isRoomCode } from "./games/protocol.ts";
+import {
+  board,
+  savedNick,
+  startRun,
+  type Entry,
+  type Game,
+} from "./games/scores.ts";
 import { playSnakeArena } from "./games/snake-online.ts";
 import { playSnake } from "./games/snake.ts";
 import { ui, type UI } from "./i18n.ts";
@@ -92,9 +99,37 @@ function open(url: string, { t, print, replaying }: Ctx) {
 const isEasy = (mode?: string) =>
   ["facil", "easy", "wrap"].includes(normalize(mode ?? ""));
 
+/**
+ * Sends each round of a solo game to its leaderboard (when there is a nickname) and keeps the best places
+ * reached, for the line printed back in the terminal.
+ */
+function leaderboardRun(game: Game, nick: string) {
+  const run = startRun(game, nick);
+  let today: number | null = null;
+  let all: number | null = null;
+  const better = (a: number | null, b: number | null) =>
+    a === null ? b : b === null ? a : Math.min(a, b);
+  return {
+    round(score: number) {
+      void run.submit(score).then((r) => {
+        if (!r) return;
+        today = better(today, r.today);
+        all = better(all, r.all);
+      });
+    },
+    /** The line for the terminal, or nothing if no place was reached. */
+    report({ t, lang }: Ctx): Child {
+      if (today === null && all === null) return null;
+      return line(t.rankPlaced(today, all), " ", cmd(`ranking ${game}`, name("ranking", lang)));
+    },
+  };
+}
+
 /** Full-screen Snake; back on the terminal it reports the best round. Easy: the walls wrap around. */
-function startSnake({ t, print, focus, replaying }: Ctx, easy = false) {
+function startSnake(ctx: Ctx, easy = false, nick = savedNick.get()) {
+  const { t, print, focus, replaying } = ctx;
   if (replaying) return;
+  const ranked = leaderboardRun(easy ? "snake-easy" : "snake", nick);
   playSnake(
     {
       title: easy ? t.snakeEasyTitle : "Snake",
@@ -110,9 +145,11 @@ function startSnake({ t, print, focus, replaying }: Ctx, easy = false) {
     },
     (best) => {
       print(muted(t.snakeOver(best)));
+      // The submissions may still be on their way: a moment later, the places reached.
+      setTimeout(() => print(ranked.report(ctx)), 600);
       focus();
     },
-    { wrap: easy },
+    { wrap: easy, onRound: ranked.round },
   );
 }
 
@@ -136,13 +173,33 @@ const invadersTexts = (t: UI, title = "Space Invaders"): InvadersTexts => ({
 });
 
 /** Full-screen Space Invaders; back on the terminal it reports the best score. */
-function startInvaders({ t, print, focus, replaying }: Ctx) {
+function startInvaders(ctx: Ctx, nick = savedNick.get()) {
+  const { t, print, focus, replaying } = ctx;
   if (replaying) return;
-  playInvaders(invadersTexts(t), (best) => {
-    print(muted(t.invadersOver(best)));
-    focus();
-  });
+  const ranked = leaderboardRun("invaders", nick);
+  playInvaders(
+    invadersTexts(t),
+    (best) => {
+      print(muted(t.invadersOver(best)));
+      setTimeout(() => print(ranked.report(ctx)), 600);
+      focus();
+    },
+    ranked.round,
+  );
 }
+
+/** The nickname field on a solo mode's start screen: optional, filled with the last one used. */
+const nickInput = (t: UI) => ({
+  placeholder: t.nickRanking,
+  maxLength: 12,
+  value: savedNick.get(),
+});
+/** Cleans and remembers a nickname typed on a start screen. */
+const takeNick = (raw: string) => {
+  const nick = cleanName(raw);
+  savedNick.set(nick);
+  return nick;
+};
 
 /** Co-op Space Invaders on the server: creates a room (and prints its link) or joins `room`. */
 function startCoop({ t, print, focus, replaying }: Ctx, room?: string) {
@@ -226,17 +283,23 @@ function snakeMenu(ctx: Ctx) {
   openGameMenu(
     "Snake",
     [
-      { label: t.modeClassic, hint: t.snakeDesc, start: () => startSnake(ctx) },
+      {
+        label: t.modeClassic,
+        hint: t.snakeDesc,
+        input: nickInput(t),
+        start: (nick) => startSnake(ctx, false, takeNick(nick)),
+      },
       {
         label: t.modeEasy,
         hint: t.snakeEasyDesc,
-        start: () => startSnake(ctx, true),
+        input: nickInput(t),
+        start: (nick) => startSnake(ctx, true, takeNick(nick)),
       },
       {
         label: t.modeOnline,
         hint: t.arenaDesc,
-        input: { placeholder: t.nicknamePlaceholder, maxLength: 12 },
-        start: (nick) => startArena(ctx, cleanName(nick)),
+        input: { ...nickInput(t), placeholder: t.nicknamePlaceholder },
+        start: (nick) => startArena(ctx, takeNick(nick)),
       },
     ],
     { keys: t.gameMenuKeys, exit: t.gameExit },
@@ -254,7 +317,8 @@ function invadersMenu(ctx: Ctx) {
       {
         label: t.modeSolo,
         hint: t.invadersDesc,
-        start: () => startInvaders(ctx),
+        input: nickInput(t),
+        start: (nick) => startInvaders(ctx, takeNick(nick)),
       },
       {
         label: t.modeCoopCreate,
@@ -823,6 +887,60 @@ export const commands: Command[] = [
     id: "invaders",
     names: { pt: ["invaders", "nave"], en: ["invaders", "spaceinvaders"] },
     run: ([mode, extra], ctx) => playInvadersMode(ctx, mode, extra),
+  },
+  {
+    id: "ranking",
+    names: {
+      pt: ["ranking", "placar", "recordes"],
+      en: ["ranking", "leaderboard", "scores"],
+    },
+    desc: {
+      pt: "melhores pontuações dos jogos (hoje e de sempre)",
+      en: "best game scores (today and all time)",
+    },
+    icon: "terminal",
+    args: () => ["snake", "invaders", "facil"],
+    run([arg], ctx) {
+      const a = normalize(arg ?? "");
+      const games: Game[] =
+        a === "snake" || a === "cobrinha"
+          ? ["snake"]
+          : ["facil", "easy", "snake-easy"].includes(a)
+            ? ["snake-easy"]
+            : ["invaders", "nave"].includes(a)
+              ? ["invaders"]
+              : ["snake", "invaders"];
+      void Promise.all(games.map((g) => board(g))).then((boards) => {
+        const { t } = ctx;
+        if (boards.every((b) => b === null))
+          return ctx.print(muted(t.rankingOffline));
+        const list = (entries: Entry[]) =>
+          entries.length
+            ? h(
+                "ol",
+                { class: "ranking-list" },
+                ...entries.map((e) =>
+                  h("li", null, h("span", null, e.name), h("span", { class: "muted" }, String(e.score))),
+                ),
+              )
+            : muted(t.rankingEmpty);
+        ctx.print(
+          ...games.flatMap((g, i) => {
+            const b = boards[i];
+            if (!b) return [];
+            return [
+              title(t.rankingTitle(g)),
+              h(
+                "div",
+                { class: "ranking" },
+                h("div", null, h("p", { class: "stack-title" }, t.rankingToday), list(b.today)),
+                h("div", null, h("p", { class: "stack-title" }, t.rankingAll), list(b.all)),
+              ),
+            ];
+          }),
+        );
+      });
+    },
   },
   {
     id: "lang",

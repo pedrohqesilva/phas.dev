@@ -1163,3 +1163,20 @@ html:not(.js) .back {
   height: 100vh;
   background: #000;
 }
+
+/* Leaderboards: today and all time side by side, one under the other on a phone. */
+.ranking {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 4px 32px;
+  margin-bottom: 8px;
+}
+.ranking-list {
+  margin: 4px 0 0;
+  padding-left: 3ch;
+}
+.ranking-list li {
+  display: flex;
+  justify-content: space-between;
+  max-width: 260px;
+}

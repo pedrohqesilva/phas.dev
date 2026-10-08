@@ -2,6 +2,8 @@
 // Static files are read once at startup and kept in memory, gzipped when that helps. Hashed assets are
 // cached for a year; everything else is revalidated. Each page address gets its own built HTML (see ROUTES);
 // unknown paths still get the terminal, with a 404 status.
+// First: drop root privileges if the container started with them (see privileges.ts).
+import "./privileges.ts";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import {
   createServer,
@@ -12,7 +14,8 @@ import { extname, join, relative, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { attachGames } from "./games.ts";
-import { fromCloudflare } from "./origin.ts";
+import { fromCloudflare, visitorAddress } from "./origin.ts";
+import { handleScores } from "./scores.ts";
 
 const PORT = Number(process.env.PORT ?? 8080);
 const DIST = resolve(process.env.DIST ?? "dist");
@@ -146,10 +149,6 @@ const cacheControl = (path: string, status: number) =>
       : "no-cache";
 
 function serveStatic(req: IncomingMessage, res: ServerResponse) {
-  if (req.method !== "GET" && req.method !== "HEAD") {
-    res.writeHead(405, { Allow: "GET, HEAD" }).end();
-    return;
-  }
   // One address for the site: www goes to the apex, keeping the path (one URL per page for search engines).
   const host = String(req.headers.host ?? "");
   if (host.startsWith("www.")) {
@@ -177,6 +176,12 @@ function serveStatic(req: IncomingMessage, res: ServerResponse) {
   // Everything else only through Cloudflare: the Railway addresses answer 403 to direct visits.
   if (!fromCloudflare(req)) {
     res.writeHead(403, SECURITY_HEADERS).end();
+    return;
+  }
+  // The leaderboards' small API; the rest is files, read only.
+  if (handleScores(req, res, path, visitorAddress(req))) return;
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    res.writeHead(405, { Allow: "GET, HEAD" }).end();
     return;
   }
   const route = ROUTES[path.replace(/(.)\/$/, "$1").toLowerCase()];

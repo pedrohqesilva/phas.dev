@@ -101,11 +101,15 @@ export function createArena() {
       () => {
         // A late timer (a busy moment) runs the beats it owes, up to a few, then carries on.
         const due = Math.floor((performance.now() - beatsFrom) / ARENA_TICK_MS);
-        for (let n = 0; timer && beatsRun < due && n < 5; n++, beatsRun++) tick();
+        for (let n = 0; timer && beatsRun < due && n < 5; n++, beatsRun++)
+          tick();
         if (beatsRun < due) beatsRun = due;
         if (timer) schedule();
       },
-      Math.max(0, beatsFrom + (beatsRun + 1) * ARENA_TICK_MS - performance.now()),
+      Math.max(
+        0,
+        beatsFrom + (beatsRun + 1) * ARENA_TICK_MS - performance.now(),
+      ),
     );
   }
   let tickNo = 0;

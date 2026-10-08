@@ -171,6 +171,17 @@ export const ui = {
     email: "E-mail",
     opening: "Abrindo",
     sectionEducation: "Formação",
+    nickRanking: "apelido para o ranking (opcional), Enter para jogar",
+    rankPlaced: (today: number | null, all: number | null) =>
+      all !== null
+        ? `Você entrou no ranking de sempre em ${all}º lugar${today !== null ? ` (e em ${today}º hoje)` : ""}!`
+        : `Você ficou em ${today}º no ranking de hoje.`,
+    rankingTitle: (game: string) =>
+      `Ranking: ${game === "snake" ? "Snake" : game === "snake-easy" ? "Snake (fácil)" : game === "invaders" ? "Space Invaders" : "Tetris"}`,
+    rankingToday: "Hoje",
+    rankingAll: "De sempre",
+    rankingEmpty: "Ninguém ainda. Seja o primeiro.",
+    rankingOffline: "Não consegui buscar o ranking agora.",
     languagesTitle: "Idiomas",
   },
   en: {
@@ -336,6 +347,17 @@ export const ui = {
     email: "Email",
     opening: "Opening",
     sectionEducation: "Education",
+    nickRanking: "nickname for the leaderboard (optional), Enter to play",
+    rankPlaced: (today: number | null, all: number | null) =>
+      all !== null
+        ? `You made the all-time leaderboard at #${all}${today !== null ? ` (and #${today} today)` : ""}!`
+        : `You placed #${today} on today's leaderboard.`,
+    rankingTitle: (game: string) =>
+      `Leaderboard: ${game === "snake" ? "Snake" : game === "snake-easy" ? "Snake (easy)" : game === "invaders" ? "Space Invaders" : "Tetris"}`,
+    rankingToday: "Today",
+    rankingAll: "All time",
+    rankingEmpty: "Nobody yet. Be the first.",
+    rankingOffline: "Couldn't fetch the leaderboard right now.",
     languagesTitle: "Languages",
   },
 } satisfies Record<Lang, unknown>;

@@ -51,6 +51,16 @@ jobs:
           for i in $(seq 1 30); do curl -fs localhost:8080/health && break; sleep 1; done
           test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/)" = 200
           test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/resume)" = 200
+      - name: As on Railway (root, with a volume) it drops to node and saves scores
+        run: |
+          docker volume create scores
+          docker run -d --name web2 -u 0 -p 8081:8080 -e PORT=8080 -e DATA_DIR=/data -v scores:/data phas-dev
+          for i in $(seq 1 30); do curl -fs localhost:8081/health && break; sleep 1; done
+          RUN=$(curl -s -X POST -H 'Content-Type: application/json' -d '{"game":"snake"}' localhost:8081/api/run | python3 -c 'import sys, json; print(json.load(sys.stdin)["run"])')
+          sleep 2
+          curl -fs -X POST -H 'Content-Type: application/json' -d "{\"game\":\"snake\",\"run\":\"$RUN\",\"name\":\"ci\",\"score\":10}" localhost:8081/api/scores
+          docker exec web2 cat /data/scores.json | grep -q '"ci"'
+          docker exec web2 grep '^Uid:' /proc/1/status | grep -q '1000'
       - name: Logs on failure
         if: failure()
-        run: docker logs web || true
+        run: docker logs web || true; docker logs web2 || true

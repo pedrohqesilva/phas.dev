@@ -1,7 +1,7 @@
 // The game WebSocket (/ws): the public Snake arena and the co-op Space Invaders rooms. Attached to an
 // HTTP server: the production one (server/index.ts) and, in development, Vite's (vite.config.ts), so
 // `pnpm dev` plays online without a second process.
-import type { IncomingMessage, Server } from "node:http";
+import type { Server } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 import {
   cleanName,
@@ -12,7 +12,7 @@ import {
 } from "../src/games/protocol.ts";
 import { createArena } from "./arena.ts";
 import { createCoop } from "./coop.ts";
-import { fromCloudflare } from "./origin.ts";
+import { fromCloudflare, visitorAddress } from "./origin.ts";
 
 /**
  * `exclusive`: this server owns every upgrade, so anything but /ws is refused. Off under Vite, whose own
@@ -43,15 +43,7 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
     !origin ||
     /^https:\/\/(www\.)?phas\.dev$/.test(origin) ||
     /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-  /** The visitor's address: Cloudflare's header first, then the proxy chain, then the socket. */
-  const addressOf = (req: IncomingMessage) => {
-    const cf = req.headers["cf-connecting-ip"];
-    if (typeof cf === "string" && cf) return cf;
-    const chain = String(req.headers["x-forwarded-for"] ?? "")
-      .split(",")[0]
-      .trim();
-    return chain || req.socket.remoteAddress || "?";
-  };
+
   // Co-op reports the ship's position up to 30 times a second, plus fire presses and pings.
   const MESSAGES_PER_SECOND = 60;
   /**
@@ -69,7 +61,7 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
       if (exclusive) socket.destroy();
       return;
     }
-    const address = addressOf(req);
+    const address = visitorAddress(req);
     if (
       !fromCloudflare(req) ||
       !allowedOrigin(req.headers.origin) ||

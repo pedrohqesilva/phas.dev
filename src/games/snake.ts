@@ -53,11 +53,14 @@ const DIRS: Record<string, Point> = {
 };
 const same = (a: Point, b: Point) => a.x === b.x && a.y === b.y;
 
-/** Opens the game; `onExit` gets the best round of the session. */
+/** Opens the game; `onExit` gets the best round of the session, `onRound` each round's score as it ends. */
 export function playSnake(
   texts: SnakeTexts,
   onExit: (best: number) => void,
-  { wrap = false } = {},
+  {
+    wrap = false,
+    onRound,
+  }: { wrap?: boolean; onRound?: (score: number) => void } = {},
 ) {
   let cols = 0;
   let rows = 0;
@@ -199,6 +202,7 @@ export function playSnake(
         blocks.some((b) => same(b, head)))
     ) {
       best = Math.max(best, score);
+      onRound?.(score);
       deadUntil = now + 900;
       return;
     }
@@ -289,7 +293,8 @@ export function playSnake(
       [shieldFood, shieldFoodUntil, GREEN],
     ] as const) {
       if (!p) continue;
-      g.globalAlpha = Math.floor(now / (until - now < 2000 ? 90 : 260)) % 2 ? 1 : 0.5;
+      g.globalAlpha =
+        Math.floor(now / (until - now < 2000 ? 90 : 260)) % 2 ? 1 : 0.5;
       g.fillStyle = color;
       g.fillRect(p.x * CELL + 2, p.y * CELL + 2, CELL - 4, CELL - 4);
     }

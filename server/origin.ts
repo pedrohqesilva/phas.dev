@@ -15,3 +15,13 @@ export function fromCloudflare(req: IncomingMessage): boolean {
   if (typeof got !== "string" || got.length !== secret.length) return false;
   return timingSafeEqual(Buffer.from(got), Buffer.from(secret));
 }
+
+/** The visitor's address: Cloudflare's header first, then the proxy chain, then the socket. */
+export function visitorAddress(req: IncomingMessage): string {
+  const cf = req.headers["cf-connecting-ip"];
+  if (typeof cf === "string" && cf) return cf;
+  const chain = String(req.headers["x-forwarded-for"] ?? "")
+    .split(",")[0]
+    .trim();
+  return chain || req.socket.remoteAddress || "?";
+}
