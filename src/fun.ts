@@ -275,13 +275,17 @@ export function matrixBackdrop(on: boolean) {
     canvas.width = innerWidth * dpr;
     canvas.height = innerHeight * dpr;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    drops = Array.from({ length: Math.ceil(innerWidth / size) }, () => Math.random() * -60);
+    drops = Array.from(
+      { length: Math.ceil(innerWidth / size) },
+      () => Math.random() * -60,
+    );
     g.fillStyle = "#000";
     g.fillRect(0, 0, innerWidth, innerHeight);
   };
   resize();
   addEventListener("resize", resize);
-  const glyphs = "アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789phasDEV<>{}=;";
+  const glyphs =
+    "アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789phasDEV<>{}=;";
   let last = 0;
   let raf = 0;
   const frame = (now: number) => {
@@ -293,7 +297,11 @@ export function matrixBackdrop(on: boolean) {
     g.font = `${size}px "Geist Mono Variable", ui-monospace, monospace`;
     drops.forEach((y, i) => {
       g.fillStyle = Math.random() > 0.98 ? "#d8ffd8" : "#00ff41";
-      g.fillText(glyphs[Math.floor(Math.random() * glyphs.length)], i * size, y * size);
+      g.fillText(
+        glyphs[Math.floor(Math.random() * glyphs.length)],
+        i * size,
+        y * size,
+      );
       drops[i] = y * size > innerHeight && Math.random() > 0.975 ? 0 : y + 1;
     });
   };

@@ -24,11 +24,7 @@ import {
   playInvadersCoop,
   type InvadersTexts,
 } from "./games/invaders.ts";
-import {
-  openGameMenu,
-  type MenuField,
-  type MenuOption,
-} from "./games/menu.ts";
+import { openGameMenu, type MenuField, type MenuOption } from "./games/menu.ts";
 import {
   playPongCpu,
   playPongOnline,
@@ -1241,16 +1237,14 @@ export const commands: Command[] = [
     },
   },
   // A theme's name typed alone switches to it (`dracula`, `escuro`…); `matrix` alone is the rain.
-  ...THEMES.filter((th) => th !== "matrix").map(
-    (th): Command => ({
-      id: `theme-${th}`,
-      names: {
-        pt: [normalize(ui.pt.themeNames[th])],
-        en: [ui.en.themeNames[th]],
-      },
-      run: (_, { setTheme }) => setTheme(th),
-    }),
-  ),
+  ...THEMES.filter((th) => th !== "matrix").map((th): Command => ({
+    id: `theme-${th}`,
+    names: {
+      pt: [normalize(ui.pt.themeNames[th])],
+      en: [ui.en.themeNames[th]],
+    },
+    run: (_, { setTheme }) => setTheme(th),
+  })),
   {
     id: "simple",
     names: { pt: ["simples", "gui"], en: ["simple", "gui"] },

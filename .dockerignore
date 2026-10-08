@@ -4,3 +4,6 @@ dist
 .claude
 .wrangler
 *.local
+video
+docs
+README*.md
