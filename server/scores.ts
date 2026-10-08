@@ -44,6 +44,12 @@ try {
 } catch {
   // No file yet: empty boards.
 }
+/** Maintenance: SCORES_RESET="snake,tetris" clears those boards when the server starts (then unset it). */
+for (const game of (process.env.SCORES_RESET ?? "").split(",").filter(Boolean))
+  if (boards[game]) {
+    delete boards[game];
+    queueMicrotask(save);
+  }
 
 /** Today in Brazil, as YYYY-MM-DD: the day the "today" board belongs to. */
 const today = () =>
