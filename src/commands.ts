@@ -626,7 +626,6 @@ export const commands: Command[] = [
         return void window.open(profile.cv, "_blank", "noopener");
       }
       // No PDF yet: the print stylesheet turns the simple version into a resume.
-      print(line(t.cvPrint));
       if (!ctx.replaying) setTimeout(() => window.print(), 400);
     },
   },
@@ -698,7 +697,6 @@ export const commands: Command[] = [
             : undefined;
       if (!theme) return print(muted(t.themeUsage));
       setTheme(theme);
-      print(muted(t.themeSet(t.themeNames[theme])));
     },
   },
   {

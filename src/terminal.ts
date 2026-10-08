@@ -342,10 +342,7 @@ export class Terminal {
       clear: () => this.clear(),
       // While redrawing, the switches only print what they printed the first time.
       home: () => !this.replaying && this.hooks.home(),
-      setLang: (l) =>
-        this.replaying
-          ? this.print(h("p", { class: "muted" }, ui[l].langSet))
-          : this.hooks.setLang(l),
+      setLang: (l) => !this.replaying && this.hooks.setLang(l),
       setTheme: (t) => !this.replaying && this.hooks.setTheme(t),
       showSimple: () => !this.replaying && this.hooks.showSimple(),
       run: (i) => this.run(i),
