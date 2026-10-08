@@ -288,8 +288,10 @@ const sections: Record<string, (ctx: Ctx) => void> = {
     print(
       title(profile.name),
       muted(`${profile.role[lang]}, ${profile.location[lang]}`),
-      line(profile.summary[lang]),
-      muted(profile.extra[lang]),
+      // Three short paragraphs: who I am, what I do now, how I like to work.
+      h("p", { class: "para" }, profile.summary[lang]),
+      h("p", { class: "para" }, profile.now[lang]),
+      h("p", { class: "para muted" }, profile.extra[lang]),
       line(
         ...join(
           ["experience", "projects", "education", "contact"].map((id) =>
@@ -345,7 +347,7 @@ const sections: Record<string, (ctx: Ctx) => void> = {
               link(p.url, p.name),
               h("span", { class: "at" }, ` ${p.url.replace("https://", "")}`),
             ),
-            muted(p.status[lang]),
+            muted(`${p.status[lang]}. ${p.role[lang]}`),
             h("p", { class: "tagline" }, `"${p.tagline[lang]}"`),
             line(p.description[lang]),
             h("ul", null, ...p.highlights.map((x) => h("li", null, x[lang]))),

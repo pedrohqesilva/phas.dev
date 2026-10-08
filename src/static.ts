@@ -48,7 +48,7 @@ export function renderStatic(lang: Lang): string {
   <img class="project-logo" src="${p.logo}" alt="" width="44" height="44" />
   <div>
     <h3>${a(p.url, p.name)} <span>${esc(p.url.replace("https://", ""))}</span></h3>
-    <p class="meta">${esc(p.status[lang])}</p>
+    <p class="meta">${esc(p.status[lang])}. ${esc(p.role[lang])}</p>
     <p class="tagline">"${esc(p.tagline[lang])}"</p>
     <p>${esc(p.description[lang])}</p>
     <ul>${p.highlights.map((x) => `<li>${esc(x[lang])}</li>`).join("")}</ul>
@@ -63,7 +63,7 @@ export function renderStatic(lang: Lang): string {
   <h1>${esc(profile.name)}</h1>
   <p class="role">${esc(profile.role[lang])}, ${esc(profile.location[lang])}</p>
 </header>
-<section id="sobre"><h2>${iconSvg("about")}${t.sectionAbout}</h2><p>${esc(profile.summary[lang])}</p><p>${esc(profile.extra[lang])}</p></section>
+<section id="sobre"><h2>${iconSvg("about")}${t.sectionAbout}</h2><p>${esc(profile.summary[lang])}</p><p>${esc(profile.now[lang])}</p><p>${esc(profile.extra[lang])}</p></section>
 <section id="experiencia"><h2>${iconSvg("experience")}${t.sectionExperience}</h2>${jobs}</section>
 <section id="projetos"><h2>${iconSvg("projects")}${t.sectionProjects}</h2>${projs}</section>
 <section id="stack"><h2>${iconSvg("stack")}${t.sectionStack}</h2><dl>${stack

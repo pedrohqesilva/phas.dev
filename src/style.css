@@ -913,3 +913,11 @@ html:not(.js) .back {
   color: #8e8a83;
   font-size: 12px;
 }
+
+/* Paragraphs of running text in the terminal (About): a little air between them. */
+.block .para {
+  margin-top: 10px;
+}
+.block .para + p:not(.para) {
+  margin-top: 10px;
+}

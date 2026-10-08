@@ -26,6 +26,8 @@ export interface Project {
   logo: string;
   url: string;
   status: L;
+  /** What I did on it, in one line. */
+  role: L;
   tagline: L;
   description: L;
   highlights: L[];
@@ -54,12 +56,16 @@ export const profile = {
     en: "Belo Horizonte, Brazil",
   } satisfies L,
   summary: {
-    pt: "Engenheiro de software sênior com 9 anos construindo backends em C# e .NET para fintechs, varejo e setor público. Ajudei a criar um banco digital no Canadá, evoluí plataformas do varejo brasileiro e hoje defino arquitetura e padrões de código numa fintech americana.",
-    en: "Senior software engineer with 9 years building C# and .NET backends for fintech, retail and the public sector. I helped build a digital bank in Canada, evolved platforms for Brazilian retail and now define architecture and code standards at a US fintech.",
+    pt: "Engenheiro de software sênior, com 9 anos em C# e .NET e foco em arquitetura e produto. Penso como dono: entendo o problema do negócio, desenho a solução e acompanho até ela estar em produção, sendo usada.",
+    en: "Senior software engineer with 9 years in C# and .NET, focused on architecture and product. I think like an owner: I understand the business problem, design the solution and follow it until it is in production and being used.",
+  } satisfies L,
+  now: {
+    pt: "Na Paysign, defino a arquitetura base das APIs e os padrões técnicos de toda a empresa. Por conta própria, criei e mantenho o Vittz, SaaS para clínicas já em produção, e lidero o desenvolvimento do iFleetHub. Antes, ajudei a construir um banco digital no Canadá e plataformas do varejo brasileiro.",
+    en: "At Paysign I define the base architecture for APIs and the technical standards for the whole company. On my own, I built and run Vittz, a SaaS for clinics already in production, and I lead development of iFleetHub. Before that, I helped build a digital bank in Canada and platforms for Brazilian retail.",
   } satisfies L,
   extra: {
-    pt: "Gosto de arquitetura que continua simples de manter: DDD, monólito modular e Vertical Slice quando bastam, microsserviços quando são necessários. Fora do trabalho, testo as versões alpha do .NET, crio POCs para validar ideias e gosto de ensinar quem está começando.",
-    en: "I like architecture that stays easy to maintain: DDD, modular monoliths and Vertical Slice when they are enough, microservices when they are needed. Outside work I try .NET alpha releases, build POCs to test ideas and enjoy teaching people who are starting out.",
+    pt: "Gosto de arquitetura que continua simples de evoluir: DDD, monólito modular e Vertical Slice quando bastam, microsserviços quando são necessários. Uso IA no dia a dia de desenvolvimento e dentro dos produtos (assistentes que consultam dados reais, transcrição, integrações com MCP), e gosto de ensinar quem está começando.",
+    en: "I like architecture that stays easy to evolve: DDD, modular monoliths and Vertical Slice when they are enough, microservices when they are needed. I use AI every day to build software and inside the products (assistants on real data, transcription, MCP integrations), and I enjoy teaching people who are starting out.",
   } satisfies L,
   email: "pedro@phas.dev",
   links: [
@@ -233,100 +239,78 @@ export const projects: Project[] = [
     name: "Vittz",
     logo: "/projects/vittz.svg",
     url: "https://vittz.com.br",
-    status: {
-      pt: "produto próprio, em produção com clínicas beta",
-      en: "my own product, in production with beta clinics",
-    },
-    tagline: {
-      pt: "Cuidar de gente, não de planilha.",
-      en: "Care for people, not spreadsheets.",
-    },
+    status: { pt: "Em produção com clínicas beta", en: "In production with beta clinics" },
+    role: { pt: "Produto meu, do conceito ao código.", en: "My own product, from concept to code." },
+    tagline: { pt: "Cuidar de gente, não de planilha.", en: "Care for people, not spreadsheets." },
     description: {
-      pt: "Sistema de gestão para clínicas e consultórios que junta agenda, prontuário, financeiro, estoque e WhatsApp num lugar só. Feito para clínicas pequenas e profissionais autônomos, começando pela odontologia.",
-      en: "Management system for clinics and private practices that brings scheduling, health records, billing, inventory and WhatsApp into one place. Built for small clinics and solo professionals, starting with dentistry.",
+      pt: "Sistema de gestão para clínicas pequenas e profissionais autônomos, começando pela odontologia. Agenda, prontuário, financeiro, estoque e WhatsApp num lugar só, em tempo real, na web e no celular.",
+      en: "Management system for small clinics and solo practitioners, starting with dentistry. Scheduling, health records, billing, inventory and WhatsApp in one place, in real time, on the web and on mobile.",
     },
     highlights: [
       {
-        pt: "Assistente de IA que consulta dados reais (pacientes, agenda, leads) e transcreve consultas em evolução clínica no formato SOAP.",
-        en: "AI assistant that queries real data (patients, schedule, leads) and turns consultation audio into SOAP clinical notes.",
+        pt: "IA com dados reais: o assistente consulta pacientes, agenda e leads, e transforma o áudio da consulta em evolução clínica no formato SOAP.",
+        en: "AI on real data: the assistant looks up patients, schedules and leads, and turns consultation audio into SOAP clinical notes.",
       },
       {
-        pt: "Odontograma por comando de voz e bot de WhatsApp com editor visual de fluxos.",
-        en: "Voice-driven dental chart and a WhatsApp bot with a visual flow editor.",
+        pt: "Odontograma preenchido por comando de voz.",
+        en: "Dental chart filled in by voice.",
       },
       {
-        pt: "Pacientes sem login: formulários, orçamentos, assinatura, agendamento e check-in por links seguros.",
+        pt: "Paciente sem login: formulários, orçamentos, assinaturas, agendamento e check-in por links seguros.",
         en: "No patient logins: forms, quotes, signatures, booking and check-in through secure links.",
       },
       {
-        pt: "Assinatura digital ICP-Brasil, trilha de auditoria LGPD e permissões granulares por perfil.",
-        en: "ICP-Brasil digital signatures, LGPD audit trail and fine-grained role permissions.",
+        pt: "WhatsApp com bot de fluxos visuais, cobrança integrada e importação de notas fiscais por OCR.",
+        en: "WhatsApp with a visual flow bot, built-in billing and OCR import of supplier invoices.",
       },
       {
-        pt: "Tudo em tempo real, na web e no app mobile, com cobrança integrada e importação de NF-e por OCR.",
-        en: "Everything real-time on web and mobile, with built-in billing and OCR invoice import for inventory.",
+        pt: "Feito para a saúde: assinatura digital ICP-Brasil, trilha de auditoria LGPD e permissões por perfil.",
+        en: "Built for healthcare: ICP-Brasil digital signatures, LGPD audit trail and role-based permissions.",
+      },
+      {
+        pt: "Por dentro: multi-tenant, tempo real com Convex e front-end organizado em Feature-Sliced Design.",
+        en: "Under the hood: multi-tenant, real time with Convex and a front end organised with Feature-Sliced Design.",
       },
     ],
-    stack: [
-      "React",
-      "Vite",
-      "Convex",
-      "Expo",
-      "TypeScript",
-      "Vercel AI SDK",
-      "OpenAI",
-      "Claude",
-      "Railway",
-    ],
+    stack: ["TypeScript", "React", "Vite", "Convex", "Expo", "Vercel AI SDK", "OpenAI", "Claude", "Railway"],
   },
   {
     name: "iFleetHub",
     logo: "/projects/ifleethub.svg",
     url: "https://ifleethub.com.br",
-    status: {
-      pt: "pré-lançamento, lista de espera aberta",
-      en: "pre-launch, waitlist open",
+    status: { pt: "Pré-lançamento, lista de espera aberta", en: "Pre-launch, waitlist open" },
+    role: {
+      pt: "Desenvolvedor principal: arquitetura, backend, web e app.",
+      en: "Lead developer: architecture, backend, web and app.",
     },
-    tagline: {
-      pt: "Menos planilha. Mais estrada.",
-      en: "Less spreadsheet. More road.",
-    },
+    tagline: { pt: "Menos planilha. Mais estrada.", en: "Less spreadsheet. More road." },
     description: {
-      pt: "A torre de controle da transportadora: cada caminhão no mapa em tempo real e cada carga acompanhada etapa por etapa até a entrega. Para a equipe de operação e para os motoristas.",
-      en: "A control tower for trucking companies: every truck on a live map and every load tracked step by step until delivery. For the operations team and for drivers.",
+      pt: "Torre de controle para transportadoras: cada caminhão no mapa em tempo real e cada carga acompanhada até a entrega. Para a equipe de operação no escritório e para o motorista na estrada.",
+      en: "A control tower for trucking companies: every truck on a live map and every load tracked until delivery. For the operations team in the office and the driver on the road.",
     },
     highlights: [
       {
-        pt: "Torre de Controle com a frota inteira no mapa, atualizada em tempo real.",
-        en: "Control Tower with the whole fleet on a live-updating map.",
+        pt: "Torre de Controle: a frota inteira no mapa, atualizada em tempo real.",
+        en: "Control Tower: the whole fleet on a map, updated in real time.",
       },
       {
-        pt: "Jornada da Carga: cada entrega acompanhada contra o prazo, etapa por etapa.",
-        en: "Load Journey: every delivery tracked against its deadline, step by step.",
+        pt: "Jornada da Carga: cada entrega acompanhada etapa por etapa, contra o prazo.",
+        en: "Load Journey: every delivery tracked step by step, against its deadline.",
       },
       {
-        pt: "App com modo motorista, login sem senha e desbloqueio por Face ID.",
-        en: "App with a driver mode, passwordless login and Face ID unlock.",
+        pt: "Modo motorista no app, com login sem senha e desbloqueio por Face ID.",
+        en: "Driver mode in the app, with passwordless login and Face ID unlock.",
       },
       {
-        pt: "WhatsApp por empresa, com transcrição de áudios e resumo de conversas por IA.",
-        en: "WhatsApp per company, with AI audio transcription and chat summaries.",
+        pt: "WhatsApp da empresa integrado, com transcrição de áudios e resumo de conversas por IA.",
+        en: "The company's WhatsApp built in, with AI audio transcription and chat summaries.",
       },
       {
-        pt: "Multi-tenant com perfis de acesso personalizáveis, na web, na web mobile e no app.",
-        en: "Multi-tenant with custom access profiles, on web, mobile web and the app.",
+        pt: "Por dentro: multi-tenant, perfis de acesso personalizáveis e as mesmas funções na web, na web mobile e no app.",
+        en: "Under the hood: multi-tenant, custom access profiles and the same features on web, mobile web and the app.",
       },
     ],
-    stack: [
-      "React",
-      "Vite",
-      "Convex",
-      "Expo",
-      "MapLibre",
-      "WorkOS",
-      "OpenAI Whisper",
-      "Railway",
-    ],
+    stack: ["TypeScript", "React", "Vite", "Convex", "Expo", "MapLibre", "WorkOS", "OpenAI Whisper", "Railway"],
   },
 ];
 
