@@ -29,9 +29,9 @@ const ACCENT = "#f0a43a";
 
 /** Scenes in order: how long each lasts (frames at 30 fps). */
 const SCENES: { frames: number; render: () => ReactNode }[] = [
-  { frames: 90, render: () => <Intro /> },
+  { frames: 130, render: () => <Intro /> },
   {
-    frames: 90,
+    frames: 150,
     render: () => (
       <Shot
         src="01-home"
@@ -40,7 +40,7 @@ const SCENES: { frames: number; render: () => ReactNode }[] = [
     ),
   },
   {
-    frames: 100,
+    frames: 160,
     render: () => (
       <Shot
         src="02-experience"
@@ -50,7 +50,7 @@ const SCENES: { frames: number; render: () => ReactNode }[] = [
     ),
   },
   {
-    frames: 80,
+    frames: 140,
     render: () => (
       <Shot
         src="05-resume"
@@ -59,10 +59,10 @@ const SCENES: { frames: number; render: () => ReactNode }[] = [
       />
     ),
   },
-  { frames: 120, render: () => <Themes /> },
-  { frames: 170, render: () => <Games /> },
+  { frames: 225, render: () => <Themes /> },
+  { frames: 270, render: () => <Games /> },
   {
-    frames: 80,
+    frames: 140,
     render: () => (
       <Shot
         src="04-easter-eggs"
@@ -70,8 +70,8 @@ const SCENES: { frames: number; render: () => ReactNode }[] = [
       />
     ),
   },
-  { frames: 90, render: () => <Phone /> },
-  { frames: 110, render: () => <Outro /> },
+  { frames: 150, render: () => <Phone /> },
+  { frames: 160, render: () => <Outro /> },
 ];
 export const DEMO_FRAMES = SCENES.reduce((n, s) => n + s.frames, 0);
 
@@ -101,7 +101,7 @@ const Fade = ({
   children: ReactNode;
 }) => {
   const f = useCurrentFrame();
-  const opacity = interpolate(f, [0, 10, frames - 10, frames], [0, 1, 1, 0], {
+  const opacity = interpolate(f, [0, 16, frames - 16, frames], [0, 1, 1, 0], {
     extrapolateRight: "clamp",
   });
   return <AbsoluteFill style={{ opacity }}>{children}</AbsoluteFill>;
@@ -111,7 +111,7 @@ const Fade = ({
 const Typed = ({
   text,
   start = 0,
-  speed = 1.6,
+  speed = 0.9,
   size = 26,
   color = FG,
   prompt = true,
@@ -235,19 +235,19 @@ const Shot = ({
     }}
   >
     <Window src={src} width={980} pan={pan} />
-    <Typed text={caption} start={12} size={24} />
+    <Typed text={caption} start={22} size={24} />
   </AbsoluteFill>
 );
 
 const Intro = () => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const pop = spring({ frame: f - 28, fps, config: { damping: 12 } });
+  const pop = spring({ frame: f - 40, fps, config: { damping: 14 } });
   return (
     <AbsoluteFill
       style={{ alignItems: "center", justifyContent: "center", gap: 26 }}
     >
-      <Typed text="whoami" start={4} speed={0.6} size={30} />
+      <Typed text="whoami" start={8} speed={0.3} size={30} />
       <div
         style={{
           fontSize: 120,
@@ -263,7 +263,7 @@ const Intro = () => {
         style={{
           fontSize: 30,
           color: MUTED,
-          opacity: interpolate(f, [45, 60], [0, 1], {
+          opacity: interpolate(f, [65, 85], [0, 1], {
             extrapolateLeft: "clamp",
             extrapolateRight: "clamp",
           }),
@@ -284,7 +284,7 @@ const Themes = () => {
     "06-theme-3-matrix",
   ];
   const names = ["dracula", "gruvbox", "matrix"];
-  const i = Math.min(2, Math.floor(f / 40));
+  const i = Math.min(2, Math.floor(f / 75));
   return (
     <AbsoluteFill
       style={{
@@ -301,7 +301,7 @@ const Themes = () => {
             style={{
               position: k ? "absolute" : "relative",
               inset: 0,
-              opacity: interpolate(f - k * 40, [-6, 0], [0, 1], {
+              opacity: interpolate(f - k * 75, [-12, 0], [0, 1], {
                 extrapolateLeft: "clamp",
                 extrapolateRight: "clamp",
               }),
@@ -311,7 +311,13 @@ const Themes = () => {
           </div>
         ))}
       </div>
-      <Typed key={i} text={`theme ${names[i]}`} start={i * 40 + 4} size={26} />
+      <Typed
+        key={i}
+        text={`theme ${names[i]}`}
+        start={i * 75 + 8}
+        speed={0.6}
+        size={26}
+      />
     </AbsoluteFill>
   );
 };
@@ -344,7 +350,7 @@ const Games = () => {
         }}
       >
         {games.map(([src, label], k) => {
-          const s = spring({ frame: f - k * 12, fps, config: { damping: 16 } });
+          const s = spring({ frame: f - k * 28, fps, config: { damping: 18 } });
           return (
             <div
               key={src}
@@ -372,7 +378,7 @@ const Games = () => {
       </div>
       <Typed
         text="four games, all with an online mode and client-side prediction."
-        start={50}
+        start={130}
         size={20}
       />
     </AbsoluteFill>
@@ -411,14 +417,14 @@ const Phone = () => {
         />
       </div>
       <div style={{ width: 460 }}>
-        <Typed text="works on a phone, too." start={10} size={30} />
+        <Typed text="works on a phone, too." start={20} size={30} />
         <div
           style={{
             marginTop: 18,
             fontSize: 20,
             color: MUTED,
             lineHeight: 1.5,
-            opacity: interpolate(f, [30, 45], [0, 1], {
+            opacity: interpolate(f, [60, 80], [0, 1], {
               extrapolateLeft: "clamp",
               extrapolateRight: "clamp",
             }),
@@ -454,12 +460,12 @@ const Outro = () => {
       >
         phas<span style={{ color: ACCENT }}>.dev</span>
       </div>
-      <Typed text="help" start={18} speed={0.5} size={30} />
+      <Typed text="help" start={30} speed={0.3} size={30} />
       <div
         style={{
           fontSize: 18,
           color: MUTED,
-          opacity: interpolate(f, [40, 55], [0, 1], {
+          opacity: interpolate(f, [70, 90], [0, 1], {
             extrapolateLeft: "clamp",
             extrapolateRight: "clamp",
           }),

@@ -5,7 +5,7 @@
   "scripts": {
     "studio": "remotion studio src/index.ts",
     "render": "remotion render src/index.ts Demo out/phas-dev.mp4 --crf=20",
-    "gif": "remotion render src/index.ts Demo out/phas-dev.gif --codec=gif --every-nth-frame=3 --scale=0.45"
+    "gif": "remotion render src/index.ts Demo out/phas-dev.gif --codec=gif --every-nth-frame=4 --scale=0.45"
   },
   "dependencies": {
     "@remotion/cli": "^4.0.534",
