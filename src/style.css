@@ -488,9 +488,6 @@ html:not(.js) .back {
   width: 28px;
   height: 28px;
 }
-.back-home {
-  margin-top: 12px;
-}
 
 .gallery {
   display: grid;

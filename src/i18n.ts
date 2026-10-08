@@ -41,7 +41,6 @@ export const ui = {
     gameMenuKeys: "↑ ↓ escolhem, Enter começa, Esc volta ao terminal",
     menuTitle: "Por onde começar? Clique em um ícone.",
     menuHint: "Ou digite um comando. ajuda lista todos.",
-    backHome: "voltar ao início",
     cvLabel: "Currículo",
     snakeDesc: "a cobrinha clássica. Setas, WASD ou deslize; Esc pausa.",
     snakeEasyDesc:
@@ -183,7 +182,6 @@ export const ui = {
     gameMenuKeys: "↑ ↓ choose, Enter starts, Esc goes back to the terminal",
     menuTitle: "Where to start? Click an icon.",
     menuHint: "Or type a command. help lists them all.",
-    backHome: "back to start",
     cvLabel: "Resume",
     snakeDesc: "the classic snake. Arrows, WASD or swipe; Esc pauses.",
     snakeEasyDesc:

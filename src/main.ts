@@ -47,19 +47,9 @@ const term = new Terminal(
     setTheme,
     showSimple: () => setSimple(true),
     onCommand(id, run) {
-      // Every section ends with the way back to the icons, for visitors who never type.
-      if (tabIds.includes(id) && id !== "help") {
-        // Each section is a step in the browser history, so the phone's Back returns to the previous one.
-        if (!run.replaying && !restoring) history.pushState({ run: run.n, cmd: run.input }, "");
-        const t = ui[term.lang];
-        term.print(
-          h(
-            "p",
-            { class: "back-home" },
-            cmd(term.lang === "pt" ? "inicio" : "start", `← ${t.backHome}`),
-          ),
-        );
-      }
+      // Each section is a step in the browser history, so the phone's Back returns to the previous one.
+      if (tabIds.includes(id) && id !== "help" && !run.replaying && !restoring)
+        history.pushState({ run: run.n, cmd: run.input }, "");
     },
     onClear: () => {},
     home,
