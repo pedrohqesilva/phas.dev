@@ -1,5 +1,8 @@
 import type { Lang } from "./content.ts";
 
+/** On a phone the hints talk about tapping and swiping, not keys and clicks. False at build time (no DOM). */
+const touch = typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
+
 export const ui = {
   pt: {
     user: "visitante",
@@ -9,10 +12,11 @@ export const ui = {
       "montando /experiencia e /projetos",
       "pronto",
     ],
-    welcomeHint: ["Digite ", " ou clique em um ícone abaixo."],
+    welcomeHint: ["Digite ", touch ? " ou toque em um ícone abaixo." : " ou clique em um ícone abaixo."],
     helpTitle: "Comandos disponíveis",
-    helpKeys:
-      "Tab completa, ↑ ↓ navegam no histórico (ou rolam a saída enquanto ela aparece), Shift+↑ ↓ e PageUp/PageDown rolam, Esc mostra tudo, Ctrl+L limpa a tela.",
+    helpKeys: touch
+      ? "Toque num comando para rodá-lo."
+      : "Tab completa, ↑ ↓ navegam no histórico (ou rolam a saída enquanto ela aparece), Shift+↑ ↓ e PageUp/PageDown rolam, Esc mostra tudo, Ctrl+L limpa a tela.",
     notFound: (cmd: string) => `comando não encontrado: ${cmd}`,
     tryHelp: "Digite ajuda para ver os comandos.",
     emptyExperience:
@@ -35,16 +39,17 @@ export const ui = {
     coopJoinDesc: "recebeu um código de 4 letras? Digite e entre na sala.",
     nicknamePlaceholder: "seu apelido (opcional), Enter para jogar",
     roomPlaceholder: "código da sala, ex.: ABCD",
-    gameMenuKeys: "↑ ↓ escolhem, Enter começa, Esc volta ao terminal",
-    menuTitle: "Por onde começar? Clique em um ícone.",
+    gameMenuKeys: touch ? "Toque num modo para jogar." : "↑ ↓ escolhem, Enter começa, Esc volta ao terminal",
+    menuTitle: touch ? "Por onde começar? Toque em um ícone." : "Por onde começar? Clique em um ícone.",
     menuHint: "Ou digite um comando. ajuda lista todos.",
     cvLabel: "Currículo",
-    snakeDesc: "a cobrinha clássica. Setas, WASD ou deslize; Esc pausa.",
+    snakeDesc: touch ? "a cobrinha clássica. Deslize o dedo para virar." : "a cobrinha clássica. Setas, WASD ou deslize; Esc pausa.",
     snakeEasyDesc:
       "a mesma cobrinha, mas as paredes atravessam: bom para começar.",
     snakeEasyTitle: "Snake (fácil)",
-    invadersDesc:
-      "a navinha contra a invasão. ← → movem, Espaço atira; Esc pausa.",
+    invadersDesc: touch
+      ? "a navinha contra a invasão. Arraste para mover; ela atira sozinha."
+      : "a navinha contra a invasão. ← → movem, Espaço atira; Esc pausa.",
     gameUsage: (g: string) => `jogo não encontrado: ${g}`,
     snakeOver: (n: number) => `Snake: melhor rodada ${n}.`,
     invadersOver: (n: number) => `Space Invaders: melhor pontuação ${n}.`,
@@ -150,10 +155,11 @@ export const ui = {
       "mounting /experience and /projects",
       "ready",
     ],
-    welcomeHint: ["Type ", " or click an icon below."],
+    welcomeHint: ["Type ", touch ? " or tap an icon below." : " or click an icon below."],
     helpTitle: "Available commands",
-    helpKeys:
-      "Tab completes, ↑ ↓ browse history (or scroll the output while it streams), Shift+↑ ↓ and PageUp/PageDown scroll, Esc shows everything, Ctrl+L clears the screen.",
+    helpKeys: touch
+      ? "Tap a command to run it."
+      : "Tab completes, ↑ ↓ browse history (or scroll the output while it streams), Shift+↑ ↓ and PageUp/PageDown scroll, Esc shows everything, Ctrl+L clears the screen.",
     notFound: (cmd: string) => `command not found: ${cmd}`,
     tryHelp: "Type help to see the commands.",
     emptyExperience: "Experience is being added. Meanwhile, see LinkedIn:",
@@ -175,16 +181,17 @@ export const ui = {
     coopJoinDesc: "got a 4-letter code? Type it to join the room.",
     nicknamePlaceholder: "your nickname (optional), Enter to play",
     roomPlaceholder: "room code, e.g. ABCD",
-    gameMenuKeys: "↑ ↓ choose, Enter starts, Esc goes back to the terminal",
-    menuTitle: "Where to start? Click an icon.",
+    gameMenuKeys: touch ? "Tap a mode to play." : "↑ ↓ choose, Enter starts, Esc goes back to the terminal",
+    menuTitle: touch ? "Where to start? Tap an icon." : "Where to start? Click an icon.",
     menuHint: "Or type a command. help lists them all.",
     cvLabel: "Resume",
-    snakeDesc: "the classic snake. Arrows, WASD or swipe; Esc pauses.",
+    snakeDesc: touch ? "the classic snake. Swipe to turn." : "the classic snake. Arrows, WASD or swipe; Esc pauses.",
     snakeEasyDesc:
       "the same snake, but the walls wrap around: good to start with.",
     snakeEasyTitle: "Snake (easy)",
-    invadersDesc:
-      "the little ship against the invasion. ← → move, Space fires; Esc pauses.",
+    invadersDesc: touch
+      ? "the little ship against the invasion. Drag to move; it fires on its own."
+      : "the little ship against the invasion. ← → move, Space fires; Esc pauses.",
     gameUsage: (g: string) => `no such game: ${g}`,
     snakeOver: (n: number) => `Snake: best round ${n}.`,
     invadersOver: (n: number) => `Space Invaders: best score ${n}.`,
