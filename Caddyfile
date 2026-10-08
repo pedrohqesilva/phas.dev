@@ -1,0 +1,27 @@
+{
+	admin off
+	persist_config off
+	# Railway terminates TLS.
+	auto_https off
+	log {
+		format json
+	}
+	servers {
+		trusted_proxies static 0.0.0.0/0 ::/0
+	}
+}
+
+:{$PORT:3000} {
+	root * dist
+	encode zstd gzip
+
+	# Hashed build assets never change; everything else (index.html) is revalidated.
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+	@pages not path /assets/*
+	header @pages Cache-Control "no-cache"
+
+	# SPA fallback: /simples and deep links serve index.html.
+	try_files {path} /index.html
+	file_server
+}
