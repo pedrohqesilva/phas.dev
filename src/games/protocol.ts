@@ -4,7 +4,13 @@ import type { InvadersView, ShipInput } from "./invaders-sim.ts";
 /** Snake arena: a fixed grid, the same for everyone; clients scale it to their screen. */
 export const ARENA_COLS = 64;
 export const ARENA_ROWS = 40;
-export const ARENA_TICK_MS = 110;
+/**
+ * The arena's beat. Snakes do not move every beat: each one gathers "move credit" every beat, faster the
+ * shorter it is (arena-rules.ts), and steps a cell whenever it has a whole one. Snapshots go out every
+ * other beat.
+ */
+export const ARENA_TICK_MS = 20;
+export const ARENA_SEND_EVERY = 2;
 /** 0 up, 1 right, 2 down, 3 left. */
 export type Dir = 0 | 1 | 2 | 3;
 export const DIR_STEP: Record<Dir, readonly [number, number]> = {
@@ -13,6 +19,10 @@ export const DIR_STEP: Record<Dir, readonly [number, number]> = {
   2: [0, 1],
   3: [-1, 0],
 };
+
+/** Power-ups on the field: the white super grain (points, grows by three), red (faster), green (shield). */
+export const POWER_KINDS = ["super", "speed", "shield"] as const;
+export type PowerKind = (typeof POWER_KINDS)[number];
 
 /** One snake in an arena snapshot. `body` is flat [x0, y0, x1, y1, …], head first. */
 export interface ArenaSnake {
@@ -23,22 +33,29 @@ export interface ArenaSnake {
   alive: boolean;
   score: number;
   /**
-   * Where it is heading, cells still to grow, and the last turn (`seq`) the server has used: what the
-   * owner's browser needs to predict its own snake ahead of the snapshots.
+   * Where it is heading, cells still to grow, the last turn (`seq`) the server has used, its move credit
+   * and the beat of its last step, and its power-ups' beats left: what a browser needs to play the snake
+   * forward exactly as the server will.
    */
   dir: Dir;
   grow: number;
   ack: number;
+  credit: number;
+  movedAt: number;
+  /** The cell its tail left on the last step, [x, y] (null if it grew instead): for the smooth drawing. */
+  prevTail: [number, number] | null;
+  boost: number;
+  shield: number;
 }
 
 export interface ArenaState {
-  /** Server tick this snapshot was taken at: one every ARENA_TICK_MS. */
+  /** Server beat this snapshot was taken at: one every ARENA_TICK_MS. */
   tick: number;
   snakes: ArenaSnake[];
   /** Flat [x, y, …]. */
   food: number[];
-  /** A super grain: [x, y, ms left], or null. */
-  superFood: [number, number, number] | null;
+  /** Power-ups: [x, y, kind (index in POWER_KINDS), beats left]. */
+  powers: [number, number, number, number][];
   /** Top five of the moment: [name, score]. */
   top: [string, number][];
   /** Humans connected right now. */

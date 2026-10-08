@@ -80,6 +80,7 @@ export const ui = {
       "Setas ou WASD mudam a direção (no celular, deslize).",
       "Coma os quadradinhos para crescer: 1 ponto cada, e a cobra fica 1% mais rápida.",
       "O super grão branco some em 6 s: vale 20 pontos, mas acelera 10%.",
+      "Às vezes surgem grãos vermelho (20% mais rápida por 5 s) e verde (invulnerável por 5 s: atravessa você mesma, os blocos e a parede).",
       "Coma de novo em até 3 s para subir o combo (até ×5). A partir de 30 pontos surgem blocos: não bata.",
       "Não bata na parede nem em você mesma.",
       "Esc pausa; na pausa, Q sai.",
@@ -114,9 +115,13 @@ export const ui = {
     arenaHelp: [
       "Uma arena só para todo mundo que está online agora. Setas, WASD ou deslize.",
       "Coma os quadradinhos para crescer. A parede e qualquer cobra (a sua também) matam.",
+      "Cobra pequena é rápida; quanto maior, mais lenta.",
+      "Super grãos: branco vale 5 pontos e cresce 3; vermelho deixa você 20% mais rápida por 5 s; verde deixa você invulnerável por 5 s (atravessa cobras e paredes).",
       "Quem bate vira comida para os outros e volta em instantes. Com pouca gente, robôs jogam junto.",
       "O jogo não pausa: a arena segue rodando. Esc abre o menu para sair.",
     ],
+    arenaSpeed: "veloz",
+    arenaShield: "escudo",
     arenaOnline: (n: number) =>
       n === 1 ? "1 PESSOA ONLINE" : `${n} PESSOAS ONLINE`,
     arenaTop: "TOP 5",
@@ -240,6 +245,7 @@ export const ui = {
       "Arrows or WASD turn (on a phone, swipe).",
       "Eat the little squares to grow: one point each, and the snake gets 1% faster.",
       "The white super grain fades in 6 s: 20 points, but 10% faster.",
+      "Now and then red (20% faster for 5 s) and green (invulnerable for 5 s: through yourself, blocks and walls) grains appear.",
       "Eat again within 3 s to grow the combo (up to ×5). From 30 points blocks appear: don't hit them.",
       "Don't hit the walls or yourself.",
       "Esc pauses; while paused, Q quits.",
@@ -274,9 +280,13 @@ export const ui = {
     arenaHelp: [
       "One arena for everyone online right now. Arrows, WASD or swipe.",
       "Eat the little squares to grow. Walls and any snake (yours too) kill.",
+      "Small snakes are quick; the bigger, the slower.",
+      "Super grains: white is worth 5 points and grows you by 3; red makes you 20% faster for 5 s; green makes you invulnerable for 5 s (through snakes and walls).",
       "Whoever crashes turns into food for the others and is back in a moment. With few people, bots play too.",
       "The game doesn't pause: the arena keeps going. Esc opens the menu to quit.",
     ],
+    arenaSpeed: "fast",
+    arenaShield: "shield",
     arenaOnline: (n: number) =>
       n === 1 ? "1 PERSON ONLINE" : `${n} PEOPLE ONLINE`,
     arenaTop: "TOP 5",

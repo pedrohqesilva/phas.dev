@@ -1,17 +1,19 @@
 // Snake in the public arena: everyone online shares one grid, simulated on the server. This side sends
 // turns and draws the snapshots: your snake in the accent, the others white with their names, the food,
-// and a live top five. Hit a wall or any snake and you turn into food, then respawn a moment later.
+// the power-ups and a live top five. Hit a wall or any snake and you turn into food, then respawn.
+// Small snakes are quick and big ones slow (arena-rules.ts); the red power-up makes you faster for 5 s and
+// the green one shields you for 5 s (you go through snakes and walls).
 //
-// The server is far (about 160 ms there and back from Brazil), so the snakes are not drawn from the
-// snapshots, which are always a little old: they are played forward here, tick by tick on the server's
-// beat, to the tick a turn pressed now would reach the server on. Yours goes forward with the turns the
-// server has not confirmed yet: a turn is sent for the tick you pressed it on, the server applies it on
-// that same tick, and the snake turns on screen at once, on the cell you saw. The others go forward in a
-// straight line, so everyone is drawn at the same moment and a head-to-head looks as it will play out;
-// when one of them turns, the next snapshot moves it over. The server still decides who eats and who
-// dies. Between ticks the snakes glide (snake-draw.ts), and a dropped connection reconnects on its own and
-// takes the same snake back.
-import { opposite, predict } from "./arena-predict.ts";
+// The server is far (about 160 ms there and back from Brazil), so your snake is not drawn from the
+// snapshots, which are always a little old: it is played forward here, beat by beat on the server's own
+// rules, to the beat a turn pressed now would reach the server on, with the turns the server has not used
+// yet. A turn is sent for your snake's next step as you see it, the server applies it on that step, and
+// the snake turns on screen at once. The other snakes are drawn a moment in the past, gliding into the
+// cell they last stepped into: only steps that already happened, so they never jump back. The beat itself
+// is smoothed, so a jittery network does not shake the picture. The server still decides who eats and who
+// dies. A dropped connection reconnects on its own and takes the same snake back.
+import { opposite, predict, type Predicted } from "./arena-predict.ts";
+import { moveInterval } from "./arena-rules.ts";
 import { connect, pingLabel } from "./net.ts";
 import {
   ARENA_COLS,
@@ -21,7 +23,7 @@ import {
   type Dir,
 } from "./protocol.ts";
 import { openGame, type GameTexts } from "./shell.ts";
-import { drawSnake, swipe } from "./snake-draw.ts";
+import { drawSnakeArriving, swipe } from "./snake-draw.ts";
 
 export interface ArenaTexts extends GameTexts {
   score: string;
@@ -35,6 +37,9 @@ export interface ArenaTexts extends GameTexts {
   unreachable: string;
   full: string;
   bot: string;
+  /** Labels for your active power-ups, with the seconds left after them. */
+  speed: string;
+  shield: string;
 }
 
 const KEYS: Record<string, Dir> = {
@@ -47,6 +52,13 @@ const KEYS: Record<string, Dir> = {
   ArrowLeft: 3,
   a: 3,
 };
+
+/** Power-up colours, by kind: the super grain white, faster red, shield green. */
+const POWER_COLORS = ["#ffffff", "#ff4d4d", "#3ddc84"];
+/** The others are drawn this many beats behind the latest snapshot's beat: room for network jitter. */
+const OTHERS_DELAY = 2.5;
+/** Your snake is drawn this many beats beyond the round trip: room for jitter on the way up. */
+const OWN_MARGIN = 1;
 
 /** Joins the arena as `name`; `onExit` gets the best score of the session and an error, if any. */
 export function playSnakeArena(
@@ -61,16 +73,19 @@ export function playSnakeArena(
   let best = 0;
   let note: string | undefined;
   let reconnecting = false;
-  /** Arrival time minus tick × tick length, for recent snapshots: the smallest is the beat with no jitter. */
+  /** Arrival time minus beat × beat length, for recent snapshots: the smallest is the beat with no jitter. */
   let offsets: number[] = [];
-  /** Turns sent and not yet confirmed by the server. */
+  /** The beat on screen: follows the network's, smoothed. Null until the first snapshot. */
+  let shownBeat: number | null = null;
+  let smoothRtt = 0;
+  /** Turns sent and not yet used by the server. */
   let pending: { dir: Dir; at: number; seq: number }[] = [];
   let seq = 0;
   let wasAlive = false;
-  /** Your snake as on screen this frame: the tick it is drawn at and where it is heading. */
-  let shown: { tick: number; dir: Dir } | null = null;
+  /** Your snake as on screen this frame. */
+  let mine: Predicted | null = null;
 
-  /** Ticks since the server's tick 0 arrived, on its beat, as a fraction. */
+  /** Beats since the server's beat 0, by the network: when the latest snapshot "should" have arrived. */
   const beat = (t: number) => (t - Math.min(...offsets)) / ARENA_TICK_MS;
   let cell = 10;
   let ox = 0;
@@ -92,7 +107,7 @@ export function playSnakeArena(
         const me = state.snakes.find((s) => s.id === you);
         if (me) {
           best = Math.max(best, me.score);
-          // Confirmed turns leave the queue; a death or a new life starts it over.
+          // Used turns leave the queue; a death or a new life starts it over.
           pending =
             me.alive && wasAlive ? pending.filter((p) => p.seq > me.ack) : [];
           wasAlive = me.alive;
@@ -100,9 +115,10 @@ export function playSnakeArena(
       } else if (msg.t === "arena.full") note = texts.full;
     },
     reconnecting() {
-      // The beat and the unconfirmed turns belong to the old connection.
+      // The beat and the unused turns belong to the old connection.
       reconnecting = true;
       offsets = [];
+      shownBeat = null;
       pending = [];
     },
     close(opened) {
@@ -112,14 +128,14 @@ export function playSnakeArena(
   });
 
   const turn = (dir: Dir) => {
-    if (!shown || !wasAlive || reconnecting || pending.length >= 3) return;
+    if (!mine || !wasAlive || reconnecting || pending.length >= 3) return;
     // Against where the snake will be heading after the turns still to come: the server ignores reversals
-    // too, and repeats would only take up a tick.
-    const last = pending.at(-1);
-    const heading = last && last.at > shown.tick ? last.dir : shown.dir;
+    // too, and repeats would only take up a step.
+    const heading = mine.waiting.at(-1)?.dir ?? mine.dir;
     if (dir === heading || opposite(dir, heading)) return;
-    // Meant for the next tick on screen (one turn per tick, like the server takes them).
-    const at = Math.max(shown.tick + 1, (last?.at ?? 0) + 1);
+    // Meant for the snake's next step on screen (one turn per step, like the server takes them).
+    const last = pending.at(-1);
+    const at = Math.max(mine.nextMoveAt, (last?.at ?? 0) + 1);
     pending.push({ dir, at, seq: ++seq });
     net.send({ t: "arena.dir", dir, seq, at });
   };
@@ -161,7 +177,15 @@ export function playSnakeArena(
     g.fillText(str, x, y);
   };
 
-  shell.loop((now) => {
+  /** How far (0 to 1) a snake is into its last step at beat `at`. */
+  const progress = (
+    at: number,
+    movedAt: number,
+    cells: number,
+    boosted: boolean,
+  ) => (at - movedAt) / (moveInterval(cells, boosted) / ARENA_TICK_MS);
+
+  shell.loop((now, dt) => {
     g.fillStyle = "#000";
     g.fillRect(0, 0, shell.width, shell.height);
     g.fillStyle = shell.accent;
@@ -190,42 +214,31 @@ export function playSnakeArena(
     }
     const s = state;
     const me = s.snakes.find((sn) => sn.id === you);
-    // The moment drawn: the tick a turn pressed now reaches the server on, and how far into it we are.
-    const ahead = beat(performance.now()) + net.rtt() / ARENA_TICK_MS;
-    const tick = Math.floor(ahead);
-    const progress = ahead - tick;
 
-    // Every snake played forward to that tick (yours with your waiting turns), and one tick further for
-    // the glide into the next cell.
-    const eaten = new Set<number>();
-    const sprites = s.snakes
-      .filter((sn) => sn.alive && sn.body.length)
-      .map((sn) => {
-        const mine = sn.id === you;
-        const turns = mine ? pending : [];
-        const now0 = predict(sn, s, turns, tick);
-        const now1 = predict(sn, s, turns, tick + 1);
-        for (const c of now0.eaten) eaten.add(c);
-        if (mine) shown = { tick, dir: now0.dir };
-        const moved =
-          now1.body[0] !== now0.body[0] || now1.body[1] !== now0.body[1];
-        return {
-          sn,
-          mine,
-          sprite: {
-            body: now0.body,
-            next: moved ? ([now1.body[0], now1.body[1]] as const) : null,
-            growing: now1.body.length > now0.body.length,
-          },
-        };
-      });
-    if (!me?.alive) shown = null;
+    // The beat on screen runs at its own pace and leans gently towards the network's, so jitter and a
+    // changing round trip do not shake the picture; a big gap (a stalled tab) snaps.
+    const target = beat(performance.now());
+    if (shownBeat === null || Math.abs(target - shownBeat) > 4)
+      shownBeat = target;
+    else shownBeat += dt / ARENA_TICK_MS + (target - shownBeat) * 0.05;
+    smoothRtt = smoothRtt
+      ? smoothRtt + (net.rtt() - smoothRtt) * 0.03
+      : net.rtt();
+    const ownBeat = shownBeat + smoothRtt / ARENA_TICK_MS + OWN_MARGIN;
+    const othersBeat = shownBeat - OTHERS_DELAY;
 
-    // Food: small squares; the super grain a blinking white cell. What a snake is eating on screen is gone.
+    // Yours: played forward to the beat a turn pressed now reaches the server on.
+    mine =
+      me?.alive && me.body.length
+        ? predict(me, s, pending, Math.floor(ownBeat))
+        : null;
+    const eaten = mine?.eaten ?? new Set<number>();
+
+    // Food: small squares. Power-ups: a full cell in their colour, blinking faster in their last 2 s.
     g.globalAlpha = 0.85;
+    const pad = Math.max(1, Math.round(cell * 0.3));
     for (let i = 0; i < s.food.length; i += 2) {
       if (eaten.has(s.food[i + 1] * ARENA_COLS + s.food[i])) continue;
-      const pad = Math.max(1, Math.round(cell * 0.3));
       g.fillRect(
         ox + s.food[i] * cell + pad,
         oy + s.food[i + 1] * cell + pad,
@@ -233,51 +246,85 @@ export function playSnakeArena(
         cell - pad * 2,
       );
     }
-    if (s.superFood) {
-      const [x, y, left] = s.superFood;
-      g.globalAlpha = Math.floor(now / (left < 2000 ? 90 : 260)) % 2 ? 1 : 0.45;
-      g.fillStyle = "#fff";
+    for (const [x, y, kind, left] of s.powers) {
+      if (eaten.has(y * ARENA_COLS + x)) continue;
+      const leftMs = left * ARENA_TICK_MS;
+      g.globalAlpha =
+        Math.floor(now / (leftMs < 2000 ? 90 : 260)) % 2 ? 1 : 0.5;
+      g.fillStyle = POWER_COLORS[kind];
       g.fillRect(ox + x * cell + 1, oy + y * cell + 1, cell - 2, cell - 2);
-      g.fillStyle = shell.accent;
     }
+    g.globalAlpha = 1;
 
-    // Snakes: yours in the accent (drawn last, on top), the others white (bots dimmer) with their names.
-    for (const { sn, mine, sprite } of sprites.sort(
-      (a, b) => Number(a.mine) - Number(b.mine),
-    )) {
-      g.fillStyle = mine ? shell.accent : "#fff";
-      const dim = mine ? 1 : sn.bot ? 0.45 : 0.75;
-      drawSnake(
+    // Snakes: the others first (white, bots dimmer, named), then yours in the accent, on top. Faster ones
+    // turn red and shielded ones green while it lasts.
+    const colorOf = (base: string, boost: number, shield: number) =>
+      shield > 0
+        ? Math.floor(now / (shield * ARENA_TICK_MS < 1500 ? 90 : 400)) % 2
+          ? POWER_COLORS[2]
+          : base
+        : boost > 0
+          ? POWER_COLORS[1]
+          : base;
+    for (const sn of s.snakes) {
+      if (sn.id === you || !sn.alive || !sn.body.length) continue;
+      const cells = sn.body.length / 2;
+      const dim = sn.bot ? 0.45 : 0.75;
+      g.fillStyle = colorOf("#fff", sn.boost, sn.shield);
+      drawSnakeArriving(
         g,
-        sprite,
+        sn.body,
+        sn.prevTail,
         cell,
         ox,
         oy,
-        progress,
+        progress(othersBeat, sn.movedAt, cells, sn.boost > 0),
         (i, n) => (i === 0 ? 1 : Math.max(0.35, 1 - i / (n + 8))) * dim,
       );
-      if (!mine) {
-        g.globalAlpha = sn.bot ? 0.45 : 0.8;
-        text(
-          sn.bot ? `${sn.name} ${texts.bot}` : sn.name,
-          ox + sprite.body[0] * cell + cell / 2,
-          oy + sprite.body[1] * cell - 4,
-          10,
-          "center",
-        );
-      }
+      g.globalAlpha = sn.bot ? 0.45 : 0.8;
+      g.fillStyle = "#fff";
+      text(
+        sn.bot ? `${sn.name} ${texts.bot}` : sn.name,
+        ox + sn.body[0] * cell + cell / 2,
+        oy + sn.body[1] * cell - 4,
+        10,
+        "center",
+      );
+    }
+    if (mine) {
+      g.fillStyle = colorOf(shell.accent, mine.boost, mine.shield);
+      drawSnakeArriving(
+        g,
+        mine.body,
+        mine.prevTail,
+        cell,
+        ox,
+        oy,
+        progress(ownBeat, mine.movedAt, mine.body.length / 2, mine.boost > 0),
+        (i, n) => (i === 0 ? 1 : Math.max(0.35, 1 - i / (n + 8))),
+      );
     }
     g.globalAlpha = 1;
     g.fillStyle = shell.accent;
 
-    // HUD: your score and best on the left, who is online in the middle, the round trip on the right,
-    // the top five inside the arena's corner.
+    // HUD: score, best and your power-ups on the left, who is online in the middle, the round trip on the
+    // right, the top five inside the arena's corner.
     g.globalAlpha = 0.8;
-    text(
-      `${texts.score} ${me?.score ?? 0}   ${texts.best} ${best}`,
-      ox,
-      oy - 12,
-    );
+    const scoreText = `${texts.score} ${me?.score ?? 0}   ${texts.best} ${best}`;
+    text(scoreText, ox, oy - 12);
+    g.font = `13px "Geist Mono Variable", ui-monospace, monospace`;
+    let hudX = ox + g.measureText(scoreText).width + 16;
+    for (const [label, beats, color] of [
+      [texts.speed, mine?.boost ?? 0, POWER_COLORS[1]],
+      [texts.shield, mine?.shield ?? 0, POWER_COLORS[2]],
+    ] as const) {
+      if (beats <= 0) continue;
+      const str = `${label} ${Math.ceil((beats * ARENA_TICK_MS) / 1000)}s`;
+      g.fillStyle = color;
+      text(str, hudX, oy - 12);
+      hudX += g.measureText(str).width + 12;
+    }
+    g.fillStyle = shell.accent;
     text(
       texts.online(s.online),
       ox + (cell * ARENA_COLS) / 2,

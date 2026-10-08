@@ -105,6 +105,8 @@ function startSnake({ t, print, focus, replaying }: Ctx, easy = false) {
       resume: t.gameResume,
       score: t.gameScore,
       best: t.gameBest,
+      speed: t.arenaSpeed,
+      shield: t.arenaShield,
     },
     (best) => {
       print(muted(t.snakeOver(best)));
@@ -206,6 +208,8 @@ function startArena({ t, print, focus, replaying }: Ctx, name = "") {
       unreachable: t.netUnreachable,
       full: t.arenaFull,
       bot: t.arenaBot,
+      speed: t.arenaSpeed,
+      shield: t.arenaShield,
     },
     name,
     (best, note) => {
@@ -957,9 +961,11 @@ export const commands: Command[] = [
         h("pre", { class: "ascii" }, HIRE[lang]),
         line(
           ...join(
-            [name("email", lang), name("linkedin", lang), name("contact", lang)].map(
-              (c) => cmd(c),
-            ),
+            [
+              name("email", lang),
+              name("linkedin", lang),
+              name("contact", lang),
+            ].map((c) => cmd(c)),
           ),
         ),
       );
@@ -972,7 +978,10 @@ export const commands: Command[] = [
   },
   {
     id: "neofetch",
-    names: { pt: ["neofetch", "fastfetch", "sistema"], en: ["neofetch", "fastfetch", "system"] },
+    names: {
+      pt: ["neofetch", "fastfetch", "sistema"],
+      en: ["neofetch", "fastfetch", "system"],
+    },
     run: (_, { lang, t, print }) =>
       print(
         h(
@@ -1000,7 +1009,9 @@ export const commands: Command[] = [
     id: "cowsay",
     names: { pt: ["cowsay", "vaca"], en: ["cowsay", "cow"] },
     run: (args, { lang, print }) =>
-      print(h("pre", { class: "ascii" }, cowsay(args.join(" ") || fortune(lang)))),
+      print(
+        h("pre", { class: "ascii" }, cowsay(args.join(" ") || fortune(lang))),
+      ),
   },
   {
     id: "matrix",
@@ -1011,7 +1022,10 @@ export const commands: Command[] = [
   },
   {
     id: "vim",
-    names: { pt: ["vim", "vi", "nano", "emacs"], en: ["vim", "vi", "nano", "emacs"] },
+    names: {
+      pt: ["vim", "vi", "nano", "emacs"],
+      en: ["vim", "vi", "nano", "emacs"],
+    },
     run: (_, { lang, print }) => print(line(JOKES.vim[lang])),
   },
   {
