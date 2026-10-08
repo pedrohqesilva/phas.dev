@@ -24,12 +24,6 @@ const esc = (s: string) =>
 const tags = (items: string[]) =>
   `<p class="tags">${items.map((i) => `<span class="tag">${esc(i)}</span>`).join("")}</p>`;
 
-/** "Label: text" with the label in bold, like the terminal. */
-const highlight = (text: string) => {
-  const cut = text.indexOf(": ");
-  return cut < 0 || cut > 40 ? esc(text) : `<strong>${esc(text.slice(0, cut + 1))}</strong>${esc(text.slice(cut + 1))}`;
-};
-
 const a = (url: string, label: string) =>
   `<a href="${esc(url)}" rel="noopener" target="_blank">${esc(label)}</a>`;
 
@@ -57,8 +51,8 @@ export function renderStatic(lang: Lang): string {
   <img class="job-logo" src="${p.logo}" alt="" width="18" height="18" />
   <h3 class="job-head">${a(p.url, p.name)} <span class="meta">${esc(p.period[lang])}</span></h3>
   <p class="job-role">${esc(p.role[lang])}</p>
-  <p class="meta"><em>${esc(p.tagline[lang])}</em> ${esc(p.description[lang])} ${esc(p.status[lang])}</p>
-  <ul>${p.highlights.map((x) => `<li>${highlight(x[lang])}</li>`).join("")}</ul>
+  <p class="meta">${esc(p.summary[lang])} ${esc(p.status[lang])}</p>
+  <ul>${p.bullets.map((x) => `<li>${esc(x[lang])}</li>`).join("")}</ul>
   ${tags(p.stack)}
 </article>`,
     )

@@ -50,7 +50,10 @@ export interface Project {
   role: L;
   tagline: L;
   description: L;
+  /** The terminal's full list; the resume uses `summary` and `bullets`, short like a job's. */
   highlights: L[];
+  summary: L;
+  bullets: L[];
   stack: string[];
 }
 
@@ -395,6 +398,28 @@ export const projects: Project[] = [
     status: { pt: "Em produção com clínicas beta.", en: "In production with beta clinics." },
     role: { pt: "CEO & Founder", en: "CEO & Founder" },
     tagline: { pt: "Cuidar de gente, não de planilha.", en: "Care for people, not spreadsheets." },
+    summary: {
+      pt: "Sistema de gestão para clínicas pequenas, do agendamento ao financeiro, começando pela odontologia.",
+      en: "Management system for small clinics, from scheduling to finance, starting with dentistry.",
+    },
+    bullets: [
+      {
+        pt: "Monorepo com web, app, site e backend em Convex: multi-tenant, tempo real em todas as telas e permissões granulares por ação.",
+        en: "Monorepo with web, app, site and a Convex backend: multi-tenant, real time on every screen and fine-grained permissions per action.",
+      },
+      {
+        pt: "IA dentro do fluxo clínico: assistente que consulta agenda e pacientes por chamadas de ferramentas, e consulta gravada que vira prontuário SOAP.",
+        en: "AI inside the clinical workflow: an assistant that queries schedules and patients through tool calls, and recorded visits that become SOAP notes.",
+      },
+      {
+        pt: "Gestão completa num lugar só: agenda, prontuário, odontograma, orçamentos, financeiro com repasse por profissional e estoque com importação de NF-e.",
+        en: "The whole clinic in one place: scheduling, health records, odontogram, quotes, finance with per-professional payouts and inventory with invoice import.",
+      },
+      {
+        pt: "Feito para o Brasil: WhatsApp nos dois sentidos, assinatura digital ICP-Brasil, auditoria LGPD e cobrança por PIX e boleto na conta da própria clínica.",
+        en: "Built for Brazil: two-way WhatsApp, ICP-Brasil digital signatures, an LGPD audit trail and PIX and boleto charges straight to the clinic's own account.",
+      },
+    ],
     description: {
       pt: "Gestão para clínicas pequenas e profissionais autônomos, começando pela odontologia: agenda, prontuário, financeiro, estoque e WhatsApp num lugar só.",
       en: "Management for small clinics and solo practitioners, starting with dentistry: scheduling, health records, billing, inventory and WhatsApp in one place.",
@@ -435,6 +460,28 @@ export const projects: Project[] = [
     status: { pt: "Em produção com transportadoras beta.", en: "In production with beta trucking companies." },
     role: { pt: "CEO & Founder", en: "CEO & Founder" },
     tagline: { pt: "Menos planilha. Mais estrada.", en: "Less spreadsheet. More road." },
+    summary: {
+      pt: "Sistema para transportadoras: frota e cargas acompanhadas em tempo real, do escritório à estrada.",
+      en: "System for trucking companies: fleet and loads tracked in real time, from the office to the road.",
+    },
+    bullets: [
+      {
+        pt: "Reaproveitei a base do Vittz (multi-tenant, autenticação, permissões e auditoria) e coloquei um segundo SaaS em produção em poucos meses.",
+        en: "Reused the Vittz foundation (multi-tenancy, auth, permissions and auditing) and took a second SaaS to production in a few months.",
+      },
+      {
+        pt: "Monorepo com web, app do motorista em Expo, site e central de ajuda, sobre um backend Convex em tempo real.",
+        en: "Monorepo with web, an Expo driver app, site and help center, on a real-time Convex backend.",
+      },
+      {
+        pt: "Torre de Controle com a frota no mapa ao vivo e Jornada da Carga, que acompanha cada entrega contra o prazo.",
+        en: "A Control Tower with the fleet on a live map, and a Load Journey that tracks every delivery against its deadline.",
+      },
+      {
+        pt: "App do motorista com login sem senha e Face ID, e WhatsApp integrado com transcrição e resumo de conversas por IA.",
+        en: "A driver app with passwordless login and Face ID, and built-in WhatsApp with AI transcription and chat summaries.",
+      },
+    ],
     description: {
       pt: "A torre de controle da transportadora: cada caminhão no mapa e cada carga acompanhada até a entrega, do escritório à estrada.",
       en: "A control tower for trucking companies: every truck on the map and every load tracked until delivery, from the office to the road.",
