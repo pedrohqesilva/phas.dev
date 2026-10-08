@@ -23,6 +23,8 @@ interface Hooks {
 }
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+/** Touch screens: focusing the prompt opens the on-screen keyboard, so only a tap on the prompt does it. */
+const touch = matchMedia("(pointer: coarse)");
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** The pieces of a block that appear one at a time when output streams in. */
@@ -153,13 +155,16 @@ export class Terminal {
 
   /** Types a command into the prompt, then runs it. Clicking shows that chips are just commands. */
   async type(command: string) {
-    this.focus();
+    // On a phone a tapped command runs with the keyboard closed; on a desktop the prompt keeps focus.
+    if (touch.matches) this.input.blur();
+    else this.focus();
     if (reducedMotion) return this.run(command);
     const id = ++this.typing;
     const input = this.input;
     for (let i = 1; i <= command.length; i++) {
       input.value = command.slice(0, i);
-      input.setSelectionRange(i, i);
+      // Moving the caret of an unfocused field can focus it on iOS (and open the keyboard).
+      if (document.activeElement === input) input.setSelectionRange(i, i);
       this.syncCursor();
       await sleep(i === 1 ? 40 : 24);
       if (id !== this.typing) return;
@@ -171,7 +176,9 @@ export class Terminal {
     this.run(command);
   }
 
+  /** Puts the caret in the prompt, except on touch screens, where that would pop the keyboard up. */
   focus() {
+    if (touch.matches) return;
     this.input.focus({ preventScroll: true });
   }
 
