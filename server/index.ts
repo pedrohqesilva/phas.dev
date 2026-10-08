@@ -103,13 +103,14 @@ const inlineScriptHashes = [
 ];
 const CSP = [
   "default-src 'self'",
-  `script-src 'self' ${inlineScriptHashes.join(" ")}`,
+  // Cloudflare Web Analytics (cookieless) is injected at the edge: its beacon script and where it reports.
+  `script-src 'self' ${inlineScriptHashes.join(" ")} https://static.cloudflareinsights.com`,
   // Inline styles: the first-paint colours in the HTML and the styles the terminal sets on the fly.
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self'",
   // The game WebSocket.
-  "connect-src 'self' wss://phas.dev",
+  "connect-src 'self' wss://phas.dev https://cloudflareinsights.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
