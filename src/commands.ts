@@ -233,7 +233,7 @@ const takeNick = (raw: string) => {
 };
 
 /** Co-op Space Invaders on the server: creates a room (and prints its link) or joins `room`. */
-function startCoop({ t, print, focus, replaying }: Ctx, room?: string) {
+function startCoop({ t, print, focus, replaying, lang }: Ctx, room?: string) {
   if (replaying) return;
   playInvadersCoop(
     {
@@ -258,7 +258,7 @@ function startCoop({ t, print, focus, replaying }: Ctx, room?: string) {
       room: room?.toUpperCase(),
       onRoom(code) {
         // The link goes to the clipboard when the browser allows it, and stays printed in the terminal.
-        const url = `${location.origin}/#coop-${code}`;
+        const url = inviteUrl(lang, "coop", code);
         navigator.clipboard?.writeText(url).catch(() => {});
         print(line(t.coopLink, " ", link(url)));
       },
@@ -443,11 +443,18 @@ const versusTexts = (t: UI): VersusTexts => ({
   notFound: t.coopNotFound,
 });
 
+/**
+ * A room's invite link: phas.dev/pong/ABCD (with /en in front from the English site), whose preview in a
+ * chat shows the game and the room.
+ */
+const inviteUrl = (lang: Lang, game: string, code: string) =>
+  `${location.origin}${lang === "en" ? "/en" : ""}/${game}/${code}`;
+
 /** Prints a versus room's invite link (and copies it) when the room is created. */
 const announceRoom =
-  ({ t, print }: Ctx, game: "pong" | "tetris" | "invaders") =>
+  ({ t, print, lang }: Ctx, game: "pong" | "tetris" | "invaders") =>
   (code: string) => {
-    const url = `${location.origin}/#${game}-${code}`;
+    const url = inviteUrl(lang, game, code);
     navigator.clipboard?.writeText(url).catch(() => {});
     print(line(t.versusLink, " ", link(url)));
   };

@@ -41,6 +41,8 @@ jobs:
           # `curl phas.dev`: terminals get the resume as coloured text.
           curl -sI localhost:8080/ | grep -qi '^content-type: text/plain'
           curl -s localhost:8080/en | grep -q 'Senior Software Engineer'
+          # Invites preview the match in a chat.
+          curl -s -A Mozilla/5.0 localhost:8080/pong/ABCD | grep -q 'og:image" content="https://phas.dev/og/pong.png'
 
   # The production image, built and started as Railway runs it: catches a file the image leaves out.
   docker:

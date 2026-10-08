@@ -117,10 +117,7 @@ export function playInvadersVersus(
           msg.players < 2
             ? [
                 versus.waiting,
-                versus.share.replace(
-                  "{link}",
-                  `phas.dev/#invaders-${msg.room}`,
-                ),
+                versus.share.replace("{link}", `phas.dev/invaders/${msg.room}`),
               ]
             : [];
       } else if (msg.t === "invaders.start") {

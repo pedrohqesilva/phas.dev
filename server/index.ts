@@ -16,6 +16,7 @@ import { gzipSync } from "node:zlib";
 import { attachGames } from "./games.ts";
 import { fromCloudflare, visitorAddress } from "./origin.ts";
 import { handleScores } from "./scores.ts";
+import { INVITE_PATH, inviteHead, type InviteGame } from "../src/seo.ts";
 
 const PORT = Number(process.env.PORT ?? 8080);
 const DIST = resolve(process.env.DIST ?? "dist");
@@ -189,6 +190,34 @@ function serveStatic(req: IncomingMessage, res: ServerResponse) {
   if (req.method !== "GET" && req.method !== "HEAD") {
     res.writeHead(405, { Allow: "GET, HEAD" }).end();
     return;
+  }
+  // Invites (phas.dev/pong/ABCD): the terminal, with a head that previews the match in a chat.
+  const invite = INVITE_PATH.exec(path);
+  if (invite && (req.method === "GET" || req.method === "HEAD")) {
+    const lang = invite[1] ? "en" : "pt";
+    const page = files.get(lang === "en" ? "/en.html" : "/index.html");
+    if (page) {
+      const html = Buffer.from(
+        page.body
+          .toString()
+          .replace(
+            /<!--head:start-->[\s\S]*?<!--head:end-->/,
+            `<!--head:start-->${inviteHead(lang, invite[2].toLowerCase() as InviteGame, invite[3])}<!--head:end-->`,
+          ),
+      );
+      const gzip = /\bgzip\b/.test(
+        String(req.headers["accept-encoding"] ?? ""),
+      );
+      res.writeHead(200, {
+        "Content-Type": page.type,
+        "Cache-Control": cacheControl(path, 200),
+        Vary: "Accept-Encoding",
+        ...SECURITY_HEADERS,
+        ...(gzip ? { "Content-Encoding": "gzip" } : {}),
+      });
+      res.end(req.method === "HEAD" ? undefined : gzip ? gzipSync(html) : html);
+      return;
+    }
   }
   const route = ROUTES[path.replace(/(.)\/$/, "$1").toLowerCase()];
   // `curl phas.dev`: a terminal asking for a page gets the resume in colour, in the page's language.

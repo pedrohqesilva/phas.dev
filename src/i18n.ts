@@ -143,7 +143,7 @@ export const ui = {
       "O jogo não pausa: Esc abre o menu para sair.",
     ],
     coopWaiting: "AGUARDANDO O PARCEIRO",
-    coopShare: "mande o link phas.dev/#coop-{code}",
+    coopShare: "mande o link phas.dev/coop/{code}",
     coopLink:
       "Sala criada. Mande este link para quem vai jogar com você (já copiei):",
     coopPartnerLeft: "O parceiro saiu da sala.",
@@ -376,7 +376,7 @@ export const ui = {
       "The game doesn't pause: Esc opens the menu to quit.",
     ],
     coopWaiting: "WAITING FOR YOUR PARTNER",
-    coopShare: "send the link phas.dev/#coop-{code}",
+    coopShare: "send the link phas.dev/coop/{code}",
     coopLink:
       "Room created. Send this link to whoever plays with you (already copied):",
     coopPartnerLeft: "Your partner left the room.",

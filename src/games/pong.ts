@@ -276,7 +276,7 @@ export function playPongOnline(
           msg.players < 2
             ? [
                 versus.waiting,
-                versus.share.replace("{link}", `phas.dev/#pong-${msg.room}`),
+                versus.share.replace("{link}", `phas.dev/pong/${msg.room}`),
               ]
             : [];
       } else if (msg.t === "pong.start") {

@@ -434,7 +434,7 @@ export function playTetrisVersus(
           msg.players < 2
             ? [
                 versus.waiting,
-                versus.share.replace("{link}", `phas.dev/#tetris-${msg.room}`),
+                versus.share.replace("{link}", `phas.dev/tetris/${msg.room}`),
               ]
             : [];
       } else if (msg.t === "tetris.start") {

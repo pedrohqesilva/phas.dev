@@ -7,7 +7,7 @@ import { cmd, h } from "./dom.ts";
 import { matrixBackdrop } from "./fun.ts";
 import { ui } from "./i18n.ts";
 import { icon } from "./icons.ts";
-import { pageTitle, pathFor } from "./seo.ts";
+import { INVITE_PATH, pageTitle, pathFor } from "./seo.ts";
 import { renderStatic } from "./static.ts";
 import { Terminal } from "./terminal.ts";
 
@@ -48,8 +48,12 @@ const isBot = /bot|crawl|spider|slurp|preview|headless|lighthouse/i.test(
   navigator.userAgent,
 );
 
+/** An invite opened from its link (phas.dev/pong/ABCD, /en/pong/ABCD): [, "en"?, game, code]. */
+const invitePath = INVITE_PATH.exec(location.pathname);
+
 const initialLang: Lang =
   PATH_LANG[currentPath()] ??
+  (invitePath?.[1] ? "en" : null) ??
   (isBot ? "pt" : null) ??
   (store.get("lang") as Lang | null) ??
   (navigator.language.toLowerCase().startsWith("pt") ? "pt" : "en");
@@ -291,7 +295,8 @@ async function boot() {
     // The game opens over the terminal; leaving it lands on the home address.
     history.replaceState(null, "", pathFor("home", term.lang));
     term.run(`${term.lang === "pt" ? "jogos" : "games"} ${game}`);
-  } else if (!runQuery() && !runHash()) startMenu();
+  } else if (invitePath) joinInvite(invitePath[2], invitePath[3]);
+  else if (!runQuery() && !runHash()) startMenu();
   if (!navigator.onLine) offlineNote();
   term.focus();
 }
@@ -303,24 +308,31 @@ function offlineNote() {
 addEventListener("offline", offlineNote);
 
 /**
+ * Joins the room of an invite. It is used once: the address goes back to the home page, so a reload does
+ * not try to join the same room again.
+ */
+function joinInvite(game: string, code: string) {
+  history.replaceState(null, "", pathFor("home", term.lang));
+  const games = term.lang === "pt" ? "jogos" : "games";
+  const room = code.toUpperCase();
+  const kind = game.toLowerCase();
+  term.run(
+    kind === "coop"
+      ? `${games} invaders coop ${room}`
+      : `${games} ${kind} ${kind === "pong" ? "online" : "versus"} ${room}`,
+  );
+}
+
+/**
  * Deep links: #projetos runs that command; #coop-ABCD (a co-op invite) joins that Space Invaders room.
  * True when the hash did something.
  */
 function runHash(): boolean {
   const hash = decodeURIComponent(location.hash.slice(1));
-  // Invites: #coop-ABCD (Space Invaders co-op), #invaders-ABCD (its versus), #pong-ABCD, #tetris-ABCD.
+  // Older invites: #coop-ABCD, #invaders-ABCD, #pong-ABCD, #tetris-ABCD.
   const invite = /^(coop|invaders|pong|tetris)-([a-z]{4})$/i.exec(hash);
   if (invite) {
-    // An invite is used once: a reload must not try to join the same room again.
-    history.replaceState(null, "", location.pathname);
-    const games = term.lang === "pt" ? "jogos" : "games";
-    const room = invite[2].toUpperCase();
-    const kind = invite[1].toLowerCase();
-    term.run(
-      kind === "coop"
-        ? `${games} invaders coop ${room}`
-        : `${games} ${kind} ${kind === "pong" ? "online" : "versus"} ${room}`,
-    );
+    joinInvite(invite[1], invite[2]);
     return true;
   }
   if (hash && resolve(hash)) {

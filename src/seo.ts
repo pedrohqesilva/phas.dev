@@ -396,3 +396,53 @@ Components: Vite, Geist Mono
 Source: https://github.com/pedrohqesilva/phas.dev
 `;
 }
+
+/** Games with invite links, and what their previews call them. */
+export const INVITE_GAMES = {
+  pong: { name: "Pong", mode: { pt: "1x1", en: "1v1" } },
+  tetris: { name: "Tetris", mode: { pt: "versus", en: "versus" } },
+  invaders: { name: "Space Invaders", mode: { pt: "versus", en: "versus" } },
+  coop: { name: "Space Invaders", mode: { pt: "em dupla", en: "co-op" } },
+} as const;
+export type InviteGame = keyof typeof INVITE_GAMES;
+
+/** An invite's address: /pong/ABCD, or /en/pong/ABCD for an invite sent from the English site. */
+export const INVITE_PATH =
+  /^\/(?:(en)\/)?(coop|invaders|pong|tetris)\/([a-z]{4})\/?$/i;
+
+/**
+ * The head of an invite page (phas.dev/pong/ABCD): what a link preview shows, in the inviter's language,
+ * with the game's own picture. Not for search engines: the room is gone in minutes.
+ */
+export function inviteHead(lang: Lang, game: InviteGame, code: string): string {
+  const g = INVITE_GAMES[game];
+  const room = code.toUpperCase();
+  const title =
+    lang === "pt"
+      ? `Bora jogar ${g.name} ${g.mode.pt}? Sala ${room} no phas.dev`
+      : `Up for ${g.name} ${g.mode.en}? Room ${room} on phas.dev`;
+  const description =
+    lang === "pt"
+      ? `Você foi chamado para uma partida de ${g.name} online. Abra o link e entre direto na sala, sem cadastro.`
+      : `You've been invited to an online ${g.name} match. Open the link to jump straight into the room, no sign-up.`;
+  const url = `${SITE}${lang === "en" ? "/en" : ""}/${game}/${room}`;
+  const image = `${SITE}/og/${game}.png`;
+  return [
+    `<title>${esc(title)}</title>`,
+    `<meta name="description" content="${esc(description)}" />`,
+    `<meta name="robots" content="noindex" />`,
+    `<meta property="og:type" content="website" />`,
+    `<meta property="og:site_name" content="phas.dev" />`,
+    `<meta property="og:url" content="${url}" />`,
+    `<meta property="og:title" content="${esc(title)}" />`,
+    `<meta property="og:description" content="${esc(description)}" />`,
+    `<meta property="og:locale" content="${lang === "pt" ? "pt_BR" : "en_US"}" />`,
+    `<meta property="og:image" content="${image}" />`,
+    `<meta property="og:image:width" content="1200" />`,
+    `<meta property="og:image:height" content="630" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
+    `<meta name="twitter:title" content="${esc(title)}" />`,
+    `<meta name="twitter:description" content="${esc(description)}" />`,
+    `<meta name="twitter:image" content="${image}" />`,
+  ].join("\n    ");
+}

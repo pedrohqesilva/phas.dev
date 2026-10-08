@@ -106,7 +106,7 @@
   </tr>
 </table>
 
-As salas online são compartilhadas por link, como `phas.dev/#pong-abcd`.
+As salas online são compartilhadas por link, como `phas.dev/pong/ABCD`, que aparece no chat como um cartão com o jogo e a sala.
 
 ### 🎨 Temas
 
