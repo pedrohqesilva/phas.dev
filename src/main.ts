@@ -118,7 +118,7 @@ function setTheme(theme: Theme) {
 // /curriculo, /resume and /cv are the same page: the simple version is the resume (and prints as one).
 const SIMPLE_PATHS = ["/simples", "/simple", "/curriculo", "/resume", "/cv"];
 const isSimplePath = () =>
-  SIMPLE_PATHS.includes(location.pathname.replace(/\/$/, ""));
+  SIMPLE_PATHS.includes(location.pathname.replace(/\/$/, "").toLowerCase());
 
 function setSimple(on: boolean, push = true) {
   root.classList.toggle("simple", on);

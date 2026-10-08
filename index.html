@@ -55,6 +55,9 @@
     <script>
       // Runs before paint: mark JS as available and apply the saved theme to avoid a flash.
       document.documentElement.classList.add("js");
+      // /curriculo (and the other simple-version addresses) paint the resume first: no terminal flash.
+      if (/^\/(simples|simple|curriculo|resume|cv)\/?$/i.test(location.pathname))
+        document.documentElement.classList.add("simple");
       try {
         var t = localStorage.getItem("theme");
         if (t) document.documentElement.dataset.theme = t;
