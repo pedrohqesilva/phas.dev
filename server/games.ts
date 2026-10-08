@@ -12,6 +12,7 @@ import {
 } from "../src/games/protocol.ts";
 import { createArena } from "./arena.ts";
 import { createCoop } from "./coop.ts";
+import { createInvadersVersus } from "./invaders-versus.ts";
 import { createPongRooms } from "./pong.ts";
 import { createTetrisRooms } from "./tetris.ts";
 import { fromCloudflare, visitorAddress } from "./origin.ts";
@@ -24,6 +25,7 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
   const arena = createArena();
   const coop = createCoop();
   const pong = createPongRooms();
+  const duel = createInvadersVersus();
   const tetris = createTetrisRooms();
 
   /** What one connection is doing: at most one arena seat and one co-op seat. */
@@ -33,6 +35,8 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
     /** A seat in a Pong or a Tetris versus room. */
     pong: { code: string; you: number } | null;
     tetris: { code: string; you: number } | null;
+    /** A seat in a Space Invaders versus room. */
+    duel: { code: string; you: number } | null;
     /** Messages this second, for a simple rate limit. */
     budget: number;
     alive: boolean;
@@ -98,6 +102,7 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
       room: null,
       pong: null,
       tetris: null,
+      duel: null,
       budget: MESSAGES_PER_SECOND,
       alive: true,
     };
@@ -199,10 +204,40 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
           break;
         case "pong.input":
           if (session.pong)
-            pong.input(session.pong.code, session.pong.you, msg.y, msg.rtt);
+            pong.input(
+              session.pong.code,
+              session.pong.you,
+              msg.y,
+              msg.vy,
+              msg.rtt,
+            );
           break;
         case "pong.again":
           if (session.pong) pong.again(session.pong.code, session.pong.you);
+          break;
+        case "invaders.create":
+          session.duel ??= duel.create(send);
+          if (!session.duel) send({ t: "invaders.error", reason: "full" });
+          break;
+        case "invaders.join":
+          if (!session.duel && isRoomCode(String(msg.room ?? "")))
+            session.duel = duel.join(
+              String(msg.room),
+              send,
+              typeof msg.resume === "string" ? msg.resume : undefined,
+            );
+          else if (!session.duel)
+            send({ t: "invaders.error", reason: "not-found" });
+          break;
+        case "invaders.ready":
+          if (session.duel) duel.ready(session.duel.code, session.duel.you);
+          break;
+        case "invaders.input":
+          if (session.duel)
+            duel.input(session.duel.code, session.duel.you, msg.input);
+          break;
+        case "invaders.again":
+          if (session.duel) duel.again(session.duel.code, session.duel.you);
           break;
         case "tetris.create":
           session.tetris ??= tetris.create(send);
@@ -252,6 +287,7 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
       if (session.room) coop.leave(session.room.code, session.room.you);
       if (session.pong) pong.leave(session.pong.code, session.pong.you);
       if (session.tetris) tetris.leave(session.tetris.code, session.tetris.you);
+      if (session.duel) duel.leave(session.duel.code, session.duel.you);
     });
     (ws as WebSocket & { session?: Session }).session = session;
   });

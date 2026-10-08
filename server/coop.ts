@@ -21,8 +21,9 @@ import {
 type Send = (msg: ServerMessage) => void;
 
 /**
- * Where a browser last said its ship was, when that report arrived, and how fast the ship is going: worked
- * out here from the last two reports (a page could claim any speed; it cannot fake its own reports' pace).
+ * Where a browser last said its ship was, when that report arrived, and how fast the ship is going there
+ * (0 the moment it stops; capped to what a ship can do). Older pages do not send it: then it is worked out
+ * from the last two reports.
  */
 type Report = { x: number; vx: number; oneWay: number; at: number };
 
@@ -75,7 +76,7 @@ function cleanInput(raw: unknown): {
       input: { ...idleInput(), fire: r.fire === true },
       report: {
         x: clamp(r.x, 8, W - 8),
-        vx: 0,
+        vx: finite(r.vx) ? clamp(r.vx, -MAX_SHIP_SPEED, MAX_SHIP_SPEED) : NaN,
         oneWay: finite(r.rtt) ? clamp(r.rtt / 2, 0, 150) : 0,
       },
     };
@@ -238,12 +239,15 @@ export function createCoop() {
       room.inputs[you] = input;
       const at = performance.now();
       const prev = room.reports[you];
-      if (report && prev && at - prev.at > 8)
-        report.vx = clamp(
-          ((report.x - prev.x) * 1000) / (at - prev.at),
-          -MAX_SHIP_SPEED,
-          MAX_SHIP_SPEED,
-        );
+      if (report && Number.isNaN(report.vx))
+        report.vx =
+          prev && at - prev.at > 8
+            ? clamp(
+                ((report.x - prev.x) * 1000) / (at - prev.at),
+                -MAX_SHIP_SPEED,
+                MAX_SHIP_SPEED,
+              )
+            : 0;
       room.reports[you] = report && { ...report, at };
       if (!report) room.sim.ships[you].hitX = undefined;
     },

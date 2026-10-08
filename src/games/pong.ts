@@ -254,6 +254,8 @@ export function playPongOnline(
   let theirY: number | null = null;
   let sent = "";
   let sentAt = 0;
+  /** Which way the paddle was going in the last report (-1, 0, 1). */
+  let sentDir = 0;
   let firePrev = false;
   let askedAgain = false;
 
@@ -318,7 +320,10 @@ export function playPongOnline(
     const t = performance.now();
     const v = view;
     const active = shell.started && !shell.paused && !overlay.length;
+    const before = myY;
     if (active && v && v.winner === null) myY = controls.move(myY, dt);
+    const vy = dt > 0 ? ((myY - before) * 1000) / dt : 0;
+    const dir = Math.abs(vy) < 1 ? 0 : Math.sign(vy);
     if (v) {
       const target = v.paddles[1 - you];
       theirY =
@@ -326,14 +331,17 @@ export function playPongOnline(
           ? target
           : theirY + (target - theirY) * Math.min(1, dt / 50);
     }
-    // Your paddle's place, up to 30 times a second.
+    // Your paddle's place and speed, up to 30 times a second, and at once when it stops or turns: the
+    // server reckons where it is from them until the next.
     const key = String(Math.round(myY * 10));
-    if (active && key !== sent && t - sentAt >= 33) {
+    if (active && (dir !== sentDir || (key !== sent && t - sentAt >= 33))) {
       sent = key;
       sentAt = t;
+      sentDir = dir;
       net.send({
         t: "pong.input",
         y: Math.round(myY * 10) / 10,
+        vy: Math.round(vy),
         rtt: Math.round(net.rtt()),
       });
     }

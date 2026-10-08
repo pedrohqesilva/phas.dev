@@ -44,7 +44,7 @@
     </td>
     <td width="33%" valign="top">
       <h3>🎮 Quatro jogos online</h3>
-      Arena do Snake para todos, Invaders co-op, Pong e Tetris versus. Com compensação de latência: a 160 ms do servidor, parece local.
+      Arena do Snake para todos, Invaders co-op e versus, Pong e Tetris versus. Com compensação de latência: a 160 ms do servidor, parece local.
     </td>
     <td width="33%" valign="top">
       <h3>🏆 Ranking global</h3>
@@ -97,7 +97,7 @@
 <table>
   <tr>
     <td align="center" width="50%"><img src="docs/screens/07-snake-online.png" alt="Arena do Snake"><br><b>🐍 Snake</b><br><sub>Clássico (paredes matam ou atravessam) · <b>Arena online</b> com poderes: vermelho acelera, verde protege</sub></td>
-    <td align="center" width="50%"><img src="docs/screens/08-invaders-coop.png" alt="Space Invaders co-op"><br><b>👾 Space Invaders</b><br><sub>Clássico · <b>Co-op</b>, duas naves contra a mesma onda</sub></td>
+    <td align="center" width="50%"><img src="docs/screens/08-invaders-coop.png" alt="Space Invaders co-op"><br><b>👾 Space Invaders</b><br><sub>Clássico · <b>Co-op</b>, duas naves contra a mesma onda · <b>Versus</b>, uma nave em cada ponta e os aliens no meio. Cinco acertos seguidos carregam um tiro especial</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/screens/09-pong.png" alt="Pong"><br><b>🏓 Pong</b><br><sub>Clássico, contra o computador · <b>Versus</b> 1x1, quem fizer 7 primeiro</sub></td>
@@ -146,7 +146,7 @@ flowchart LR
 O servidor fica na Virginia, a uns 160 ms de ida e volta do Brasil, e decide todas as partidas. Para que jogar não pareça lento, o navegador mostra os seus próprios movimentos à frente do servidor:
 
 - **Arena do Snake.** O servidor bate a cada 20 ms; cada cobra junta crédito de movimento a cada batida (mais quando é pequena) e anda uma casa por crédito inteiro. O navegador avança a sua cobra com as mesmas regras ([`arena-rules.ts`](src/games/arena-rules.ts), [`arena-predict.ts`](src/games/arena-predict.ts)) até a batida em que uma curva apertada agora chega ao servidor. Cada curva vai marcada com essa batida e é aplicada nela, então aparece na hora, na casa que você viu. As outras cobras deslizam pelo próprio corpo, só com passos que já aconteceram, e por isso nunca voltam.
-- **Invaders co-op e Pong.** A sua nave ou raquete anda no navegador e o servidor segue, com velocidade limitada. As bombas e a bola são conferidas contra a posição que ela tem na sua tela agora. O resto é desenhado onde está agora, projetado a partir do último estado (a bola quica nas paredes e nas raquetes no caminho). Os seus tiros aparecem no instante da tecla.
+- **Invaders co-op, versus e Pong.** A sua nave ou raquete anda no navegador e o servidor segue, com velocidade limitada. Ela informa onde está e a que velocidade (zero no instante em que para), então bombas, tiros e a bola são conferidos contra a posição que ela tem na sua tela agora. O resto é desenhado onde está agora, projetado a partir do último estado (a bola quica nas paredes e nas raquetes no caminho). Os seus tiros aparecem no instante da tecla.
 - **Tetris versus.** Cada jogador roda o próprio jogo, com a mesma sequência de peças (uma semente compartilhada); o servidor repassa tabuleiros e ataques.
 - **Reconexão.** Uma conexão que cai volta sozinha em até 15 segundos, para a mesma vaga. O ping aparece na tela.
 
@@ -218,7 +218,7 @@ src/
 server/
   index.ts          arquivos, cabeçalhos, rotas, API do ranking
   games.ts          o WebSocket e as salas
-  arena.ts coop.ts pong.ts tetris.ts rooms.ts
+  arena.ts coop.ts invaders-versus.ts pong.ts tetris.ts rooms.ts
   scores.ts         rankings
 video/              o vídeo em Remotion (e o script que captura as telas)
 ```

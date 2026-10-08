@@ -308,8 +308,8 @@ addEventListener("offline", offlineNote);
  */
 function runHash(): boolean {
   const hash = decodeURIComponent(location.hash.slice(1));
-  // Invites: #coop-ABCD (Space Invaders co-op), #pong-ABCD, #tetris-ABCD.
-  const invite = /^(coop|pong|tetris)-([a-z]{4})$/i.exec(hash);
+  // Invites: #coop-ABCD (Space Invaders co-op), #invaders-ABCD (its versus), #pong-ABCD, #tetris-ABCD.
+  const invite = /^(coop|invaders|pong|tetris)-([a-z]{4})$/i.exec(hash);
   if (invite) {
     // An invite is used once: a reload must not try to join the same room again.
     history.replaceState(null, "", location.pathname);

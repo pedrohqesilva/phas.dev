@@ -24,6 +24,7 @@ import {
   playInvadersCoop,
   type InvadersTexts,
 } from "./games/invaders.ts";
+import { playInvadersVersus } from "./games/invaders-versus.ts";
 import { openGameMenu, type MenuField, type MenuOption } from "./games/menu.ts";
 import {
   playPongCpu,
@@ -185,6 +186,7 @@ const invadersTexts = (t: UI, title = "Space Invaders"): InvadersTexts => ({
   powers: t.invadersPowers,
   shots: t.invadersShots,
   rapid: t.invadersRapid,
+  special: t.invadersSpecial,
 });
 
 /** Full-screen Space Invaders; back on the terminal it reports the best score. */
@@ -356,7 +358,7 @@ function snakeMenu(ctx: Ctx) {
   );
 }
 
-/** Space Invaders' start screen: Classic (with a nickname) or Co-op (create a room or join one). */
+/** Space Invaders' start screen: Classic (with a nickname), Co-op or Versus (create a room or join one). */
 function invadersMenu(ctx: Ctx) {
   if (ctx.replaying) return;
   const { t } = ctx;
@@ -376,6 +378,15 @@ function invadersMenu(ctx: Ctx) {
           t,
           () => startCoop(ctx),
           (code) => startCoop(ctx, code),
+        ),
+      },
+      {
+        label: t.modeVersus,
+        hint: t.invadersVersusDesc,
+        submenu: roomChoices(
+          t,
+          () => startInvadersVersus(ctx),
+          (code) => startInvadersVersus(ctx, code),
         ),
       },
     ],
@@ -434,12 +445,40 @@ const versusTexts = (t: UI): VersusTexts => ({
 
 /** Prints a versus room's invite link (and copies it) when the room is created. */
 const announceRoom =
-  ({ t, print }: Ctx, game: "pong" | "tetris") =>
+  ({ t, print }: Ctx, game: "pong" | "tetris" | "invaders") =>
   (code: string) => {
     const url = `${location.origin}/#${game}-${code}`;
     navigator.clipboard?.writeText(url).catch(() => {});
     print(line(t.versusLink, " ", link(url)));
   };
+
+/** Space Invaders versus on the server: creates a room (and prints its link) or joins `room`. */
+function startInvadersVersus(ctx: Ctx, room?: string) {
+  const { t, print, focus, replaying } = ctx;
+  if (replaying) return;
+  playInvadersVersus(
+    {
+      ...invadersTexts(t, t.invadersVersusTitle),
+      help: t.invadersVersusHelp,
+      paused: t.gameLiveMenu,
+      you: t.pongYou,
+      rival: t.pongRival,
+      win: t.pongWin,
+      lose: t.pongLose,
+      again: t.pongAgain,
+      waitingAgain: t.pongWaitingAgain,
+    },
+    versusTexts(t),
+    {
+      room: room?.toUpperCase(),
+      onRoom: announceRoom(ctx, "invaders"),
+      onExit(note) {
+        if (note) print(muted(note));
+        focus();
+      },
+    },
+  );
+}
 
 function startPong(ctx: Ctx, mode: "cpu" | "online", room?: string) {
   const { t, print, focus, replaying } = ctx;
@@ -579,6 +618,15 @@ function playSnakeMode(ctx: Ctx, mode?: string, extra?: string) {
 }
 
 function playInvadersMode(ctx: Ctx, mode?: string, extra?: string) {
+  if (
+    ["versus", "vs", "1x1", "1v1", "duelo", "duel"].includes(
+      normalize(mode ?? ""),
+    )
+  )
+    return startInvadersVersus(
+      ctx,
+      extra && isRoomCode(extra) ? extra.toUpperCase() : undefined,
+    );
   if (isCoop(mode))
     return startCoop(
       ctx,

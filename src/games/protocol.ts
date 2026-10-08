@@ -1,5 +1,6 @@
 // Messages between the browser and the game server (/ws), shared by both sides. JSON, one object per frame.
 import type { InvadersView, ShipInput } from "./invaders-sim.ts";
+import type { VersusView } from "./invaders-versus-sim.ts";
 import type { PongView } from "./pong-sim.ts";
 
 /** Snake arena: a fixed grid, the same for everyone; clients scale it to their screen. */
@@ -69,6 +70,8 @@ export interface ArenaState {
  */
 export interface CoopInput {
   x: number;
+  /** How fast the ship is going here (0 the moment it stops): the server reckons with it between reports. */
+  vx?: number;
   fire: boolean;
   /** The measured round trip: with it the server places the ship where it is on the player's screen. */
   rtt?: number;
@@ -90,8 +93,14 @@ export type ClientMessage =
   | { t: "pong.create" }
   | { t: "pong.join"; room: string; resume?: string }
   | { t: "pong.ready" }
-  | { t: "pong.input"; y: number; rtt?: number }
+  | { t: "pong.input"; y: number; vy?: number; rtt?: number }
   | { t: "pong.again" }
+  // Space Invaders versus: the same room flow; the ship is reported like in co-op.
+  | { t: "invaders.create" }
+  | { t: "invaders.join"; room: string; resume?: string }
+  | { t: "invaders.ready" }
+  | { t: "invaders.input"; input: CoopInput }
+  | { t: "invaders.again" }
   // Tetris versus: each browser runs its own game; the server passes boards and attacks along.
   | { t: "tetris.create" }
   | { t: "tetris.join"; room: string; resume?: string }
@@ -135,6 +144,19 @@ export type ServerMessage =
   | { t: "pong.back" }
   | { t: "pong.left" }
   | { t: "pong.error"; reason: "full" | "not-found" }
+  | {
+      t: "invaders.room";
+      room: string;
+      you: number;
+      players: number;
+      token: string;
+    }
+  | { t: "invaders.start" }
+  | { t: "invaders.state"; view: VersusView }
+  | { t: "invaders.away" }
+  | { t: "invaders.back" }
+  | { t: "invaders.left" }
+  | { t: "invaders.error"; reason: "full" | "not-found" }
   | {
       t: "tetris.room";
       room: string;

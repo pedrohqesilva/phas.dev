@@ -69,13 +69,16 @@ export const movePaddle = (y: number, dir: number, dt: number) =>
 /**
  * Moves the ball `dt` ms (keep it at 16 or less): off the top and bottom, off a paddle when it reaches
  * one's face, past it otherwise (a point). `hitAt` gives where each paddle is for the bounce check (the
- * server passes where each player has it on their own screen). Returns who scored, if anyone.
+ * server passes where each player has it on their own screen), and `reach` how far either way that may
+ * be off (the server is never quite sure): the paddle counts as anywhere in that span. Returns who
+ * scored, if anyone.
  */
 export function stepBall(
   st: PongState,
   now: number,
   dt: number,
   hitAt: readonly [number, number] = st.paddles,
+  reach: readonly [number, number] = [0, 0],
 ): 0 | 1 | null {
   if (st.winner !== null || now < st.serveAt) return null;
   const b = st.ball;
@@ -99,7 +102,12 @@ export function stepBall(
     if (!towards || !crossed) continue;
     const t = (face - b.x) / (nx - b.x);
     const yAt = b.y + (ny - b.y) * t;
-    const offset = (yAt - hitAt[side]) / (PADDLE_H / 2 + BALL / 2);
+    // The paddle's place in its span nearest the ball.
+    const at = Math.max(
+      hitAt[side] - reach[side],
+      Math.min(hitAt[side] + reach[side], yAt),
+    );
+    const offset = (yAt - at) / (PADDLE_H / 2 + BALL / 2);
     if (Math.abs(offset) <= 1) {
       // A hit: back the other way, faster, at an angle set by where it met the paddle.
       const speed = Math.min(MAX_SPEED, Math.hypot(b.vx, b.vy) * SPEED_UP);

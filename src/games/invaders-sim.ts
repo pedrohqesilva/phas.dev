@@ -13,6 +13,9 @@
 //   "P" for 10 s, shots that go through the first invader they hit, "I" 10 s of invincibility (no bomb or
 //   miss costs a life), "♥" one life back.
 // In co-op the team shares score, lives, misses and upgrades; each ship fires its own volleys.
+// The special: five volleys in a row that hit an invader (or the saucer) charge it; holding fire then lets
+// it go, a fast shot that drills through shields and up to three invaders, two hits on each. A volley that hits nothing
+// starts the count again.
 
 export type PowerKind =
   "multi" | "rapid" | "pierce" | "shield" | "heart" | "nuke";
@@ -25,26 +28,35 @@ const GAP_X = 18;
 const GAP_Y = 16;
 export const SHIP_Y = H - 24;
 const MISSES_PER_LIFE = 3;
-const MAX_LIVES = 5;
+/** The special: volleys in a row that must hit, how long to hold fire, its speed and how many it drills. */
+export const SPECIAL_STREAK = 5;
+export const SPECIAL_HOLD_MS = 400;
+export const SPECIAL_SPEED = 680;
+export const SPECIAL_PIERCE = 3;
+export const MAX_LIVES = 5;
 /** Drop chance per kill: 5% on wave 1, one point less each wave, never under 1%. */
-const dropChance = (wave: number) => Math.max(0.01, 0.05 - (wave - 1) * 0.01);
+export const dropChance = (wave: number) =>
+  Math.max(0.01, 0.05 - (wave - 1) * 0.01);
 /** Every wave starts faster and bombs more: these shrink by a fixed share per wave, with a floor. */
-const marchBaseMs = (wave: number) => Math.max(90, 560 * 0.86 ** (wave - 1));
-const bombEveryMs = (wave: number) => Math.max(140, 1100 * 0.84 ** (wave - 1));
-const bombSpeed = (wave: number) => Math.min(230, 90 * 1.09 ** (wave - 1));
+export const marchBaseMs = (wave: number) =>
+  Math.max(90, 560 * 0.86 ** (wave - 1));
+export const bombEveryMs = (wave: number) =>
+  Math.max(140, 1100 * 0.84 ** (wave - 1));
+export const bombSpeed = (wave: number) =>
+  Math.min(230, 90 * 1.09 ** (wave - 1));
 /** From wave 4, every few waves one more bomb per volley. */
 const bombsPerVolley = (wave: number) => 1 + Math.floor((wave - 1) / 3);
-const PIERCE_MS = 10_000;
-const SHIELD_MS = 10_000;
-const MAX_SHOTS = 5;
-const MAX_ARMOUR = 4;
+export const PIERCE_MS = 10_000;
+export const SHIELD_MS = 10_000;
+export const MAX_SHOTS = 5;
+export const MAX_ARMOUR = 4;
 export const SHIELD_TOP = SHIP_Y - 34;
 export const SHIELD_CELL = 2;
 export const UFO_Y = 24;
 export const UFO_SPEED = 40;
-const MAX_RAPID = 5;
+export const MAX_RAPID = 5;
 // Share of each power-up among the drops, in percent: the extra shot and invincibility are the rare ones, a life is 10%.
-const POWER_WEIGHTS: [PowerKind, number][] = [
+export const POWER_WEIGHTS: [PowerKind, number][] = [
   ["multi", 20],
   ["rapid", 30],
   ["pierce", 33],
@@ -52,7 +64,7 @@ const POWER_WEIGHTS: [PowerKind, number][] = [
   ["heart", 10],
 ];
 const WEIGHT_TOTAL = POWER_WEIGHTS.reduce((sum, [, w]) => sum + w, 0);
-function randomPower(): PowerKind {
+export function randomPower(): PowerKind {
   let roll = Math.random() * WEIGHT_TOTAL;
   for (const [kind, weight] of POWER_WEIGHTS)
     if ((roll -= weight) < 0) return kind;
@@ -61,7 +73,7 @@ function randomPower(): PowerKind {
 const NUKE_CHANCE = 0.01;
 
 // A shield: 2×2 cells on this mask, chipped one cell (plus a neighbour) at a time.
-const SHIELD_MASK = [
+export const SHIELD_MASK = [
   "..#######..",
   ".#########.",
   "###########",
@@ -94,15 +106,18 @@ export type Banner =
   | { kind: "rapid"; n: number }
   | { kind: "power"; power: PowerKind };
 
-type Invader = {
+export type Invader = {
   col: number;
   row: number;
   alive: boolean;
   hp: number;
   hitAt: number;
 };
-/** `pierceLeft`: invaders the shot may still pass through; `hits` keeps it from hitting one twice. */
-type Shot = {
+/**
+ * `pierceLeft`: invaders the shot may still pass through; `hits` keeps it from hitting one twice. A
+ * `special` shot is fast, drills through shields, and is no volley (it never counts as a miss).
+ */
+export type Shot = {
   ship: number;
   x: number;
   y: number;
@@ -112,15 +127,21 @@ type Shot = {
   pierce: boolean;
   pierceLeft: number;
   hits: Set<Invader>;
+  special?: boolean;
 };
 type Bomb = { x: number; y: number; vy: number };
 type Drop = { x: number; y: number; kind: PowerKind };
-type Box = { x: number; y: number; w: number; h: number };
-type Cell = { x: number; y: number; alive: boolean };
-type Ship = {
+export type Box = { x: number; y: number; w: number; h: number };
+export type Cell = { x: number; y: number; alive: boolean };
+export type Ship = {
   x: number;
   hitUntil: number;
   fireCooldown: number;
+  /** Volleys in a row that hit; the special is charged once it reaches SPECIAL_STREAK. */
+  streak: number;
+  special: boolean;
+  /** When fire was pressed (the special goes after SPECIAL_HOLD_MS held); null while released. */
+  heldSince: number | null;
   /**
    * Co-op only: where the ship is on its player's screen right now, which runs a little ahead of `x` (the
    * server learns of each move half a round trip late). Bombs and power-ups are checked against it.
@@ -157,12 +178,22 @@ export interface InvadersState {
   shieldUntil: number;
   volleySeq: number;
   volleyHit: Set<number>;
+  /** Volleys that hit an invader or the saucer (a shield does not count for the special). */
+  volleyScored: Set<number>;
   misses: number;
   /** Fire held on the previous step, per ship: a fresh press restarts a finished game. */
   fireWas: boolean[];
 }
 
 const startX = (players: number, i: number) => (W * (i + 1)) / (players + 1);
+export const newShip = (x: number): Ship => ({
+  x,
+  hitUntil: 0,
+  fireCooldown: 0,
+  streak: 0,
+  special: false,
+  heldSince: null,
+});
 
 export function createInvaders(players = 1): InvadersState {
   const st: InvadersState = {
@@ -173,11 +204,9 @@ export function createInvaders(players = 1): InvadersState {
     marchTimer: 0,
     animFrame: 0,
     wave: 1,
-    ships: Array.from({ length: players }, (_, i) => ({
-      x: startX(players, i),
-      hitUntil: 0,
-      fireCooldown: 0,
-    })),
+    ships: Array.from({ length: players }, (_, i) =>
+      newShip(startX(players, i)),
+    ),
     lives: 3,
     score: 0,
     best: 0,
@@ -198,6 +227,7 @@ export function createInvaders(players = 1): InvadersState {
     shieldUntil: 0,
     volleySeq: 0,
     volleyHit: new Set(),
+    volleyScored: new Set(),
     misses: 0,
     fireWas: Array.from({ length: players }, () => false),
   };
@@ -263,6 +293,8 @@ export function restartInvaders(st: InvadersState, now: number) {
   st.ships.forEach((s, i) => {
     s.x = startX(st.ships.length, i);
     s.hitUntil = 0;
+    s.streak = 0;
+    s.special = false;
   });
   newWave(st, now);
 }
@@ -315,6 +347,21 @@ function fire(st: InvadersState, index: number, now: number) {
   ship.fireCooldown = now + fireCooldownMs(st.rapidLevel);
 }
 
+function fireSpecial(st: InvadersState, index: number) {
+  st.shots.push({
+    ship: index,
+    x: st.ships[index].x,
+    y: SHOT_START_Y,
+    vx: 0,
+    vy: -SPECIAL_SPEED,
+    volley: 0,
+    pierce: true,
+    pierceLeft: SPECIAL_PIERCE - 1,
+    hits: new Set(),
+    special: true,
+  });
+}
+
 function loseLife(st: InvadersState, now: number, ship?: Ship) {
   if (shielded(st, now)) return;
   st.lives--;
@@ -325,9 +372,55 @@ function loseLife(st: InvadersState, now: number, ship?: Ship) {
   if (st.lives <= 0) end(st);
 }
 
+/**
+ * A ship's volley is over: one that hit an invader adds to the ship's streak (five charge the special),
+ * anything else starts it again.
+ */
+export function tallyVolley(ship: Ship, scored: boolean) {
+  if (!scored) {
+    ship.streak = 0;
+    return;
+  }
+  if (ship.special) return;
+  if (++ship.streak >= SPECIAL_STREAK) {
+    ship.streak = 0;
+    ship.special = true;
+  }
+}
+
+/**
+ * Fire held: a fresh press starts the hold; held long enough with the special charged, it goes. True
+ * when the special was fired (`launch` puts the shot on the field).
+ */
+export function holdSpecial(
+  ship: Ship,
+  pressed: boolean,
+  now: number,
+  launch: () => void,
+): boolean {
+  if (!pressed) {
+    ship.heldSince = null;
+    return false;
+  }
+  ship.heldSince ??= now;
+  if (!ship.special || now - ship.heldSince < SPECIAL_HOLD_MS) return false;
+  ship.special = false;
+  // One special per hold: release and hold again for the next.
+  ship.heldSince = Infinity;
+  launch();
+  return true;
+}
+
 /** A volley whose last shot just left the field without any hit counts as a miss. */
-function settleVolley(st: InvadersState, volley: number, now: number) {
+function settleVolley(
+  st: InvadersState,
+  volley: number,
+  ship: number,
+  now: number,
+) {
   if (st.shots.some((s) => s.volley === volley)) return;
+  const scored = st.volleyScored.delete(volley);
+  if (st.ships[ship]) tallyVolley(st.ships[ship], scored);
   if (st.volleyHit.delete(volley)) return;
   st.misses++;
   if (st.misses >= MISSES_PER_LIFE) {
@@ -450,6 +543,7 @@ export function stepInvaders(
     ship.x = moveShip(ship.x, input, dt);
     const pressed = input.fire || input.touchX !== null;
     if (pressed) fire(st, i, now);
+    holdSpecial(ship, pressed, now, () => fireSpecial(st, i));
     st.fireWas[i] = pressed;
   });
 
@@ -485,9 +579,24 @@ export function stepInvaders(
     }
   }
 
-  // Player shots.
-  const gone = new Set<number>();
+  // Player shots. The special moves in short hops, so it cannot skip over an invader.
+  const gone = new Map<number, number>();
   st.shots = st.shots.filter((shot) => {
+    const hops = shot.special ? Math.ceil((Math.abs(shot.vy) * s) / 6) : 1;
+    for (let k = 0; k < hops; k++) {
+      const result = moveShot(shot, s / hops);
+      if (result === "gone") return false;
+    }
+    return true;
+  });
+  for (const [volley, ship] of gone) settleVolley(st, volley, ship, now);
+
+  /** One hop of a shot: "gone" when it hit something that stops it, or left the field. */
+  function moveShot(shot: Shot, s: number): "gone" | "flying" {
+    const stop = () => {
+      if (!shot.special) gone.set(shot.volley, shot.ship);
+      return "gone" as const;
+    };
     shot.x += shot.vx * s;
     shot.y += shot.vy * s;
     if (st.ufo && inside(shot, { x: st.ufo.x, y: UFO_Y, w: 16, h: 7 })) {
@@ -502,23 +611,27 @@ export function stepInvaders(
       st.ufo = null;
       st.ufoAt = now + 15_000 + Math.random() * 10_000;
       st.volleyHit.add(shot.volley);
+      st.volleyScored.add(shot.volley);
       st.misses = 0;
-      gone.add(shot.volley);
-      return false;
+      return stop();
     }
-    // The shields stop the players' shots too (no miss counted: the shot hit something).
+    // The shields stop the players' shots too (no miss counted: the shot hit something); the special
+    // drills through them.
     if (chip(st, shot)) {
-      st.volleyHit.add(shot.volley);
-      gone.add(shot.volley);
-      return false;
+      if (!shot.special) {
+        st.volleyHit.add(shot.volley);
+        return stop();
+      }
     }
     for (const target of alive(st)) {
       if (shot.hits.has(target) || !inside(shot, invaderBox(st, target)))
         continue;
       shot.hits.add(target);
       st.volleyHit.add(shot.volley);
+      st.volleyScored.add(shot.volley);
       st.misses = 0;
-      target.hp--;
+      // The special hits twice as hard.
+      target.hp -= shot.special ? 2 : 1;
       target.hitAt = now;
       if (target.hp <= 0) {
         target.alive = false;
@@ -533,14 +646,10 @@ export function stepInvaders(
         shot.pierceLeft--;
         continue;
       }
-      gone.add(shot.volley);
-      return false;
+      return stop();
     }
-    const out = shot.y < 0 || shot.x < 0 || shot.x > W;
-    if (out) gone.add(shot.volley);
-    return !out;
-  });
-  for (const v of gone) settleVolley(st, v, now);
+    return shot.y < 0 || shot.x < 0 || shot.x > W ? stop() : "flying";
+  }
 
   // Bombs from the lowest invader of a random column: more often and faster every wave.
   st.bombTimer -= dt;
@@ -633,8 +742,12 @@ export interface InvadersView {
   hp: number[];
   /** Slots hit in the last 90 ms (they flash white). */
   flash: number[];
-  ships: { x: number; blink: boolean }[];
-  /** Flat [x, y, piercing(0/1), vx, vy, ship, …] (SHOT_STRIDE per shot); speeds in units per second. */
+  /** `streak`: volleys in a row that hit (towards the special); `special`: charged. */
+  ships: { x: number; blink: boolean; streak: number; special: boolean }[];
+  /**
+   * Flat [x, y, kind, vx, vy, ship, …] (SHOT_STRIDE per shot); kind 0 plain, 1 piercing, 2 the special;
+   * speeds in units per second.
+   */
   shots: number[];
   /** Flat [x, y, vy, …] (BOMB_STRIDE per bomb). */
   bombs: number[];
@@ -672,11 +785,13 @@ export function viewInvaders(st: InvadersState, now: number): InvadersView {
     ships: st.ships.map((s) => ({
       x: r1(s.x),
       blink: now < s.hitUntil && Math.floor(now / 120) % 2 === 1,
+      streak: s.streak,
+      special: s.special,
     })),
     shots: st.shots.flatMap((s) => [
       r1(s.x),
       r1(s.y),
-      s.pierce ? 1 : 0,
+      s.special ? 2 : s.pierce ? 1 : 0,
       r1(s.vx),
       r1(s.vy),
       s.ship,

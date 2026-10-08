@@ -86,6 +86,7 @@ export const ui = {
       "Aliens derrubam poderes, pegue com a nave: + mais um tiro e R tiro mais rápido (acumulam até o fim), P perfurante e I invencível por 10 s, ♥ uma vida.",
       "Na onda 2 todos aguentam 2 tiros, na 3 aguentam 3 (até 4), e atiram cada vez mais. Perder vida custa um upgrade.",
       "Cuidado com os escudos: seus tiros param neles, as bombas atravessam. O disco voador no topo vale 100 × a onda e sempre solta um poder; raramente, a bomba B, que tira metade da vida de todos os aliens.",
+      "Especial: 5 tiros seguidos que acertam carregam a estrela ★. Aí segure o disparo: sai um tiro rápido que fura escudos e atravessa até 3 aliens, com dano dobrado.",
       "No celular, a nave segue o dedo e atira sozinha. Esc pausa; na pausa, Q sai.",
     ],
     invadersOverTitle: "FIM DE JOGO",
@@ -104,6 +105,17 @@ export const ui = {
     },
     invadersShots: (n: number) => `${n} TIROS POR VEZ`,
     invadersRapid: (n: number) => `TIRO RÁPIDO NÍVEL ${n}`,
+    invadersSpecial: "SEGURE O TIRO",
+    invadersVersusTitle: "Space Invaders (versus)",
+    invadersVersusDesc:
+      "1x1 online: uma nave de cada lado, os aliens no meio atirando nas duas.",
+    invadersVersusHelp: [
+      "Uma nave de cada lado, os aliens no meio: eles marcham e atiram para os dois lados.",
+      "Seus tiros que passam pelos aliens podem acertar o rival: -1 vida dele. Bombas também tiram vida. Cada um tem 3.",
+      "Os poderes que você solta voam até você. 5 acertos seguidos carregam o especial ★: segure o disparo.",
+      "← → ou A D movem, Espaço atira; no toque, a nave segue o dedo. Quem zerar as vidas do outro vence.",
+      "O jogo não pausa: Esc abre o menu para sair.",
+    ],
     arenaTitle: "Snake online",
     arenaDesc: "a arena pública: todo mundo online na mesma grade.",
     arenaHelp: [
@@ -148,7 +160,8 @@ export const ui = {
     downloadLabel: "Baixar o currículo em PDF",
     terminalView: "voltar ao terminal",
     skip: "Pular para a versão simples",
-    offline: "Você está offline: o currículo e os jogos solo continuam funcionando; os modos online e o ranking voltam com a internet.",
+    offline:
+      "Você está offline: o currículo e os jogos solo continuam funcionando; os modos online e o ranking voltam com a internet.",
     inputLabel: "Comando do terminal",
     sudo: "Permissão negada. Boa tentativa.",
     rm: "Melhor não. Este site gosta de existir.",
@@ -306,6 +319,7 @@ export const ui = {
       "Aliens drop power-ups, catch them with the ship: + one more shot and R a faster gun (they stack for the whole game), P piercing and I invincible for 10 s, ♥ one life.",
       "On wave 2 every alien takes 2 hits, on wave 3 it takes 3 (up to 4), and they fire more and more. Losing a life costs an upgrade.",
       "Mind the shields: your shots stop on them, the bombs go through. The saucer up top is worth 100 × the wave and always drops a power-up; rarely, the bomb B, which takes half the life off every alien.",
+      "Special: 5 shots in a row that hit charge the star ★. Then hold fire: out goes a fast shot that drills through shields and up to 3 aliens, at double damage.",
       "On a phone, the ship follows your finger and fires on its own. Esc pauses; while paused, Q quits.",
     ],
     invadersOverTitle: "GAME OVER",
@@ -324,6 +338,17 @@ export const ui = {
     },
     invadersShots: (n: number) => `${n} SHOTS PER VOLLEY`,
     invadersRapid: (n: number) => `RAPID FIRE LEVEL ${n}`,
+    invadersSpecial: "HOLD FIRE",
+    invadersVersusTitle: "Space Invaders (versus)",
+    invadersVersusDesc:
+      "1v1 online: a ship on each side, the aliens in the middle shooting at both.",
+    invadersVersusHelp: [
+      "A ship on each side, the aliens in the middle: they march and fire both ways.",
+      "Your shots that get past the aliens can hit your rival: -1 life for them. Bombs cost lives too. You each have 3.",
+      "The power-ups you free fly to you. 5 hits in a row charge the special ★: hold fire.",
+      "← → or A D move, Space fires; on touch, the ship follows your finger. Take all your rival's lives to win.",
+      "The game doesn't pause: Esc opens the menu to leave.",
+    ],
     arenaTitle: "Snake online",
     arenaDesc: "the public arena: everyone online on the same grid.",
     arenaHelp: [
@@ -368,7 +393,8 @@ export const ui = {
     downloadLabel: "Download the resume as PDF",
     terminalView: "back to terminal",
     skip: "Skip to the simple version",
-    offline: "You are offline: the resume and the solo games still work; online modes and the leaderboard come back with the connection.",
+    offline:
+      "You are offline: the resume and the solo games still work; online modes and the leaderboard come back with the connection.",
     inputLabel: "Terminal command",
     sudo: "Permission denied. Nice try.",
     rm: "Better not. This site likes existing.",

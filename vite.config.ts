@@ -85,7 +85,9 @@ export default defineConfig({
             f !== "/sw.js",
         );
         const version = createHash("sha256");
-        for (const f of all.filter((f) => keep.includes(f) || f.endsWith(".html")).sort())
+        for (const f of all
+          .filter((f) => keep.includes(f) || f.endsWith(".html"))
+          .sort())
           version.update(f).update(readFileSync(resolve(dist, f.slice(1))));
         writeFileSync(
           resolve(dist, "sw.js"),

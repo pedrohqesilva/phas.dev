@@ -22,6 +22,8 @@ import {
   shieldLayout,
   SHIP_Y,
   slotBox,
+  SPECIAL_HOLD_MS,
+  SPECIAL_SPEED,
   stepInvaders,
   UFO_SPEED,
   UFO_Y,
@@ -47,6 +49,8 @@ export interface InvadersTexts extends GameTexts {
   powers: Record<PowerKind, string>;
   shots: (n: number) => string;
   rapid: (n: number) => string;
+  /** Shown while the special is charged: how to fire it. */
+  special: string;
 }
 
 /** Extra lines for co-op: the waiting screen, the ship labels and what can go wrong with the connection. */
@@ -66,7 +70,7 @@ export interface CoopTexts {
   partner: string;
 }
 
-const POWER_LETTER: Record<PowerKind, string> = {
+export const POWER_LETTER: Record<PowerKind, string> = {
   multi: "+",
   rapid: "R",
   pierce: "P",
@@ -77,7 +81,7 @@ const POWER_LETTER: Record<PowerKind, string> = {
 
 const sprite = (rows: string[]) =>
   rows.map((r) => [...r].map((c) => c === "#"));
-const INVADER = [
+export const INVADER = [
   sprite([
     "..#.....#..",
     "...#...#...",
@@ -108,7 +112,7 @@ const UFO = sprite([
   "..###..##..###..",
   "...#........#...",
 ]);
-const SHIP = sprite([
+export const SHIP = sprite([
   "......#......",
   ".....###.....",
   ".....###.....",
@@ -121,7 +125,7 @@ const SHIP = sprite([
 const SHIELDS = shieldLayout();
 
 /** Keyboard and touch, turned into a ShipInput. */
-function controls() {
+export function controls() {
   const held = new Set<string>();
   let touchX: number | null = null;
   return {
@@ -157,7 +161,7 @@ function fit() {
   return { f, update };
 }
 
-function bannerText(texts: InvadersTexts, b: Banner): string {
+export function bannerText(texts: InvadersTexts, b: Banner): string {
   switch (b.kind) {
     case "wave":
       return texts.wave(b.n);
@@ -172,6 +176,61 @@ function bannerText(texts: InvadersTexts, b: Banner): string {
     case "power":
       return texts.powers[b.power];
   }
+}
+
+/**
+ * The special's charge, centred at (x, y): five pips filling with each volley that hits, then a blinking
+ * star with how to fire it.
+ */
+export function drawSpecial(
+  g: CanvasRenderingContext2D,
+  texts: InvadersTexts,
+  ship: { streak: number; special: boolean },
+  x: number,
+  y: number,
+  now: number,
+) {
+  if (ship.special) {
+    g.globalAlpha = Math.floor(now / 260) % 2 ? 1 : 0.6;
+    g.font = `6px "Geist Mono Variable", ui-monospace, monospace`;
+    g.textAlign = "center";
+    g.fillText(`★ ${texts.special}`, x, y + 2);
+    g.globalAlpha = 1;
+    return;
+  }
+  for (let k = 0; k < 5; k++) {
+    g.globalAlpha = k < ship.streak ? 0.9 : 0.25;
+    g.fillRect(x - 12 + k * 5, y - 1.5, 3, 3);
+  }
+  g.globalAlpha = 1;
+}
+
+/**
+ * A shot, from a flat shots entry: plain (1 px), piercing (2 px) or the special (white, wider, with a
+ * fading trail behind it).
+ */
+export function drawShot(
+  g: CanvasRenderingContext2D,
+  accent: string,
+  x: number,
+  y: number,
+  kind: number,
+  vy: number,
+) {
+  // `y` is the tip; the body (and the special's trail) runs back from it, against the way it flies.
+  const back = vy > 0 ? -1 : 1;
+  if (kind !== 2) {
+    g.fillRect(x, back > 0 ? y : y - 5, kind ? 2 : 1, 5);
+    return;
+  }
+  g.fillStyle = "#fff";
+  g.fillRect(x - 1, back > 0 ? y : y - 7, 3, 7);
+  g.fillStyle = accent;
+  for (let k = 1; k <= 4; k++) {
+    g.globalAlpha = 0.5 - k * 0.1;
+    g.fillRect(x - 0.5, back > 0 ? y + 2 + k * 5 : y - 7 - k * 5, 2, 5);
+  }
+  g.globalAlpha = 1;
 }
 
 interface DrawCoop {
@@ -232,6 +291,8 @@ function draw(
   ].filter(Boolean);
   text(upgrades.join("  "), W / 2, 10, 7, "center");
   g.globalAlpha = 1;
+  const mine = v.ships[coop?.you ?? 0];
+  if (mine) drawSpecial(g, texts, mine, W / 2, 18, now);
   g.fillRect(0, H - 6, W, 1);
   if (coop?.rtt) {
     // The round trip, under the ground line: grey when fine, yellow when slow, red when bad.
@@ -283,7 +344,14 @@ function draw(
   g.fillStyle = shell.accent;
 
   for (let i = 0; i < v.shots.length; i += SHOT_STRIDE)
-    g.fillRect(v.shots[i], v.shots[i + 1], v.shots[i + 2] ? 2 : 1, 5);
+    drawShot(
+      g,
+      shell.accent,
+      v.shots[i],
+      v.shots[i + 1],
+      v.shots[i + 2],
+      v.shots[i + 4],
+    );
   for (let i = 0; i < v.bombs.length; i += BOMB_STRIDE)
     g.fillRect(v.bombs[i], v.bombs[i + 1], 1, 4);
   if (v.flashLeft > 0) {
@@ -389,6 +457,8 @@ type Ghost = {
   at: number;
   /** When the server's copy was last seen; 0 until it first shows up. */
   seen: number;
+  /** The special: fast, and drills through what it hits. */
+  special?: boolean;
 };
 
 /**
@@ -430,6 +500,8 @@ export function playInvadersCoop(
   let partnerX: number | null = null;
   let ghosts: Ghost[] = [];
   let lastVolley = -Infinity;
+  /** When fire was pressed here (for the special's hold); Infinity once this hold fired it. */
+  let heldSince: number | null = null;
   let sent = "";
   let sentFire = false;
   let sentAt = 0;
@@ -506,14 +578,16 @@ export function playInvadersCoop(
       const px = x + vx * lead;
       const py = y + vy * lead;
       if (py < -6) continue;
-      // Your server shot confirms the ghost just ahead of it on the same line, and is not drawn itself.
+      // Your server shot confirms the ghost just ahead of it on the same line, and is not drawn itself
+      // (a faster shot trails further behind its ghost).
       if (ship === you) {
         const gh = ghosts.find(
           (g, k) =>
             !claimed.has(k) &&
+            !!g.special === (pierce === 2) &&
             Math.abs(g.x + g.vx * age(g, t) - px) < 6 &&
             py - ghostY(g, t) > -10 &&
-            py - ghostY(g, t) < 45,
+            py - ghostY(g, t) < (45 * Math.abs(g.vy)) / 260,
         );
         if (gh) {
           claimed.add(ghosts.indexOf(gh));
@@ -527,7 +601,7 @@ export function playInvadersCoop(
       shots.push(
         gh.x + gh.vx * age(gh, t),
         ghostY(gh, t),
-        v.pierceLeft > 0 ? 1 : 0,
+        gh.special ? 2 : v.pierceLeft > 0 ? 1 : 0,
         gh.vx,
         gh.vy,
         you,
@@ -582,7 +656,7 @@ export function playInvadersCoop(
       ).length;
       const volleys =
         Math.ceil(myShots / v.shotCount) +
-        new Set(ghosts.map((gh) => gh.at)).size;
+        new Set(ghosts.filter((gh) => !gh.special).map((gh) => gh.at)).size;
       if (
         t - lastVolley >= fireCooldownMs(v.rapidLevel) &&
         volleys < 1 + Math.ceil(v.rapidLevel / 2)
@@ -600,6 +674,22 @@ export function playInvadersCoop(
         }
       }
     }
+    // The special: charged (says the server) and fire held long enough here, once per hold.
+    if (!(active && fire)) heldSince = null;
+    else if (v && myX !== null && !v.over) {
+      heldSince ??= t;
+      if (v.ships[you]?.special && t - heldSince >= SPECIAL_HOLD_MS) {
+        heldSince = Infinity;
+        ghosts.push({
+          x: myX,
+          vx: 0,
+          vy: -SPECIAL_SPEED,
+          at: t,
+          seen: 0,
+          special: true,
+        });
+      }
+    }
     // A ghost goes when its server copy is gone (the shot hit something), when it reaches an invader (unless
     // piercing), or, never confirmed, after a round trip and a bit (the server did not fire it).
     if (v)
@@ -608,6 +698,7 @@ export function playInvadersCoop(
         const x = gh.x + gh.vx * age(gh, t);
         const hitInvader =
           v.pierceLeft <= 0 &&
+          !gh.special &&
           v.hp.some((hp, k) => {
             if (!hp) return false;
             const b = slotBox(v, k);
@@ -629,6 +720,7 @@ export function playInvadersCoop(
           t: "coop.input",
           input: {
             x: Math.round(myX * 10) / 10,
+            vx: Math.round(myVx),
             fire: firing,
             rtt: Math.round(net.rtt()),
           },

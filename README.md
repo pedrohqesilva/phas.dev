@@ -44,7 +44,7 @@
     </td>
     <td width="33%" valign="top">
       <h3>🎮 Four online games</h3>
-      Snake arena for everyone, Invaders co-op, Pong and Tetris versus. Lag-compensated, so 160 ms away still feels local.
+      Snake arena for everyone, Invaders co-op and versus, Pong and Tetris versus. Lag-compensated, so 160 ms away still feels local.
     </td>
     <td width="33%" valign="top">
       <h3>🏆 Global leaderboard</h3>
@@ -97,7 +97,7 @@
 <table>
   <tr>
     <td align="center" width="50%"><img src="docs/screens/07-snake-online.png" alt="Snake arena"><br><b>🐍 Snake</b><br><sub>Classic (walls kill or wrap) · <b>Online arena</b> with power-ups: red for speed, green for a shield</sub></td>
-    <td align="center" width="50%"><img src="docs/screens/08-invaders-coop.png" alt="Space Invaders co-op"><br><b>👾 Space Invaders</b><br><sub>Classic · <b>Co-op</b>, two ships against the same wave</sub></td>
+    <td align="center" width="50%"><img src="docs/screens/08-invaders-coop.png" alt="Space Invaders co-op"><br><b>👾 Space Invaders</b><br><sub>Classic · <b>Co-op</b>, two ships against the same wave · <b>Versus</b>, a ship at each end and the aliens in between. Five hits in a row charge a special shot</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/screens/09-pong.png" alt="Pong"><br><b>🏓 Pong</b><br><sub>Classic, against the computer · <b>Versus</b> 1v1, first to 7</sub></td>
@@ -146,7 +146,7 @@ flowchart LR
 The server is in Virginia, about 160 ms there and back from Brazil, and it decides every match. So that playing doesn't feel like that, the browser shows your own moves ahead of the server:
 
 - **Snake arena.** The server beats every 20 ms; each snake gathers move credit every beat (more when it is short) and steps a cell per whole credit. The browser plays your snake forward with the same rules ([`arena-rules.ts`](src/games/arena-rules.ts), [`arena-predict.ts`](src/games/arena-predict.ts)) to the beat a turn pressed now reaches the server on. Each turn is sent for that beat and applied on it, so it shows at once, on the cell you saw. Other snakes glide along their own bodies, drawn only from steps that already happened, so they never jump back.
-- **Invaders co-op and Pong.** Your ship or paddle moves in the browser and the server follows it at a capped speed. Bombs and the ball are checked against where it is on your screen right now. Everything else is drawn where it is now, projected from the last snapshot (the ball bounces off walls and paddles on the way). Your shots appear the moment you fire.
+- **Invaders co-op, versus and Pong.** Your ship or paddle moves in the browser and the server follows it at a capped speed. It reports where it is and how fast it is going (zero the moment it stops), so bombs, shots and the ball are checked against where it is on your screen right now. Everything else is drawn where it is now, projected from the last snapshot (the ball bounces off walls and paddles on the way). Your shots appear the moment you fire.
 - **Tetris versus.** Each player runs their own game on the same piece sequence (a shared seed); the server passes boards and attacks along.
 - **Reconnects.** A dropped connection comes back on its own within 15 seconds and takes the same seat. The ping shows on screen.
 
@@ -218,7 +218,7 @@ src/
 server/
   index.ts          static files, headers, routes, scores API
   games.ts          the WebSocket and its rooms
-  arena.ts coop.ts pong.ts tetris.ts rooms.ts
+  arena.ts coop.ts invaders-versus.ts pong.ts tetris.ts rooms.ts
   scores.ts         leaderboards
 video/              the Remotion demo (and the script that captures the screenshots)
 ```
