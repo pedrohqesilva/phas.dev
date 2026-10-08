@@ -12,10 +12,22 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <!-- First paint already in the site's colours: no white flash before the stylesheet arrives. -->
     <style>
-      :root { background: #111214; color: #dcd9d2; color-scheme: dark; }
-      :root[data-theme="light"] { background: #f3f3f1; color: #1c1e21; color-scheme: light; }
+      :root {
+        background: #111214;
+        color: #dcd9d2;
+        color-scheme: dark;
+      }
+      :root[data-theme="light"] {
+        background: #f3f3f1;
+        color: #1c1e21;
+        color-scheme: light;
+      }
       @media (prefers-color-scheme: light) {
-        :root:not([data-theme]) { background: #f3f3f1; color: #1c1e21; color-scheme: light; }
+        :root:not([data-theme]) {
+          background: #f3f3f1;
+          color: #1c1e21;
+          color-scheme: light;
+        }
       }
     </style>
     <!-- A <link>, not an import in main.ts: Vite then serves it before any script runs, in dev too. -->
@@ -32,7 +44,10 @@
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://phas.dev/" />
-    <meta property="og:title" content="Pedro Henrique, Engenheiro de Software Sênior" />
+    <meta
+      property="og:title"
+      content="Pedro Henrique, Engenheiro de Software Sênior"
+    />
     <meta
       property="og:description"
       content="Portfólio em forma de terminal. Digite ajuda e explore."

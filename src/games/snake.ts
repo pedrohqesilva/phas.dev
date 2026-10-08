@@ -40,7 +40,11 @@ const DIRS: Record<string, Point> = {
 const same = (a: Point, b: Point) => a.x === b.x && a.y === b.y;
 
 /** Opens the game; `onExit` gets the best round of the session. */
-export function playSnake(texts: SnakeTexts, onExit: (best: number) => void, { wrap = false } = {}) {
+export function playSnake(
+  texts: SnakeTexts,
+  onExit: (best: number) => void,
+  { wrap = false } = {},
+) {
   let cols = 0;
   let rows = 0;
   let snake: Point[] = [];
@@ -76,21 +80,35 @@ export function playSnake(texts: SnakeTexts, onExit: (best: number) => void, { w
       const dy = y - touchFrom.y;
       touchFrom = null;
       if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
-      steer(Math.abs(dx) > Math.abs(dy) ? DIRS[dx > 0 ? "ArrowRight" : "ArrowLeft"] : DIRS[dy > 0 ? "ArrowDown" : "ArrowUp"]);
+      steer(
+        Math.abs(dx) > Math.abs(dy)
+          ? DIRS[dx > 0 ? "ArrowRight" : "ArrowLeft"]
+          : DIRS[dy > 0 ? "ArrowDown" : "ArrowUp"],
+      );
     },
     onExit: () => onExit(Math.max(best, score)),
   });
   const { g } = shell;
 
   const taken = (p: Point) =>
-    snake.some((q) => same(q, p)) || blocks.some((b) => same(b, p)) || same(food, p) || (superFood !== null && same(superFood, p));
+    snake.some((q) => same(q, p)) ||
+    blocks.some((b) => same(b, p)) ||
+    same(food, p) ||
+    (superFood !== null && same(superFood, p));
   /** A random free cell; `awayFromHead` keeps blocks from landing right in the snake's path. */
   function freeCell(awayFromHead = 0): Point {
     const head = snake[0];
     for (let tries = 0; tries < 500; tries++) {
-      const p = { x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) };
+      const p = {
+        x: Math.floor(Math.random() * cols),
+        y: Math.floor(Math.random() * rows),
+      };
       if (taken(p)) continue;
-      if (head && Math.abs(p.x - head.x) + Math.abs(p.y - head.y) < awayFromHead) continue;
+      if (
+        head &&
+        Math.abs(p.x - head.x) + Math.abs(p.y - head.y) < awayFromHead
+      )
+        continue;
       return p;
     }
     return { x: 0, y: 0 };
@@ -126,7 +144,8 @@ export function playSnake(texts: SnakeTexts, onExit: (best: number) => void, { w
     const before = score;
     score += points * combo;
     // Crossing 30, 40, 50… drops a block, away from the head.
-    for (let mark = BLOCKS_FROM; mark <= score; mark += BLOCK_EVERY) if (mark > before) blocks.push(freeCell(6));
+    for (let mark = BLOCKS_FROM; mark <= score; mark += BLOCK_EVERY)
+      if (mark > before) blocks.push(freeCell(6));
   }
 
   function tick(now: number) {
@@ -139,12 +158,17 @@ export function playSnake(texts: SnakeTexts, onExit: (best: number) => void, { w
     dir = turns.shift() ?? dir;
     let head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
     if (wrap) head = { x: (head.x + cols) % cols, y: (head.y + rows) % rows };
-    const hitWall = head.x < 0 || head.y < 0 || head.x >= cols || head.y >= rows;
+    const hitWall =
+      head.x < 0 || head.y < 0 || head.x >= cols || head.y >= rows;
     if (superFood && now > superUntil) superFood = null;
     const ateSuper = superFood !== null && same(head, superFood);
     const ate = same(head, food) || ateSuper;
     const body = ate ? snake : snake.slice(0, -1);
-    if (hitWall || body.some((p) => same(p, head)) || blocks.some((b) => same(b, head))) {
+    if (
+      hitWall ||
+      body.some((p) => same(p, head)) ||
+      blocks.some((b) => same(b, head))
+    ) {
       best = Math.max(best, score);
       deadUntil = now + 900;
       return;
@@ -175,13 +199,19 @@ export function playSnake(texts: SnakeTexts, onExit: (best: number) => void, { w
     g.globalAlpha = 0.7;
     g.font = '13px "Geist Mono Variable", ui-monospace, monospace';
     g.textAlign = "left";
-    const comboText = combo > 1 && now - lastEat <= COMBO_MS ? `   ×${combo}` : "";
-    g.fillText(`${texts.score} ${score}   ${texts.best} ${Math.max(best, score)}${comboText}`, 14, 24);
+    const comboText =
+      combo > 1 && now - lastEat <= COMBO_MS ? `   ×${combo}` : "";
+    g.fillText(
+      `${texts.score} ${score}   ${texts.best} ${Math.max(best, score)}${comboText}`,
+      14,
+      24,
+    );
     // Blocks: hollow squares, so they read as walls rather than food.
     g.globalAlpha = 0.8;
     g.strokeStyle = shell.accent;
     g.lineWidth = 2;
-    for (const b of blocks) g.strokeRect(b.x * CELL + 2, b.y * CELL + 2, CELL - 4, CELL - 4);
+    for (const b of blocks)
+      g.strokeRect(b.x * CELL + 2, b.y * CELL + 2, CELL - 4, CELL - 4);
     g.globalAlpha = 0.85;
     g.fillRect(food.x * CELL + 5, food.y * CELL + 5, CELL - 10, CELL - 10);
     if (superFood) {
@@ -189,7 +219,12 @@ export function playSnake(texts: SnakeTexts, onExit: (best: number) => void, { w
       const period = superUntil - now < 2000 ? 90 : 260;
       g.globalAlpha = Math.floor(now / period) % 2 ? 1 : 0.45;
       g.fillStyle = "#fff";
-      g.fillRect(superFood.x * CELL + 2, superFood.y * CELL + 2, CELL - 4, CELL - 4);
+      g.fillRect(
+        superFood.x * CELL + 2,
+        superFood.y * CELL + 2,
+        CELL - 4,
+        CELL - 4,
+      );
       g.fillStyle = shell.accent;
     }
     snake.forEach((p, i) => {

@@ -222,8 +222,14 @@ export const projects: Project[] = [
     name: "Vittz",
     logo: "/projects/vittz.svg",
     url: "https://vittz.com.br",
-    status: { pt: "produto próprio, em produção com clínicas beta", en: "my own product, in production with beta clinics" },
-    tagline: { pt: "Cuidar de gente, não de planilha.", en: "Care for people, not spreadsheets." },
+    status: {
+      pt: "produto próprio, em produção com clínicas beta",
+      en: "my own product, in production with beta clinics",
+    },
+    tagline: {
+      pt: "Cuidar de gente, não de planilha.",
+      en: "Care for people, not spreadsheets.",
+    },
     description: {
       pt: "Sistema de gestão para clínicas e consultórios que junta agenda, prontuário, financeiro, estoque e WhatsApp num lugar só. Feito para clínicas pequenas e profissionais autônomos, começando pela odontologia.",
       en: "Management system for clinics and private practices that brings scheduling, health records, billing, inventory and WhatsApp into one place. Built for small clinics and solo professionals, starting with dentistry.",
@@ -250,14 +256,30 @@ export const projects: Project[] = [
         en: "Everything real-time on web and mobile, with built-in billing and OCR invoice import for inventory.",
       },
     ],
-    stack: ["React", "Vite", "Convex", "Expo", "TypeScript", "Vercel AI SDK", "OpenAI", "Claude", "Railway"],
+    stack: [
+      "React",
+      "Vite",
+      "Convex",
+      "Expo",
+      "TypeScript",
+      "Vercel AI SDK",
+      "OpenAI",
+      "Claude",
+      "Railway",
+    ],
   },
   {
     name: "iFleetHub",
     logo: "/projects/ifleethub.svg",
     url: "https://ifleethub.com.br",
-    status: { pt: "pré-lançamento, lista de espera aberta", en: "pre-launch, waitlist open" },
-    tagline: { pt: "Menos planilha. Mais estrada.", en: "Less spreadsheet. More road." },
+    status: {
+      pt: "pré-lançamento, lista de espera aberta",
+      en: "pre-launch, waitlist open",
+    },
+    tagline: {
+      pt: "Menos planilha. Mais estrada.",
+      en: "Less spreadsheet. More road.",
+    },
     description: {
       pt: "A torre de controle da transportadora: cada caminhão no mapa em tempo real e cada carga acompanhada etapa por etapa até a entrega. Para a equipe de operação e para os motoristas.",
       en: "A control tower for trucking companies: every truck on a live map and every load tracked step by step until delivery. For the operations team and for drivers.",
@@ -284,7 +306,16 @@ export const projects: Project[] = [
         en: "Multi-tenant with custom access profiles, on web, mobile web and the app.",
       },
     ],
-    stack: ["React", "Vite", "Convex", "Expo", "MapLibre", "WorkOS", "OpenAI Whisper", "Railway"],
+    stack: [
+      "React",
+      "Vite",
+      "Convex",
+      "Expo",
+      "MapLibre",
+      "WorkOS",
+      "OpenAI Whisper",
+      "Railway",
+    ],
   },
 ];
 

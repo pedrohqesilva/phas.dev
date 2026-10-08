@@ -11,7 +11,9 @@ import {
 } from "./content.ts";
 import { cmd, h, join, link, type Child } from "./dom.ts";
 import { icon, iconNames, type IconName } from "./icons.ts";
-import { playInvaders } from "./games/invaders.ts";
+import { playInvaders, playInvadersCoop, type InvadersTexts } from "./games/invaders.ts";
+import { isRoomCode } from "./games/protocol.ts";
+import { playSnakeArena } from "./games/snake-online.ts";
 import { playSnake } from "./games/snake.ts";
 import type { UI } from "./i18n.ts";
 
@@ -89,33 +91,96 @@ function startSnake({ t, print, focus, replaying }: Ctx, easy = false) {
   );
 }
 
+/** The texts every Space Invaders mode shares. */
+const invadersTexts = (t: UI, title = "Space Invaders"): InvadersTexts => ({
+  title,
+  help: t.invadersHelp,
+  start: t.gameStart,
+  exit: t.gameExit,
+  paused: t.gamePaused,
+  resume: t.gameResume,
+  over: t.invadersOverTitle,
+  restart: t.invadersRestart,
+  wave: t.invadersWave,
+  score: t.gameScore,
+  best: t.gameBest,
+  missed: t.invadersMissed,
+  powers: t.invadersPowers,
+  shots: t.invadersShots,
+  rapid: t.invadersRapid,
+});
+
 /** Full-screen Space Invaders; back on the terminal it reports the best score. */
 function startInvaders({ t, print, focus, replaying }: Ctx) {
   if (replaying) return;
-  playInvaders(
+  playInvaders(invadersTexts(t), (best) => {
+    print(muted(t.invadersOver(best)));
+    focus();
+  });
+}
+
+/** Co-op Space Invaders on the server: creates a room (and prints its link) or joins `room`. */
+function startCoop({ t, print, focus, replaying }: Ctx, room?: string) {
+  if (replaying) return;
+  playInvadersCoop(
+    { ...invadersTexts(t, t.coopTitle), help: t.coopHelp, paused: t.gameLiveMenu },
     {
-      title: "Space Invaders",
-      help: t.invadersHelp,
+      waiting: t.coopWaiting,
+      share: t.coopShare,
+      partnerLeft: t.coopPartnerLeft,
+      disconnected: t.netDisconnected,
+      full: t.coopFull,
+      notFound: t.coopNotFound,
+      you: t.coopYou,
+      partner: t.coopPartner,
+    },
+    {
+      room: room?.toUpperCase(),
+      onRoom(code) {
+        // The link goes to the clipboard when the browser allows it, and stays printed in the terminal.
+        const url = `${location.origin}/#coop-${code}`;
+        navigator.clipboard?.writeText(url).catch(() => {});
+        print(line(t.coopLink, " ", link(url)));
+      },
+      onExit(best, note) {
+        print(muted(note ? `${note} ${t.invadersOver(best)}` : t.invadersOver(best)));
+        focus();
+      },
+    },
+  );
+}
+
+/** The public Snake arena, as `name` (or an anonymous one the server picks). */
+function startArena({ t, print, focus, replaying }: Ctx, name = "") {
+  if (replaying) return;
+  playSnakeArena(
+    {
+      title: t.arenaTitle,
+      help: t.arenaHelp,
       start: t.gameStart,
       exit: t.gameExit,
-      paused: t.gamePaused,
+      paused: t.gameLiveMenu,
       resume: t.gameResume,
-      over: t.invadersOverTitle,
-      restart: t.invadersRestart,
-      wave: t.invadersWave,
       score: t.gameScore,
       best: t.gameBest,
-      missed: t.invadersMissed,
-      powers: t.invadersPowers,
-      shots: t.invadersShots,
-      rapid: t.invadersRapid,
+      online: t.arenaOnline,
+      top: t.arenaTop,
+      respawn: t.arenaRespawn,
+      connecting: t.netConnecting,
+      disconnected: t.netDisconnected,
+      full: t.arenaFull,
+      bot: t.arenaBot,
     },
-    (best) => {
-      print(muted(t.invadersOver(best)));
+    name,
+    (best, note) => {
+      print(muted(note ? `${note} ${t.snakeOver(best)}` : t.snakeOver(best)));
       focus();
     },
   );
 }
+
+const isOnline = (mode?: string) => ["online", "arena", "multi", "multiplayer"].includes(normalize(mode ?? ""));
+const isCoop = (mode?: string) => ["coop", "co-op", "dupla", "duo", "2p"].includes(normalize(mode ?? ""));
 
 const linkOf = (label: string) =>
   profile.links.find((l) => l.label === label)!.url;
@@ -459,10 +524,10 @@ export const commands: Command[] = [
   {
     id: "game",
     names: { pt: ["jogos", "game", "games", "jogo"], en: ["games", "game"] },
-    desc: { pt: "jogos (snake, invaders)", en: "games (snake, invaders)" },
+    desc: { pt: "jogos (snake, invaders, online)", en: "games (snake, invaders, online)" },
     icon: "terminal",
     args: () => ["snake", "invaders"],
-    run([arg, mode], ctx) {
+    run([arg, mode, extra], ctx) {
       const game = normalize(arg ?? "");
       if (!game)
         return ctx.print(
@@ -487,24 +552,28 @@ export const commands: Command[] = [
               cmd(`${name("game", ctx.lang)} invaders`, "invaders"),
             ),
             h("dd", null, ctx.t.invadersDesc),
+            h("dt", null, cmd(`${name("game", ctx.lang)} snake online`, "snake online")),
+            h("dd", null, ctx.t.arenaDesc),
+            h("dt", null, cmd(`${name("game", ctx.lang)} invaders coop`, "invaders coop")),
+            h("dd", null, ctx.t.coopDesc),
           ),
         );
       if (game === "snake" || game === "cobrinha")
-        return startSnake(ctx, isEasy(mode));
+        return isOnline(mode) ? startArena(ctx, extra) : startSnake(ctx, isEasy(mode));
       if (["invaders", "space", "spaceinvaders", "nave"].includes(game))
-        return startInvaders(ctx);
+        return isCoop(mode) ? startCoop(ctx, extra && isRoomCode(extra) ? extra : undefined) : startInvaders(ctx);
       ctx.print(muted(ctx.t.gameUsage(arg)));
     },
   },
   {
     id: "snake",
     names: { pt: ["snake", "cobrinha"], en: ["snake"] },
-    run: ([mode], ctx) => startSnake(ctx, isEasy(mode)),
+    run: ([mode, extra], ctx) => (isOnline(mode) ? startArena(ctx, extra) : startSnake(ctx, isEasy(mode))),
   },
   {
     id: "invaders",
     names: { pt: ["invaders", "nave"], en: ["invaders", "spaceinvaders"] },
-    run: (_, ctx) => startInvaders(ctx),
+    run: ([mode, extra], ctx) => (isCoop(mode) ? startCoop(ctx, extra && isRoomCode(extra) ? extra : undefined) : startInvaders(ctx)),
   },
   {
     id: "lang",
@@ -659,7 +728,9 @@ export function translateCommand(raw: string, lang: Lang): string {
   const typed = normalize(name);
   const other: Lang = lang === "pt" ? "en" : "pt";
   // Keep what was typed when it already reads as this language; translate the other one's main name.
-  const foreign = !command.names[lang].includes(typed) || (command.names[other][0] === typed && command.names[lang][0] !== typed);
+  const foreign =
+    !command.names[lang].includes(typed) ||
+    (command.names[other][0] === typed && command.names[lang][0] !== typed);
   if (!foreign) return raw;
   return [command.names[lang][0], ...args].join(" ");
 }

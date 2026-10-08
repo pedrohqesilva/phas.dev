@@ -31,6 +31,8 @@ export interface Shell {
 
 interface Options {
   texts: GameTexts;
+  /** Online games keep running on the server: leaving the tab doesn't pause, and Esc is just a menu. */
+  live?: boolean;
   onKey(key: string, down: boolean, e: KeyboardEvent): void;
   onResize?(): void;
   onStart?(): void;
@@ -38,7 +40,6 @@ interface Options {
   /** Touch on the play area (after the tutorial): position and phase. */
   onTouch?(x: number, y: number, phase: "start" | "move" | "end"): void;
 }
-
 
 export function openGame(options: Options): Shell {
   const { texts } = options;
@@ -95,7 +96,10 @@ export function openGame(options: Options): Shell {
   const shell: Shell = {
     canvas,
     g,
-    accent: getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#f0a43a",
+    accent:
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--accent")
+        .trim() || "#f0a43a",
     width: 0,
     height: 0,
     started: false,
@@ -148,7 +152,8 @@ export function openGame(options: Options): Shell {
     e.stopPropagation();
     if (shell.paused) {
       if (key === "q") close();
-      else if (key === "Escape" || key === " " || key === "Enter") setPaused(false);
+      else if (key === "Escape" || key === " " || key === "Enter")
+        setPaused(false);
       return;
     }
     if (key === "Escape") return shell.started ? setPaused(true) : close();
@@ -166,8 +171,12 @@ export function openGame(options: Options): Shell {
     if (!shell.started) return begin();
     options.onTouch?.(...point(e.touches[0]), "start");
   };
-  const onTouchMove = (e: TouchEvent) => shell.started && !shell.paused && options.onTouch?.(...point(e.touches[0]), "move");
-  const onTouchEnd = (e: TouchEvent) => shell.started && options.onTouch?.(...point(e.changedTouches[0]), "end");
+  const onTouchMove = (e: TouchEvent) =>
+    shell.started &&
+    !shell.paused &&
+    options.onTouch?.(...point(e.touches[0]), "move");
+  const onTouchEnd = (e: TouchEvent) =>
+    shell.started && options.onTouch?.(...point(e.changedTouches[0]), "end");
   const onClick = (e: MouseEvent) => {
     if (!(e.target as HTMLElement).closest(".game-exit, .game-pause")) begin();
   };
@@ -183,7 +192,7 @@ export function openGame(options: Options): Shell {
   resumeBtn.addEventListener("click", () => setPaused(false));
   quitBtn.addEventListener("click", () => close());
   // Leaving the tab pauses the game, like a console.
-  const onHidden = () => document.hidden && setPaused(true);
+  const onHidden = () => document.hidden && !options.live && setPaused(true);
   document.addEventListener("visibilitychange", onHidden);
 
   let raf = 0;

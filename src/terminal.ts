@@ -219,7 +219,8 @@ export class Terminal {
     this.replaying = true;
     try {
       for (const item of items) {
-        if (typeof item === "string") this.run(translateCommand(item, this.lang));
+        if (typeof item === "string")
+          this.run(translateCommand(item, this.lang));
         else {
           item();
           this.transcript.push(item);
@@ -279,7 +280,8 @@ export class Terminal {
       this.transcript.push(raw);
     }
     if (!input) return;
-    if (!this.replaying && this.history.at(-1) !== input) this.history.push(input);
+    if (!this.replaying && this.history.at(-1) !== input)
+      this.history.push(input);
     this.cursor = this.history.length;
 
     const [name, ...args] = input.split(/\s+/);
@@ -315,7 +317,10 @@ export class Terminal {
       clear: () => this.clear(),
       // While redrawing, the switches only print what they printed the first time.
       home: () => !this.replaying && this.hooks.home(),
-      setLang: (l) => (this.replaying ? this.print(h("p", { class: "muted" }, ui[l].langSet)) : this.hooks.setLang(l)),
+      setLang: (l) =>
+        this.replaying
+          ? this.print(h("p", { class: "muted" }, ui[l].langSet))
+          : this.hooks.setLang(l),
       setTheme: (t) => !this.replaying && this.hooks.setTheme(t),
       showSimple: () => !this.replaying && this.hooks.showSimple(),
       run: (i) => this.run(i),

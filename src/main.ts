@@ -128,7 +128,8 @@ function setTheme(theme: Theme) {
 }
 
 /** `/simples` (or `/simple`) is the simple version's own address, so it can be shared or bookmarked. */
-const SIMPLE_PATHS = ["/simples", "/simple"];
+// /curriculo, /resume and /cv are the same page: the simple version is the resume (and prints as one).
+const SIMPLE_PATHS = ["/simples", "/simple", "/curriculo", "/resume", "/cv"];
 const isSimplePath = () =>
   SIMPLE_PATHS.includes(location.pathname.replace(/\/$/, ""));
 
@@ -188,7 +189,15 @@ function welcome() {
 /** Boot lines in their finished state, for a redraw in another language. */
 function renderBootDone() {
   for (const line of ui[term.lang].boot)
-    term.printNow(h("p", { class: "boot" }, h("span", { class: "ok" }, "[ ok ]"), " ", line));
+    term.printNow(
+      h(
+        "p",
+        { class: "boot" },
+        h("span", { class: "ok" }, "[ ok ]"),
+        " ",
+        line,
+      ),
+    );
 }
 
 function renderWelcome() {
@@ -246,16 +255,31 @@ async function boot() {
   welcome();
 
   // Deep links: phas.dev/#projetos runs that command after boot.
-  const hash = decodeURIComponent(location.hash.slice(1));
-  if (hash && resolve(hash)) term.run(hash);
-  else startMenu();
+  if (!runHash()) startMenu();
   term.focus();
 }
 
-addEventListener("hashchange", () => {
+/**
+ * Deep links: #projetos runs that command; #coop-ABCD (a co-op invite) joins that Space Invaders room.
+ * True when the hash did something.
+ */
+function runHash(): boolean {
   const hash = decodeURIComponent(location.hash.slice(1));
-  if (hash && resolve(hash)) term.run(hash);
-});
+  const invite = /^coop-([a-z]{4})$/i.exec(hash);
+  if (invite) {
+    // An invite is used once: a reload must not try to join the same room again.
+    history.replaceState(null, "", location.pathname);
+    term.run(`${term.lang === "pt" ? "jogos" : "games"} invaders coop ${invite[1].toUpperCase()}`);
+    return true;
+  }
+  if (hash && resolve(hash)) {
+    term.run(hash);
+    return true;
+  }
+  return false;
+}
+
+addEventListener("hashchange", () => runHash());
 
 root.dataset.theme = initialTheme;
 applyLang(initialLang);
