@@ -356,29 +356,19 @@ const sections: Record<string, (ctx: Ctx) => void> = {
   },
 
   projects({ lang, print }) {
+    // The same timeline as the jobs: the logo is the marker, then name and status, my role, the pitch,
+    // the highlights and the stack.
     print(
       ...projects.map((p) =>
         h(
           "div",
-          { class: "project" },
-          h("img", {
-            class: "project-logo",
-            src: p.logo,
-            alt: "",
-            width: "44",
-            height: "44",
-          }),
-          h(
-            "div",
-            null,
-            // Same reading order as a job: name and address, my role and the status, then the pitch and the details.
-            h("p", { class: "job-head" }, h("span", { class: "title" }, link(p.url, p.name)), h("span", { class: "muted" }, p.url.replace("https://", ""))),
-            h("p", { class: "job-role" }, p.role[lang], h("span", { class: "muted" }, ` ${p.status[lang]}.`)),
-            h("p", { class: "tagline muted" }, p.tagline[lang]),
-            h("p", { class: "para" }, p.description[lang]),
-            h("ul", null, ...p.highlights.map((x) => highlight(x[lang]))),
-            tags(p.stack),
-          ),
+          { class: "entry job has-logo" },
+          h("img", { class: "job-logo", src: p.logo, alt: "", width: "18", height: "18" }),
+          h("p", { class: "job-head" }, h("span", { class: "title" }, link(p.url, p.name)), h("span", { class: "muted" }, p.status[lang])),
+          h("p", { class: "job-role" }, p.role[lang]),
+          h("p", { class: "muted" }, h("em", null, p.tagline[lang]), ` ${p.description[lang]}`),
+          h("ul", null, ...p.highlights.map((x) => highlight(x[lang]))),
+          tags(p.stack),
         ),
       ),
     );

@@ -741,40 +741,6 @@ html:not(.js) .back {
   opacity: 0.7;
 }
 
-/* Project cards: brand mark beside the details. */
-.project {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  gap: 0 16px;
-}
-.project + .project {
-  margin-top: 22px;
-}
-.project-logo {
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
-  margin-top: 2px;
-}
-.tagline {
-  margin: 6px 0 !important;
-  color: var(--fg);
-  font-style: italic;
-}
-.static article.project {
-  display: grid;
-}
-@media (max-width: 640px) {
-  .project {
-    grid-template-columns: 32px minmax(0, 1fr);
-    gap: 0 12px;
-  }
-  .project-logo {
-    width: 32px;
-    height: 32px;
-  }
-}
-
 /* Print (and the `curriculo` command): the simple version becomes a one-column resume. */
 /* Zero page margin leaves the browser no room for its own header and footer (date, title, URL);
    the margins move into the page padding, cloned on every printed page. */
@@ -964,7 +930,6 @@ html:not(.js) .back {
 
 /* Tags under a job or project: a little air above, after the bullets. */
 .entry .tags,
-.project .tags,
 .static article .tags {
   margin-top: 8px !important;
 }
@@ -1037,22 +1002,29 @@ html:not(.js) .back {
   margin-top: 8px;
 }
 
-/* Projects read like jobs: the role line is stronger than the status after it; the tagline steps back. */
-.project .tagline {
-  margin: 4px 0 0 !important;
-  font-style: italic;
+/* Projects on the jobs' timeline: the product's logo stands in for the square marker. */
+.job.has-logo::before {
+  display: none;
 }
-.project .para {
-  margin-top: 10px;
+.job-logo {
+  position: absolute;
+  left: -10px;
+  top: 0.2em;
+  width: 19px;
+  height: 19px;
+  padding: 1px;
+  object-fit: contain;
+  background: var(--bg);
 }
-.project li strong,
-.static .project li strong {
+.job li strong {
   font-weight: 600;
   color: var(--fg);
 }
-.project ul {
-  margin-top: 8px !important;
+/* A project's name reads like a company's: the underline only shows on hover. */
+.job-head a {
+  text-decoration: none;
+  background: none;
 }
-.project li + li {
-  margin-top: 3px;
+.job-head a:hover {
+  text-decoration: underline;
 }

@@ -78,8 +78,8 @@ export const profile = {
     en: "Nine years building software in C# and .NET, now focused on architecture and product. I think like an owner: I understand the business problem, design the solution and stay with it until it runs in production.",
   } satisfies L,
   now: {
-    pt: "Na Paysign, defino a base das novas APIs e os padrões técnicos da empresa. Por conta própria, criei sozinho dois SaaS: o Vittz, para clínicas, já com clientes beta, e o iFleetHub, para transportadoras, em pré-lançamento. Antes, ajudei a construir um banco digital no Canadá e plataformas do varejo brasileiro.",
-    en: "At Paysign I define the foundation of new APIs and the company's technical standards. On my own, I built two SaaS products: Vittz, for clinics, already with beta customers, and iFleetHub, for trucking companies, in pre-launch. Before that, I helped build a digital bank in Canada and platforms for Brazilian retail.",
+    pt: "Na Paysign, defino a base das novas APIs e os padrões técnicos da empresa. Por conta própria, criei sozinho dois SaaS, ambos em produção com clientes beta: o Vittz, para clínicas, e o iFleetHub, para transportadoras. Antes, ajudei a construir um banco digital no Canadá e plataformas do varejo brasileiro.",
+    en: "At Paysign I define the foundation of new APIs and the company's technical standards. On my own, I built two SaaS products, both in production with beta customers: Vittz, for clinics, and iFleetHub, for trucking companies. Before that, I helped build a digital bank in Canada and platforms for Brazilian retail.",
   } satisfies L,
   extra: {
     pt: "Prefiro soluções simples de evoluir: DDD, monólito modular e Vertical Slice quando bastam, microsserviços quando são necessários. Uso IA no dia a dia e dentro dos produtos (assistentes com dados reais, transcrição, MCP) e gosto de ensinar quem está começando.",
@@ -428,7 +428,7 @@ export const projects: Project[] = [
     name: "iFleetHub",
     logo: "/projects/ifleethub.svg",
     url: "https://ifleethub.com.br",
-    status: { pt: "Pré-lançamento, lista de espera aberta", en: "Pre-launch, waitlist open" },
+    status: { pt: "Em produção com transportadoras beta", en: "In production with beta trucking companies" },
     role: { pt: "Produto meu, do conceito ao código.", en: "My own product, from concept to code." },
     tagline: { pt: "Menos planilha. Mais estrada.", en: "Less spreadsheet. More road." },
     description: {

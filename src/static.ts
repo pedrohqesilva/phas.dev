@@ -53,16 +53,13 @@ export function renderStatic(lang: Lang): string {
 
   const projs = projects
     .map(
-      (p) => `<article class="project">
-  <img class="project-logo" src="${p.logo}" alt="" width="44" height="44" />
-  <div>
-    <h3 class="job-head">${a(p.url, p.name)} <span class="meta">${esc(p.url.replace("https://", ""))}</span></h3>
-    <p class="job-role">${esc(p.role[lang])}<span class="meta"> ${esc(p.status[lang])}.</span></p>
-    <p class="tagline meta">${esc(p.tagline[lang])}</p>
-    <p>${esc(p.description[lang])}</p>
-    <ul>${p.highlights.map((x) => `<li>${highlight(x[lang])}</li>`).join("")}</ul>
-    ${tags(p.stack)}
-  </div>
+      (p) => `<article class="job has-logo">
+  <img class="job-logo" src="${p.logo}" alt="" width="18" height="18" />
+  <h3 class="job-head">${a(p.url, p.name)} <span class="meta">${esc(p.status[lang])}</span></h3>
+  <p class="job-role">${esc(p.role[lang])}</p>
+  <p class="meta"><em>${esc(p.tagline[lang])}</em> ${esc(p.description[lang])}</p>
+  <ul>${p.highlights.map((x) => `<li>${highlight(x[lang])}</li>`).join("")}</ul>
+  ${tags(p.stack)}
 </article>`,
     )
     .join("\n");

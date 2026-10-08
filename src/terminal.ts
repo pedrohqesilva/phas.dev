@@ -28,7 +28,7 @@ const touch = matchMedia("(pointer: coarse)");
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** The pieces of a block that appear one at a time when output streams in. */
-const UNITS = "p, li, dt, dd, pre, figure, svg.banner, .project-logo, .tile";
+const UNITS = "p, li, dt, dd, pre, figure, svg.banner, .job-logo, .tile";
 
 /** Short lines appear quickly, longer ones get a beat more so the eye can follow. */
 const pace = (el: Element) =>
