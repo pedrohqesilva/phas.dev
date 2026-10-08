@@ -124,3 +124,35 @@ attachGames(server);
 server.listen(PORT, () =>
   console.log(`phas.dev on :${PORT} (${files.size} static files)`),
 );
+
+/**
+ * IndexNow: after a deploy, tell Bing and the other IndexNow engines that the pages changed, instead of
+ * waiting for their next crawl. The key is the public `<key>.txt` file in dist (it proves the site is ours).
+ * Only in Railway's production, a minute after start so the new deploy is the one answering.
+ */
+const SITE = "https://phas.dev";
+const INDEXNOW_URLS = ["/", "/en", "/curriculo", "/resume", "/llms.txt", "/resume.md", "/curriculo.md"];
+const indexNowKey = [...files.keys()]
+  .map((path) => /^\/([a-f0-9]{32})\.txt$/.exec(path)?.[1])
+  .find(Boolean);
+
+async function pingIndexNow(key: string) {
+  try {
+    const res = await fetch("https://api.indexnow.org/indexnow", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({
+        host: new URL(SITE).host,
+        key,
+        keyLocation: `${SITE}/${key}.txt`,
+        urlList: INDEXNOW_URLS.map((path) => SITE + path),
+      }),
+    });
+    console.log(`indexnow: ${res.status} for ${INDEXNOW_URLS.length} urls`);
+  } catch (error) {
+    console.warn("indexnow: failed", error);
+  }
+}
+
+if (indexNowKey && process.env.RAILWAY_ENVIRONMENT_NAME === "production")
+  setTimeout(() => pingIndexNow(indexNowKey), 60_000).unref();
