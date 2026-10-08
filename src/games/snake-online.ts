@@ -18,6 +18,7 @@ export interface ArenaTexts extends GameTexts {
   respawn: string;
   connecting: string;
   disconnected: string;
+  unreachable: string;
   full: string;
   bot: string;
 }
@@ -59,8 +60,8 @@ export function playSnakeArena(
         if (me) best = Math.max(best, me.score);
       } else if (msg.t === "arena.full") note = texts.full;
     },
-    close() {
-      note ??= texts.disconnected;
+    close(opened) {
+      note ??= opened ? texts.disconnected : texts.unreachable;
     },
   });
 

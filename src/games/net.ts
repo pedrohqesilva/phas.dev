@@ -9,13 +9,17 @@ export interface Net {
 export function connect(handlers: {
   open(): void;
   message(msg: ServerMessage): void;
-  close(): void;
+  close(opened: boolean): void;
 }): Net {
   const ws = new WebSocket(
     `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`,
   );
   let closedByUs = false;
-  ws.addEventListener("open", () => handlers.open());
+  let opened = false;
+  ws.addEventListener("open", () => {
+    opened = true;
+    handlers.open();
+  });
   ws.addEventListener("message", (e) => {
     try {
       handlers.message(JSON.parse(e.data as string) as ServerMessage);
@@ -23,7 +27,8 @@ export function connect(handlers: {
       console.error(error);
     }
   });
-  ws.addEventListener("close", () => !closedByUs && handlers.close());
+  // `opened` tells "never reached the server" apart from "the connection dropped".
+  ws.addEventListener("close", () => !closedByUs && handlers.close(opened));
   return {
     send(msg) {
       if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));

@@ -46,6 +46,7 @@ export interface CoopTexts {
   share: string;
   partnerLeft: string;
   disconnected: string;
+  unreachable: string;
   full: string;
   notFound: string;
   you: string;
@@ -401,8 +402,8 @@ export function playInvadersCoop(
         overlay = [note];
       }
     },
-    close() {
-      note ??= coop.disconnected;
+    close(opened) {
+      note ??= opened ? coop.disconnected : coop.unreachable;
       overlay = [note];
     },
   });
