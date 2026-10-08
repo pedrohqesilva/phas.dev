@@ -117,7 +117,16 @@ type Bomb = { x: number; y: number; vy: number };
 type Drop = { x: number; y: number; kind: PowerKind };
 type Box = { x: number; y: number; w: number; h: number };
 type Cell = { x: number; y: number; alive: boolean };
-type Ship = { x: number; hitUntil: number; fireCooldown: number };
+type Ship = {
+  x: number;
+  hitUntil: number;
+  fireCooldown: number;
+  /**
+   * Co-op only: where the ship is on its player's screen right now, which runs a little ahead of `x` (the
+   * server learns of each move half a round trip late). Bombs and power-ups are checked against it.
+   */
+  hitX?: number;
+};
 
 export interface InvadersState {
   invaders: Invader[];
@@ -395,7 +404,9 @@ function end(st: InvadersState) {
 export function moveShip(x: number, input: ShipInput, dt: number): number {
   const s = dt / 1000;
   if (input.touchX !== null)
-    x += Math.sign(input.touchX - x) * Math.min(Math.abs(input.touchX - x), 140 * s);
+    x +=
+      Math.sign(input.touchX - x) *
+      Math.min(Math.abs(input.touchX - x), 140 * s);
   else x += ((input.right ? 1 : 0) - (input.left ? 1 : 0)) * 110 * s;
   return Math.max(8, Math.min(W - 8, x));
 }
@@ -549,7 +560,7 @@ export function stepInvaders(
   st.bombs = st.bombs.filter((b) => {
     b.y += b.vy * s;
     const hit = st.ships.find(
-      (ship) => now > ship.hitUntil && inside(b, shipBox(ship.x)),
+      (ship) => now > ship.hitUntil && inside(b, shipBox(ship.hitX ?? ship.x)),
     );
     if (hit) {
       loseLife(st, now, hit);
@@ -562,7 +573,7 @@ export function stepInvaders(
   st.drops = st.drops.filter((d) => {
     d.y += DROP_SPEED * s;
     const caught = st.ships.some((ship) => {
-      const box = shipBox(ship.x);
+      const box = shipBox(ship.hitX ?? ship.x);
       return inside(d, {
         x: box.x - 3,
         y: box.y - 3,

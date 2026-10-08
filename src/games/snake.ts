@@ -7,6 +7,7 @@
 // From 30 points, every 10 points drops a fixed block on the field.
 // Easy mode (`game snake facil`): the walls wrap around instead of killing.
 import { openGame, type GameTexts } from "./shell.ts";
+import { drawSnake, swipe } from "./snake-draw.ts";
 
 export interface SnakeTexts extends GameTexts {
   score: string;
@@ -60,7 +61,15 @@ export function playSnake(
   let lastEat = -Infinity;
   let deadUntil = 0;
   let stepMs = STEP_MS;
-  let touchFrom: Point | null = null;
+  /** Time into the current tick, for the smooth drawing. */
+  let acc = 0;
+  /** Swipe directions (up, right, down, left) as steps. */
+  const SWIPE_DIRS = [
+    DIRS.ArrowUp,
+    DIRS.ArrowRight,
+    DIRS.ArrowDown,
+    DIRS.ArrowLeft,
+  ];
 
   const shell = openGame({
     texts,
@@ -73,19 +82,7 @@ export function playSnake(
     onKey(key, down) {
       if (down && DIRS[key]) steer(DIRS[key]);
     },
-    onTouch(x, y, phase) {
-      if (phase === "start") touchFrom = { x, y };
-      if (phase !== "end" || !touchFrom) return;
-      const dx = x - touchFrom.x;
-      const dy = y - touchFrom.y;
-      touchFrom = null;
-      if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
-      steer(
-        Math.abs(dx) > Math.abs(dy)
-          ? DIRS[dx > 0 ? "ArrowRight" : "ArrowLeft"]
-          : DIRS[dy > 0 ? "ArrowDown" : "ArrowUp"],
-      );
-    },
+    onTouch: swipe((dir) => steer(SWIPE_DIRS[dir])),
     onExit: () => onExit(Math.max(best, score)),
   });
   const { g } = shell;
@@ -227,14 +224,27 @@ export function playSnake(
       );
       g.fillStyle = shell.accent;
     }
-    snake.forEach((p, i) => {
-      g.globalAlpha = i === 0 ? 1 : Math.max(0.35, 1 - i / (snake.length + 8));
-      g.fillRect(p.x * CELL + 1, p.y * CELL + 1, CELL - 2, CELL - 2);
-    });
-    g.globalAlpha = 1;
+    // Gliding through the tick: the head into the cell it is about to enter, the tail out of its last one.
+    const moving = shell.started && !shell.paused && !deadUntil;
+    const step = turns[0] ?? dir;
+    const next = { x: snake[0].x + step.x, y: snake[0].y + step.y };
+    const inside = next.x >= 0 && next.y >= 0 && next.x < cols && next.y < rows;
+    drawSnake(
+      g,
+      {
+        body: snake.flatMap((p) => [p.x, p.y]),
+        next: moving && inside ? [next.x, next.y] : null,
+        growing:
+          same(next, food) || (superFood !== null && same(next, superFood)),
+      },
+      CELL,
+      0,
+      0,
+      acc / stepMs,
+      (i, n) => (i === 0 ? 1 : Math.max(0.35, 1 - i / (n + 8))),
+    );
   }
 
-  let acc = 0;
   shell.loop((now, dt) => {
     // Behind the tutorial (and while paused) the snake waits, already drawn.
     if (shell.started && !shell.paused) {

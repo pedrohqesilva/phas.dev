@@ -32,7 +32,7 @@ import {
   type PowerKind,
   type ShipInput,
 } from "./invaders-sim.ts";
-import { connect } from "./net.ts";
+import { connect, pingLabel } from "./net.ts";
 import { openGame, type GameTexts, type Shell } from "./shell.ts";
 
 export type { PowerKind } from "./invaders-sim.ts";
@@ -55,6 +55,9 @@ export interface CoopTexts {
   /** "{code}" is replaced with the room code. */
   share: string;
   partnerLeft: string;
+  /** Your partner's connection dropped and the game waits for them. */
+  partnerAway: string;
+  reconnecting: string;
   disconnected: string;
   unreachable: string;
   full: string;
@@ -177,6 +180,8 @@ interface DrawCoop {
   coop: CoopTexts;
   /** Lines shown over a dimmed field (waiting, partner left…). */
   overlay: string[];
+  /** Round trip to the server in ms, shown small in a corner; 0 until measured. */
+  rtt: number;
 }
 
 /** Draws one frame of a view; with `coop`, your ship is the accent and your partner's is white. */
@@ -228,6 +233,13 @@ function draw(
   text(upgrades.join("  "), W / 2, 10, 7, "center");
   g.globalAlpha = 1;
   g.fillRect(0, H - 6, W, 1);
+  if (coop?.rtt) {
+    // The round trip, under the ground line: grey when fine, yellow when slow, red when bad.
+    const ping = pingLabel(coop.rtt);
+    g.fillStyle = ping.color;
+    text(ping.text, W - 2, H - 0.5, 5, "right");
+    g.fillStyle = shell.accent;
+  }
 
   const flashing = new Set(v.flash);
   v.hp.forEach((hp, k) => {
@@ -400,11 +412,16 @@ export function playInvadersCoop(
   /** When the last snapshot arrived (performance.now()). */
   let viewAt = 0;
   let you = 0;
+  /** The room and this seat's token, to take the seat back after a dropped connection. */
+  let code = room;
+  let token: string | undefined;
   let note: string | undefined;
   let overlay: string[] = [coop.waiting];
   let best = 0;
   /** Your ship, moved here as you press; the server follows it. Null until a snapshot places it. */
   let myX: number | null = null;
+  /** How fast your ship is moving, sent along so the server can check bombs where it really is. */
+  let myVx = 0;
   /** Your partner's ship, eased towards each snapshot so it glides instead of stepping 30 times a second. */
   let partnerX: number | null = null;
   let ghosts: Ghost[] = [];
@@ -415,11 +432,17 @@ export function playInvadersCoop(
 
   const net = connect({
     open: () =>
-      net.send(room ? { t: "coop.join", room } : { t: "coop.create" }),
+      net.send(
+        code
+          ? { t: "coop.join", room: code, resume: token }
+          : { t: "coop.create" },
+      ),
     message(msg) {
       if (msg.t === "coop.room") {
         you = msg.you;
-        if (!room) onRoom(msg.room);
+        token = msg.token;
+        if (!code) onRoom(msg.room);
+        code = msg.room;
         overlay =
           msg.players < 2
             ? [coop.waiting, coop.share.replace("{code}", msg.room)]
@@ -431,13 +454,18 @@ export function playInvadersCoop(
         best = Math.max(best, msg.view.best);
         myX ??= msg.view.ships[you]?.x ?? null;
         if (msg.view.over) ghosts = [];
-      } else if (msg.t === "coop.left") {
+      } else if (msg.t === "coop.away") overlay = [coop.partnerAway];
+      else if (msg.t === "coop.back") overlay = [];
+      else if (msg.t === "coop.left") {
         note = coop.partnerLeft;
         overlay = [note];
       } else if (msg.t === "coop.error") {
         note = msg.reason === "full" ? coop.full : coop.notFound;
         overlay = [note];
       }
+    },
+    reconnecting() {
+      overlay = [coop.reconnecting];
     },
     close(opened) {
       note ??= opened ? coop.disconnected : coop.unreachable;
@@ -462,8 +490,11 @@ export function playInvadersCoop(
 
   /** The last snapshot, moved forward to the present and with your ship and shots as they are here. */
   function present(v: InvadersView, t: number): InvadersView {
-    // The snapshot left the server half a round trip ago, plus however long it has been here.
-    const lead = Math.min(0.3, (net.rtt() / 2 + (t - viewAt)) / 1000);
+    // The snapshot left the server half a round trip ago, plus however long it has been here. While the
+    // game waits (a message over the field: someone reconnecting, waiting for the partner), nothing moves.
+    const lead = overlay.length
+      ? 0
+      : Math.min(0.3, (net.rtt() / 2 + (t - viewAt)) / 1000);
     const shots: number[] = [];
     const claimed = new Set<number>();
     for (let i = 0; i < v.shots.length; i += SHOT_STRIDE) {
@@ -489,10 +520,21 @@ export function playInvadersCoop(
       shots.push(px, py, pierce, vx, vy, ship);
     }
     for (const gh of ghosts)
-      shots.push(gh.x + gh.vx * age(gh, t), ghostY(gh, t), v.pierceLeft > 0 ? 1 : 0, gh.vx, gh.vy, you);
+      shots.push(
+        gh.x + gh.vx * age(gh, t),
+        ghostY(gh, t),
+        v.pierceLeft > 0 ? 1 : 0,
+        gh.vx,
+        gh.vy,
+        you,
+      );
     const bombs: number[] = [];
     for (let i = 0; i < v.bombs.length; i += BOMB_STRIDE)
-      bombs.push(v.bombs[i], v.bombs[i + 1] + v.bombs[i + 2] * lead, v.bombs[i + 2]);
+      bombs.push(
+        v.bombs[i],
+        v.bombs[i + 1] + v.bombs[i + 2] * lead,
+        v.bombs[i + 2],
+      );
     return {
       ...v,
       ships: v.ships.map((ship, i) => ({
@@ -516,19 +558,41 @@ export function playInvadersCoop(
     const fire = input.fire || input.touchX !== null;
     const v = view;
 
+    const before = myX;
     if (v && myX !== null && active && !v.over) myX = moveShip(myX, input, dt);
+    myVx =
+      before !== null && myX !== null && dt > 0
+        ? ((myX - before) * 1000) / dt
+        : 0;
     const partner = v?.ships[1 - you];
-    if (partner) partnerX = partnerX === null ? partner.x : partnerX + (partner.x - partnerX) * Math.min(1, dt / 50);
+    if (partner)
+      partnerX =
+        partnerX === null
+          ? partner.x
+          : partnerX + (partner.x - partnerX) * Math.min(1, dt / 50);
 
     // Fire: the volley shows at once, under the same pacing the server uses (cooldown, volleys on screen).
     if (v && myX !== null && active && fire && !v.over) {
-      const myShots = v.shots.filter((_, i) => i % SHOT_STRIDE === 5 && v.shots[i] === you).length;
-      const volleys = Math.ceil(myShots / v.shotCount) + new Set(ghosts.map((gh) => gh.at)).size;
-      if (t - lastVolley >= fireCooldownMs(v.rapidLevel) && volleys < 1 + Math.ceil(v.rapidLevel / 2)) {
+      const myShots = v.shots.filter(
+        (_, i) => i % SHOT_STRIDE === 5 && v.shots[i] === you,
+      ).length;
+      const volleys =
+        Math.ceil(myShots / v.shotCount) +
+        new Set(ghosts.map((gh) => gh.at)).size;
+      if (
+        t - lastVolley >= fireCooldownMs(v.rapidLevel) &&
+        volleys < 1 + Math.ceil(v.rapidLevel / 2)
+      ) {
         lastVolley = t;
         for (let i = 0; i < v.shotCount; i++) {
           const k = i - (v.shotCount - 1) / 2;
-          ghosts.push({ x: myX + k * 3, vx: k * 34, vy: -shotSpeed(v.rapidLevel), at: t, seen: 0 });
+          ghosts.push({
+            x: myX + k * 3,
+            vx: k * 34,
+            vy: -shotSpeed(v.rapidLevel),
+            at: t,
+            seen: 0,
+          });
         }
       }
     }
@@ -549,18 +613,31 @@ export function playInvadersCoop(
         return y > -6 && !hitInvader && alive;
       });
 
-    // Report the ship's place up to 30 times a second; a fire press or release goes at once.
+    // Report the ship's place (and speed) up to 30 times a second; a fire press or release goes at once.
     if (myX !== null) {
       const firing = active && fire;
-      const key = `${Math.round(myX * 10)}|${firing}`;
+      const key = `${Math.round(myX * 10)}|${firing}|${Math.sign(Math.round(myVx))}`;
       if (key !== sent && (firing !== sentFire || t - sentAt >= 33)) {
         sent = key;
         sentFire = firing;
         sentAt = t;
-        net.send({ t: "coop.input", input: { x: Math.round(myX * 10) / 10, fire: firing } });
+        net.send({
+          t: "coop.input",
+          input: {
+            x: Math.round(myX * 10) / 10,
+            fire: firing,
+            vx: Math.round(myVx),
+            rtt: Math.round(net.rtt()),
+          },
+        });
       }
     }
 
-    draw(shell, f, v ? present(v, t) : placeholder, texts, now, { you, coop, overlay });
+    draw(shell, f, v ? present(v, t) : placeholder, texts, now, {
+      you,
+      coop,
+      overlay,
+      rtt: net.rtt(),
+    });
   });
 }

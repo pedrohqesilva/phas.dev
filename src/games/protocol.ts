@@ -52,29 +52,49 @@ export interface ArenaState {
 export interface CoopInput {
   x: number;
   fire: boolean;
+  /**
+   * The ship's speed right now and the measured round trip: the server uses them to place the ship where
+   * it really is on the player's screen when a bomb arrives, not where the last report left it.
+   */
+  vx?: number;
+  rtt?: number;
 }
 
 export type ClientMessage =
   /** Round-trip time: the server answers `pong` with the same `n` right away. */
   | { t: "ping"; n: number }
-  | { t: "arena.join"; name: string }
+  /** `resume`: the token from a previous welcome, to take the same snake back after a dropped connection. */
+  | { t: "arena.join"; name: string; resume?: string }
   /** A turn, numbered, meant for server tick `at` (what the browser showed when it was pressed). */
   | { t: "arena.dir"; dir: Dir; seq: number; at: number }
   | { t: "coop.create" }
-  | { t: "coop.join"; room: string }
+  /** `resume`: the token from `coop.room`, to take the same seat back after a dropped connection. */
+  | { t: "coop.join"; room: string; resume?: string }
   | { t: "coop.ready" }
   | { t: "coop.input"; input: CoopInput | ShipInput };
 
 export type ServerMessage =
   | { t: "pong"; n: number }
-  | { t: "arena.welcome"; you: number; name: string }
+  | { t: "arena.welcome"; you: number; name: string; token: string }
   | { t: "arena.state"; state: ArenaState }
   | { t: "arena.full" }
-  | { t: "coop.room"; room: string; you: number; players: number }
+  | {
+      t: "coop.room";
+      room: string;
+      you: number;
+      players: number;
+      token: string;
+    }
+  /** The other player's connection dropped: the game waits for them (up to a few seconds). */
+  | { t: "coop.away" }
+  | { t: "coop.back" }
   | { t: "coop.start" }
   | { t: "coop.state"; view: InvadersView }
   | { t: "coop.left" }
   | { t: "coop.error"; reason: "full" | "not-found" };
+
+/** How long a dropped player's snake or co-op seat is kept for them to come back. */
+export const RESUME_MS = 15_000;
 
 /** Room codes: 4 letters without the easily confused ones (I, L, O). */
 export const ROOM_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ";

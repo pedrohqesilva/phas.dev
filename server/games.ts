@@ -94,6 +94,7 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
               cleanName(String(msg.name ?? "")) ||
                 `anon${Math.floor(Math.random() * 900 + 100)}`,
               send,
+              typeof msg.resume === "string" ? msg.resume : undefined,
             );
             if (id === null) send({ t: "arena.full" });
             else session.arenaId = id;
@@ -114,7 +115,11 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
           break;
         case "coop.join":
           if (!session.room && isRoomCode(String(msg.room ?? "")))
-            session.room = coop.join(String(msg.room), send);
+            session.room = coop.join(
+              String(msg.room),
+              send,
+              typeof msg.resume === "string" ? msg.resume : undefined,
+            );
           else if (!session.room)
             send({ t: "coop.error", reason: "not-found" });
           break;

@@ -2,11 +2,14 @@
 // Snakes move together; a head on a wall or on any body (its own included) dies, and two heads meeting
 // both die. A dead snake turns into food and respawns after a short wait. While fewer than three people
 // are playing, a couple of bots join so the arena never feels empty; they leave as people arrive.
+// A dropped connection keeps its snake for RESUME_MS: the page reconnects and takes it back with its token.
+import { randomUUID } from "node:crypto";
 import {
   ARENA_COLS,
   ARENA_ROWS,
   ARENA_TICK_MS,
   DIR_STEP,
+  RESUME_MS,
   type ArenaState,
   type Dir,
   type ServerMessage,
@@ -30,6 +33,10 @@ interface Player {
   /** Cells still to grow by (a super grain grows the snake by three). */
   grow: number;
   send?: (msg: ServerMessage) => void;
+  /** Proof of who this is, to resume after a dropped connection. */
+  token: string;
+  /** When the connection dropped; null while connected. */
+  awaySince: number | null;
 }
 
 const START_LENGTH = 4;
@@ -59,7 +66,9 @@ export function createArena() {
   let timer: ReturnType<typeof setInterval> | null = null;
   let tickNo = 0;
 
-  const humans = () => [...players.values()].filter((p) => !p.bot);
+  /** People connected right now (a dropped one waiting to come back does not count). */
+  const humans = () =>
+    [...players.values()].filter((p) => !p.bot && p.awaySince === null);
 
   function occupied(): Set<number> {
     const cells = new Set<number>();
@@ -179,8 +188,19 @@ export function createArena() {
   function tick() {
     const now = Date.now();
     tickNo++;
-    for (const p of players.values())
-      if (!p.alive && now >= p.respawnAt) spawn(p, now);
+    let gone = false;
+    for (const p of players.values()) {
+      // Gone for good: past the grace period.
+      if (p.awaySince !== null && now - p.awaySince > RESUME_MS) {
+        if (p.alive) kill(p, now);
+        players.delete(p.id);
+        gone = true;
+        continue;
+      }
+      if (!p.alive && now >= p.respawnAt && p.awaySince === null) spawn(p, now);
+    }
+    if (gone) balanceBots();
+    if (!timer) return;
     if (superFood && now > superFood.until) superFood = null;
 
     const living = [...players.values()].filter((p) => p.alive);
@@ -279,6 +299,8 @@ export function createArena() {
     for (const bot of bots.slice(wanted)) players.delete(bot.id);
     for (let i = bots.length; i < wanted; i++) {
       const bot: Player = {
+        token: "",
+        awaySince: null,
         id: nextId++,
         name: BOT_NAMES[i],
         bot: true,
@@ -293,8 +315,10 @@ export function createArena() {
       };
       players.set(bot.id, bot);
     }
-    if (people && !timer) timer = setInterval(tick, ARENA_TICK_MS);
-    if (!people && timer) {
+    // The arena keeps running while someone may still come back.
+    const waiting = [...players.values()].some((p) => p.awaySince !== null);
+    if ((people || waiting) && !timer) timer = setInterval(tick, ARENA_TICK_MS);
+    if (!people && !waiting && timer) {
       clearInterval(timer);
       timer = null;
       food = [];
@@ -303,13 +327,36 @@ export function createArena() {
   }
 
   return {
-    /** Adds a player; null when the arena is full. */
-    join(name: string, send: (msg: ServerMessage) => void): number | null {
+    /** Adds a player (or gives a dropped one its snake back, by token); null when the arena is full. */
+    join(
+      name: string,
+      send: (msg: ServerMessage) => void,
+      resume?: string,
+    ): number | null {
+      const back = resume
+        ? [...players.values()].find(
+            (p) => p.token === resume && p.awaySince !== null,
+          )
+        : undefined;
+      if (back) {
+        back.send = send;
+        back.awaySince = null;
+        send({
+          t: "arena.welcome",
+          you: back.id,
+          name: back.name,
+          token: back.token,
+        });
+        balanceBots();
+        return back.id;
+      }
       if (humans().length >= MAX_HUMANS) return null;
       const taken = new Set([...players.values()].map((p) => p.name));
       let unique = name;
       for (let n = 2; taken.has(unique); n++) unique = `${name}${n}`;
       const player: Player = {
+        token: randomUUID(),
+        awaySince: null,
         id: nextId++,
         name: unique,
         bot: false,
@@ -324,7 +371,12 @@ export function createArena() {
         send,
       };
       players.set(player.id, player);
-      send({ t: "arena.welcome", you: player.id, name: unique });
+      send({
+        t: "arena.welcome",
+        you: player.id,
+        name: unique,
+        token: player.token,
+      });
       balanceBots();
       return player.id;
     },
@@ -333,8 +385,13 @@ export function createArena() {
       // Up to three queued turns, so a quick double tap (down, then left) is not lost between ticks.
       if (p && p.turns.length < 3) p.turns.push({ dir, seq, at });
     },
+    /** The connection dropped: the snake waits RESUME_MS for its player (it keeps going straight). */
     leave(id: number) {
-      if (!players.delete(id)) return;
+      const p = players.get(id);
+      if (!p) return;
+      p.send = undefined;
+      p.turns = [];
+      p.awaySince = Date.now();
       balanceBots();
     },
   };

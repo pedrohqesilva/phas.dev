@@ -96,9 +96,13 @@ const inlineScriptHashes = [
       .flatMap(([, file]) => [
         ...file.body
           .toString("utf8")
-          .matchAll(/<script(?![^>]*\bsrc=)(?![^>]*ld\+json)[^>]*>([\s\S]*?)<\/script>/g),
+          .matchAll(
+            /<script(?![^>]*\bsrc=)(?![^>]*ld\+json)[^>]*>([\s\S]*?)<\/script>/g,
+          ),
       ])
-      .map((m) => `'sha256-${createHash("sha256").update(m[1]).digest("base64")}'`),
+      .map(
+        (m) => `'sha256-${createHash("sha256").update(m[1]).digest("base64")}'`,
+      ),
   ),
 ];
 const CSP = [
@@ -124,7 +128,8 @@ const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
   "Referrer-Policy": "strict-origin-when-cross-origin",
-  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
+  "Permissions-Policy":
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
   "Cross-Origin-Opener-Policy": "same-origin",
 };
 
@@ -196,7 +201,15 @@ server.listen(PORT, () =>
  * Only in Railway's production, a minute after start so the new deploy is the one answering.
  */
 const SITE = "https://phas.dev";
-const INDEXNOW_URLS = ["/", "/en", "/curriculo", "/resume", "/llms.txt", "/resume.md", "/curriculo.md"];
+const INDEXNOW_URLS = [
+  "/",
+  "/en",
+  "/curriculo",
+  "/resume",
+  "/llms.txt",
+  "/resume.md",
+  "/curriculo.md",
+];
 const indexNowKey = [...files.keys()]
   .map((path) => /^\/([a-f0-9]{32})\.txt$/.exec(path)?.[1])
   .find(Boolean);
