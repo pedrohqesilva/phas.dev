@@ -1,0 +1,39 @@
+# Type check and build on every push and pull request, so a broken main shows up here
+# before Railway tries to deploy it.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # `build` runs tsc first, then Vite, then writes the SEO files.
+      - run: pnpm build
+      - name: Built pages and SEO files are there
+        run: |
+          for f in index.html en.html curriculo.html resume.html robots.txt sitemap.xml llms.txt resume.md curriculo.md; do
+            test -s "dist/$f" || { echo "missing dist/$f"; exit 1; }
+          done
+      - name: Server starts and answers
+        run: |
+          PORT=8080 node server/index.ts &
+          for i in $(seq 1 20); do curl -fs localhost:8080/health && break; sleep 0.5; done
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/resume)" = 200
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/nao-existe)" = 404
+          curl -sI localhost:8080/ | grep -qi '^content-security-policy:'

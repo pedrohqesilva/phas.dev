@@ -9,6 +9,7 @@ import {
   type ServerResponse,
 } from "node:http";
 import { extname, join, relative, resolve } from "node:path";
+import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { attachGames } from "./games.ts";
 
@@ -20,12 +21,12 @@ const TYPES: Record<string, string> = {
   ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".svg": "image/svg+xml",
-  ".json": "application/json",
+  ".json": "application/json; charset=utf-8",
   ".png": "image/png",
   ".ico": "image/x-icon",
   ".woff2": "font/woff2",
   ".txt": "text/plain; charset=utf-8",
-  ".xml": "application/xml",
+  ".xml": "application/xml; charset=utf-8",
   ".webmanifest": "application/manifest+json",
   ".md": "text/markdown; charset=utf-8",
 };
@@ -83,9 +84,74 @@ function loadDist(): Map<string, File> {
 
 const files = loadDist();
 
+/**
+ * Content Security Policy: only this site's own files run. The one inline script (theme and language before
+ * first paint) is allowed by its hash, computed here from the built pages, so editing it never breaks the
+ * policy. JSON-LD blocks are data, not scripts, and need no hash.
+ */
+const inlineScriptHashes = [
+  ...new Set(
+    [...files]
+      .filter(([path]) => path.endsWith(".html"))
+      .flatMap(([, file]) => [
+        ...file.body
+          .toString("utf8")
+          .matchAll(/<script(?![^>]*\bsrc=)(?![^>]*ld\+json)[^>]*>([\s\S]*?)<\/script>/g),
+      ])
+      .map((m) => `'sha256-${createHash("sha256").update(m[1]).digest("base64")}'`),
+  ),
+];
+const CSP = [
+  "default-src 'self'",
+  `script-src 'self' ${inlineScriptHashes.join(" ")}`,
+  // Inline styles: the first-paint colours in the HTML and the styles the terminal sets on the fly.
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "font-src 'self'",
+  // The game WebSocket.
+  "connect-src 'self' wss://phas.dev",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "upgrade-insecure-requests",
+].join("; ");
+
+const SECURITY_HEADERS = {
+  "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+  "Content-Security-Policy": CSP,
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
+  "Cross-Origin-Opener-Policy": "same-origin",
+};
+
+/**
+ * Pages may be kept at the edge (Cloudflare) for a few minutes, while browsers always revalidate: a deploy
+ * shows up within minutes everywhere. Hashed assets never change, so they are kept for a year.
+ */
+const cacheControl = (path: string, status: number) =>
+  path.startsWith("/assets/")
+    ? "public, max-age=31536000, immutable"
+    : status === 200
+      ? "public, max-age=0, s-maxage=300, stale-while-revalidate=60"
+      : "no-cache";
+
 function serveStatic(req: IncomingMessage, res: ServerResponse) {
   if (req.method !== "GET" && req.method !== "HEAD") {
     res.writeHead(405, { Allow: "GET, HEAD" }).end();
+    return;
+  }
+  // One address for the site: www goes to the apex, keeping the path (one URL per page for search engines).
+  const host = String(req.headers.host ?? "");
+  if (host.startsWith("www.")) {
+    res
+      .writeHead(301, {
+        Location: `https://${host.slice(4)}${req.url ?? "/"}`,
+        ...SECURITY_HEADERS,
+      })
+      .end();
     return;
   }
   const path = decodeURIComponent(new URL(req.url ?? "/", "http://x").pathname);
@@ -108,11 +174,9 @@ function serveStatic(req: IncomingMessage, res: ServerResponse) {
   res.writeHead(status, {
     "Content-Type": file.type,
     "Content-Length": body.length,
-    "Cache-Control": path.startsWith("/assets/")
-      ? "public, max-age=31536000, immutable"
-      : "no-cache",
+    "Cache-Control": cacheControl(path, status),
     Vary: "Accept-Encoding",
-    "X-Content-Type-Options": "nosniff",
+    ...SECURITY_HEADERS,
     ...(gzip ? { "Content-Encoding": "gzip" } : {}),
   });
   res.end(req.method === "HEAD" ? undefined : body);
