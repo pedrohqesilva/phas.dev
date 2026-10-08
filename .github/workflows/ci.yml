@@ -37,3 +37,20 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/resume)" = 200
           test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/nao-existe)" = 404
           curl -sI localhost:8080/ | grep -qi '^content-security-policy:'
+
+  # The production image, built and started as Railway runs it: catches a file the image leaves out.
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t phas-dev .
+      - name: The image's server starts and answers
+        run: |
+          docker run -d --name web -p 8080:8080 -e PORT=8080 phas-dev
+          for i in $(seq 1 30); do curl -fs localhost:8080/health && break; sleep 1; done
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/)" = 200
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/resume)" = 200
+      - name: Logs on failure
+        if: failure()
+        run: docker logs web || true
