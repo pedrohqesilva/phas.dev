@@ -524,40 +524,41 @@ export const commands: Command[] = [
   {
     id: "game",
     names: { pt: ["jogos", "game", "games", "jogo"], en: ["games", "game"] },
-    desc: { pt: "jogos (snake, invaders, online)", en: "games (snake, invaders, online)" },
+    desc: { pt: "jogos (snake, invaders)", en: "games (snake, invaders)" },
     icon: "terminal",
     args: () => ["snake", "invaders"],
     run([arg, mode, extra], ctx) {
       const game = normalize(arg ?? "");
-      if (!game)
+      if (!game) {
+        // Two games; easy, online and co-op are modes of each, clickable under its description.
+        const g = name("game", ctx.lang);
+        const modeButton = (line: string, label: string, hint: string) => {
+          const b = cmd(line, label);
+          b.title = hint;
+          return b;
+        };
+        const modes = (...buttons: HTMLElement[]) =>
+          h("span", { class: "modes" }, `${ctx.t.gameModes} `, ...join(buttons, "  "));
         return ctx.print(
           title(ctx.t.gamesTitle),
           h(
             "dl",
             { class: "pairs" },
-            h("dt", null, cmd(`${name("game", ctx.lang)} snake`, "snake")),
-            h("dd", null, ctx.t.snakeDesc),
+            h("dt", null, cmd(`${g} snake`, "snake")),
             h(
-              "dt",
+              "dd",
               null,
-              cmd(
-                `${name("game", ctx.lang)} snake ${ctx.lang === "pt" ? "facil" : "easy"}`,
-                `snake ${ctx.lang === "pt" ? "facil" : "easy"}`,
+              ctx.t.snakeDesc,
+              modes(
+                modeButton(`${g} snake ${ctx.lang === "pt" ? "facil" : "easy"}`, ctx.t.modeEasy, ctx.t.snakeEasyDesc),
+                modeButton(`${g} snake online`, "online", ctx.t.arenaDesc),
               ),
             ),
-            h("dd", null, ctx.t.snakeEasyDesc),
-            h(
-              "dt",
-              null,
-              cmd(`${name("game", ctx.lang)} invaders`, "invaders"),
-            ),
-            h("dd", null, ctx.t.invadersDesc),
-            h("dt", null, cmd(`${name("game", ctx.lang)} snake online`, "snake online")),
-            h("dd", null, ctx.t.arenaDesc),
-            h("dt", null, cmd(`${name("game", ctx.lang)} invaders coop`, "invaders coop")),
-            h("dd", null, ctx.t.coopDesc),
+            h("dt", null, cmd(`${g} invaders`, "invaders")),
+            h("dd", null, ctx.t.invadersDesc, modes(modeButton(`${g} invaders coop`, "co-op", ctx.t.coopDesc))),
           ),
         );
+      }
       if (game === "snake" || game === "cobrinha")
         return isOnline(mode) ? startArena(ctx, extra) : startSnake(ctx, isEasy(mode));
       if (["invaders", "space", "spaceinvaders", "nave"].includes(game))

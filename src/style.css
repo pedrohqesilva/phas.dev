@@ -844,3 +844,10 @@ html:not(.js) .back {
     display: none;
   }
 }
+
+/* Game modes under each game's description, on their own line. */
+.modes {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+}
