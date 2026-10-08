@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pedro Henrique, Engenheiro de Software Sênior</title>
+    <meta
+      name="description"
+      content="Portfólio de Pedro Henrique, engenheiro de software sênior focado em backend .NET, C#, Azure e AWS. Belo Horizonte. Navegue como num terminal ou na versão simples."
+    />
+    <link rel="canonical" href="https://phas.dev/" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!-- First paint already in the site's colours: no white flash before the stylesheet arrives. -->
+    <style>
+      :root { background: #111214; color: #dcd9d2; color-scheme: dark; }
+      :root[data-theme="light"] { background: #f3f3f1; color: #1c1e21; color-scheme: light; }
+      @media (prefers-color-scheme: light) {
+        :root:not([data-theme]) { background: #f3f3f1; color: #1c1e21; color-scheme: light; }
+      }
+    </style>
+    <!-- A <link>, not an import in main.ts: Vite then serves it before any script runs, in dev too. -->
+    <link rel="stylesheet" href="/src/style.css" />
+    <meta
+      name="theme-color"
+      content="#111214"
+      media="(prefers-color-scheme: dark)"
+    />
+    <meta
+      name="theme-color"
+      content="#f3f3f1"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://phas.dev/" />
+    <meta property="og:title" content="Pedro Henrique, Engenheiro de Software Sênior" />
+    <meta
+      property="og:description"
+      content="Portfólio em forma de terminal. Digite ajuda e explore."
+    />
+    <script>
+      // Runs before paint: mark JS as available and apply the saved theme to avoid a flash.
+      document.documentElement.classList.add("js");
+      try {
+        var t = localStorage.getItem("theme");
+        if (t) document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <a class="skip" id="skip-link" href="#static"
+      >Pular para a versão simples</a
+    >
+
+    <div class="term" id="app">
+      <header class="bar">
+        <a class="brand" href="/" aria-label="phas.dev"
+          ><span class="brand-mark" id="brand-mark"></span
+          ><span class="brand-name">phas<span class="tld">.dev</span></span></a
+        >
+        <nav class="tabs" id="chips" aria-label="Seções"></nav>
+        <div class="bar-actions">
+          <button type="button" id="lang-toggle">EN</button>
+          <button type="button" id="theme-toggle">claro</button>
+          <button type="button" id="simple-toggle">versão simples</button>
+        </div>
+      </header>
+      <main class="screen" id="screen">
+        <div id="out" role="log" aria-live="polite"></div>
+        <form class="prompt-line" id="prompt-form" autocomplete="off">
+          <label for="cmd" class="prompt"
+            ><span id="prompt-user">visitante</span>@phas.dev:~$</label
+          >
+          <div class="input-wrap">
+            <input
+              id="cmd"
+              name="cmd"
+              type="text"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
+              enterkeyhint="send"
+            />
+            <span class="mirror" aria-hidden="true"
+              ><span class="before"></span><span class="cursor"> </span
+              ><span class="after"></span
+            ></span>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <div class="static" id="static" tabindex="-1">
+      <button type="button" class="back" id="back-terminal">
+        voltar ao terminal
+      </button>
+      <div id="static-content"><!--static--></div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,870 @@
+/* Tokens. Dark is the default; light follows the system or the `tema` command. */
+:root {
+  --bg: #111214;
+  --surface: #17191c;
+  --fg: #dcd9d2;
+  --muted: #8e8a83;
+  --accent: #f0a43a;
+  --border: #2a2d31;
+  --focus: #f0a43a;
+  --font:
+    "Geist Mono Variable", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #f3f3f1;
+  --surface: #e9e9e6;
+  --fg: #1c1e21;
+  --muted: #5d6066;
+  --accent: #9a5200;
+  --border: #d3d4d1;
+  --focus: #9a5200;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 3px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.skip {
+  position: absolute;
+  left: 16px;
+  top: -40px;
+  z-index: 10;
+  padding: 6px 10px;
+  background: var(--accent);
+  color: var(--bg);
+}
+.skip:focus {
+  top: 8px;
+}
+
+/* Which view is visible: terminal with JS, static content without JS or in "simple" mode. */
+.term,
+html.js .static {
+  display: none;
+}
+html.js .term {
+  display: grid;
+}
+html.js.simple .term {
+  display: none;
+}
+html.js.simple .static {
+  display: block;
+}
+html:not(.js) .back {
+  display: none;
+}
+
+/* Terminal */
+.term {
+  /* minmax(0, 1fr) lets the tab row scroll instead of widening the page. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  height: 100dvh;
+}
+
+.screen {
+  overflow-y: auto;
+  padding: 16px 16px 24px;
+  overscroll-behavior: contain;
+}
+
+#out,
+.prompt-line {
+  max-width: 92ch;
+}
+
+.block {
+  margin-bottom: 14px;
+}
+.block p {
+  margin: 0;
+}
+.block ul,
+.block ol {
+  margin: 4px 0 0;
+  padding-left: 2ch;
+}
+.block li::marker {
+  color: var(--muted);
+}
+
+.echo,
+.prompt {
+  color: var(--muted);
+}
+.echo {
+  color: var(--fg);
+}
+.echo .prompt {
+  margin-right: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+.title {
+  color: var(--accent);
+  font-weight: 600;
+}
+.title .at {
+  color: var(--fg);
+  font-weight: 400;
+}
+.entry + .entry {
+  margin-top: 14px;
+}
+
+.boot .ok {
+  color: var(--accent);
+}
+.block:has(.boot) {
+  margin-bottom: 0;
+}
+
+/* Inline clickable commands look like links, not buttons. */
+.cmd {
+  color: var(--accent);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.cmd:hover {
+  text-decoration-style: solid;
+}
+
+.pairs {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 3ch;
+  margin: 4px 0;
+}
+.pairs dt {
+  align-self: start;
+  color: var(--muted);
+}
+.pairs dd {
+  margin: 0;
+}
+.pairs dt .cmd {
+  color: var(--accent);
+}
+
+.history {
+  list-style: decimal-leading-zero;
+}
+
+.prompt-line {
+  display: flex;
+  gap: 1ch;
+  align-items: baseline;
+}
+.input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+/* The real input stays on top (for typing, selection, IME) but is invisible;
+   .mirror draws the same text plus a block cursor underneath. */
+.prompt-line input {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font: inherit;
+}
+.prompt-line input::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.mirror {
+  position: absolute;
+  inset: 0;
+  white-space: pre;
+  pointer-events: none;
+  color: var(--fg);
+}
+.mirror .cursor {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+.input-wrap:focus-within .mirror .cursor {
+  background: var(--accent);
+  color: var(--bg);
+  outline: 0;
+  animation: blink 1.06s steps(1) infinite;
+}
+@keyframes blink {
+  50% {
+    background: transparent;
+    color: var(--fg);
+  }
+}
+
+/* Games: full screen, nothing but black and the game. */
+.game {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #000;
+  touch-action: none;
+}
+.game canvas {
+  display: block;
+}
+/* Always there, so leaving never depends on knowing Esc. */
+.game-exit {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 10px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #9a9a9a;
+  background: #000;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.game-exit:hover,
+.game-exit:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+/* The tutorial holds the game until the first key or tap, then fades away. */
+.game-help {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(440px, calc(100vw - 32px));
+  transform: translate(-50%, -50%);
+  padding: 20px 24px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.88);
+  color: #d6d6d6;
+  font-size: 14px;
+  line-height: 1.6;
+  transition: opacity 0.2s ease-out;
+}
+.game-help.gone {
+  opacity: 0;
+  pointer-events: none;
+}
+.game-help ul {
+  margin: 8px 0 16px;
+  padding-left: 18px;
+}
+.game-title {
+  margin: 0;
+  color: var(--accent);
+  font-weight: 600;
+}
+.game-pause {
+  text-align: center;
+}
+.game-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.game-actions button {
+  padding: 6px 14px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: none;
+  color: #d6d6d6;
+  font: inherit;
+  cursor: pointer;
+}
+.game-actions button:hover,
+.game-actions button:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+  outline: none;
+}
+.game-start {
+  margin: 0;
+  color: var(--accent);
+  animation: pulse 1.2s steps(2) infinite;
+}
+
+/* Static / simple version */
+.static {
+  max-width: 68ch;
+  margin: 0 auto;
+  padding: 32px 16px 64px;
+  outline: none;
+}
+.static .back {
+  color: var(--accent);
+  margin-bottom: 24px;
+}
+.static .download {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 4px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.9em;
+  background: none;
+  cursor: pointer;
+}
+.static .download:hover {
+  color: var(--bg);
+  background: var(--accent);
+}
+.static .download .icon {
+  height: 16px;
+  image-rendering: pixelated;
+}
+.static header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  line-height: 1.2;
+}
+.static .role,
+.static .meta {
+  color: var(--muted);
+  margin: 4px 0 0;
+}
+.static section {
+  margin-top: 40px;
+}
+.static h2 {
+  font-size: 1rem;
+  color: var(--accent);
+  margin: 0 0 12px;
+}
+.static h3 {
+  font-size: 1rem;
+  margin: 0;
+}
+.static h3 span {
+  color: var(--muted);
+  font-weight: 400;
+}
+.static article + article {
+  margin-top: 20px;
+}
+.static dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 3ch;
+}
+.static dt {
+  color: var(--muted);
+}
+.static dd {
+  margin: 0;
+}
+.static ul {
+  padding-left: 2ch;
+}
+
+@media (max-width: 640px) {
+  /* 16px stops iOS from zooming into the prompt. */
+  .prompt-line input {
+    font-size: 16px;
+  }
+  .pairs {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .pairs dd + dt {
+    margin-top: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
+
+/* Icons: pixel-art set from src/icons.ts, always 16px (one grid cell = one screen pixel). */
+.icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+}
+.has-icon,
+.bar-actions button,
+.brand,
+.static .back,
+.static h2,
+.pairs dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.pairs dt .icon {
+  color: var(--muted);
+}
+.pairs dt .cmd {
+  display: inline-flex;
+}
+/* Start menu: icon tiles, each one a command. */
+.menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 12px;
+  max-width: 720px;
+  margin: 8px 0;
+}
+.tile {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 14px 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.12s, background-color 0.12s;
+}
+.tile span {
+  color: var(--fg);
+}
+.tile:hover,
+.tile:focus-visible {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  outline: none;
+}
+.tile .icon {
+  width: 28px;
+  height: 28px;
+}
+.back-home {
+  margin-top: 12px;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 16px;
+  margin: 4px 0;
+}
+.gallery figure {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 12px 4px;
+  border: 1px solid var(--border);
+  color: var(--accent);
+}
+.gallery .icon {
+  width: 32px;
+  height: 32px;
+}
+.gallery figcaption {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.static h2 .icon {
+  color: var(--accent);
+}
+.static #contato ul {
+  list-style: none;
+  padding: 0;
+}
+.static #contato li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.static #contato li .icon {
+  color: var(--muted);
+}
+
+/* Micro-animations. Each one exists to give feedback or set the stage, and all of them
+   are switched off under prefers-reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  /* New output settles in, so it is clear what a command just printed. */
+  .block {
+    animation: enter 0.18s ease-out both;
+  }
+  @keyframes enter {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+  }
+
+  /* Boot steps: waiting dots pulse until they flip to ok (not `.pending`, which hides streaming units). */
+  .boot .waiting {
+    color: var(--muted);
+    animation: pulse 0.32s steps(2) infinite;
+  }
+  @keyframes pulse {
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  /* Banner reveals left to right in whole character steps, like it is being drawn. */
+  .banner {
+    animation: wipe 0.6s steps(26) both 0.05s;
+  }
+  @keyframes wipe {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  /* Hover feedback in pixel steps instead of smooth tweens, to match the icon style. */
+  .has-icon .icon,
+  .bar-actions .icon {
+    transition: transform 0.12s steps(2);
+  }
+  .has-icon:hover .icon,
+  .bar-actions button:hover .icon-simple {
+    transform: translateY(-2px);
+  }
+  .bar-actions button:hover .icon-lang {
+    transform: scaleX(-1);
+  }
+  .bar-actions button:hover .icon-sun {
+    transform: scale(1.25);
+  }
+  .bar-actions button:hover .icon-moon {
+    transform: rotate(-20deg);
+  }
+  .static .back .icon {
+    transition: transform 0.12s steps(2);
+  }
+  .static .back:hover .icon {
+    transform: translateX(-2px);
+  }
+
+  /* Links: underline grows from the left. */
+  .block a,
+  .static a {
+    text-decoration: none;
+    background: linear-gradient(currentColor, currentColor) left bottom / 100%
+      1px no-repeat;
+    transition: background-size 0.25s ease-out;
+  }
+  .block a:hover,
+  .static a:hover {
+    background-size: 0 1px;
+    background-position: right bottom;
+  }
+}
+
+/* Header: one status line, like tmux. Brand, section tabs, then actions. */
+.bar {
+  display: flex;
+  align-items: stretch;
+  gap: 24px;
+  height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 14px;
+}
+.brand {
+  align-items: center;
+  color: var(--fg);
+  font-weight: 600;
+  text-decoration: none;
+}
+.brand .tld {
+  color: var(--accent);
+  font-weight: 400;
+}
+.brand-mark {
+  display: inline-flex;
+  color: var(--accent);
+}
+
+.tabs {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs .cmd {
+  position: relative;
+  flex: none;
+  gap: 8px;
+  padding: 0 14px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.tabs .cmd:hover,
+.tabs .cmd[aria-current] {
+  color: var(--fg);
+}
+.tabs .cmd[aria-current] .icon,
+.tabs .cmd:hover .icon {
+  color: var(--accent);
+}
+/* Active tab: a 2px accent rule sitting on the header's bottom border. */
+.tabs .cmd[aria-current]::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+}
+.tabs .key {
+  color: var(--muted);
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.bar-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  color: var(--muted);
+}
+.bar-actions button {
+  height: 32px;
+  white-space: nowrap;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.bar-actions button:hover {
+  color: var(--accent);
+  border-color: var(--border);
+}
+
+.banner {
+  display: block;
+  height: clamp(64px, 12vw, 104px);
+  width: auto;
+  max-width: 100%;
+  margin: 18px 0 14px;
+  color: var(--accent);
+}
+.banner .rack,
+.banner .blocks,
+.banner .led {
+  fill: currentColor;
+}
+.banner .shadow {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  opacity: 0.55;
+}
+.banner .led {
+  fill: var(--fg);
+}
+
+@media (max-width: 1200px) {
+  .bar-actions .label {
+    display: none;
+  }
+}
+/* Phones: brand + actions on top, tabs scroll on a second row. */
+@media (max-width: 640px) {
+  .bar {
+    flex-wrap: wrap;
+    height: auto;
+    gap: 0 12px;
+    padding: 0 8px;
+  }
+  .brand {
+    height: 44px;
+    padding-left: 8px;
+  }
+  .tabs {
+    order: 3;
+    flex-basis: 100%;
+    height: 40px;
+    margin: 0 -8px;
+    border-top: 1px solid var(--border);
+  }
+  .tabs .cmd {
+    padding: 0 12px;
+  }
+  .tabs .key {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Server LEDs blink out of sync, like real disk activity. */
+  .banner .led {
+    animation: led 1.2s steps(1) infinite;
+  }
+  .banner .led:nth-of-type(2n) {
+    animation-duration: 0.7s;
+  }
+  .banner .led:nth-of-type(3n) {
+    animation-duration: 1.9s;
+    animation-delay: 0.3s;
+  }
+  @keyframes led {
+    50% {
+      fill: var(--accent);
+    }
+  }
+}
+
+/* Streaming output: units wait hidden until their turn. */
+.pending {
+  display: none !important;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .revealed {
+    animation: enter 0.16s ease-out both;
+  }
+}
+
+/* Inline completion preview, accepted with Tab or →. */
+.mirror .ghost {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+/* Project cards: brand mark beside the details. */
+.project {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 0 16px;
+}
+.project + .project {
+  margin-top: 22px;
+}
+.project-logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  margin-top: 2px;
+}
+.tagline {
+  margin: 6px 0 !important;
+  color: var(--fg);
+  font-style: italic;
+}
+.static article.project {
+  display: grid;
+}
+@media (max-width: 640px) {
+  .project {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 0 12px;
+  }
+  .project-logo {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* Print (and the `curriculo` command): the simple version becomes a one-column resume. */
+/* Zero page margin leaves the browser no room for its own header and footer (date, title, URL);
+   the margins move into the page padding, cloned on every printed page. */
+@page {
+  margin: 0;
+}
+
+@media print {
+  :root,
+  :root[data-theme] {
+    --bg: #fff;
+    --surface: #fff;
+    --fg: #16181b;
+    --muted: #55585e;
+    --accent: #8a4700;
+    --border: #d0d0d0;
+    color-scheme: light;
+  }
+  html,
+  body {
+    font-size: 10.5pt;
+    line-height: 1.45;
+  }
+  html.js .term,
+  .skip,
+  .static .back,
+  .static .download {
+    display: none !important;
+  }
+  html.js .static {
+    display: block !important;
+  }
+  .static {
+    max-width: none;
+    padding: 14mm 16mm;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  .static section {
+    margin-top: 18pt;
+  }
+  .static article,
+  .static h2 {
+    break-inside: avoid;
+  }
+  .static a {
+    color: inherit;
+  }
+  * {
+    animation: none !important;
+  }
+}

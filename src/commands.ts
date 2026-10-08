@@ -1,0 +1,643 @@
+import {
+  certifications,
+  education,
+  experience,
+  languages,
+  profile,
+  projects,
+  stack,
+  type L,
+  type Lang,
+} from "./content.ts";
+import { cmd, h, join, link, type Child } from "./dom.ts";
+import { icon, iconNames, type IconName } from "./icons.ts";
+import { playInvaders } from "./games/invaders.ts";
+import { playSnake } from "./games/snake.ts";
+import type { UI } from "./i18n.ts";
+
+export type Theme = "light" | "dark";
+
+export interface Ctx {
+  lang: Lang;
+  t: UI;
+  history: readonly string[];
+  print(...children: Child[]): void;
+  clear(): void;
+  home(): void;
+  setLang(lang: Lang): void;
+  setTheme(theme: Theme): void;
+  showSimple(): void;
+  run(input: string): void;
+  focus(): void;
+}
+
+interface Command {
+  id: string;
+  /** First name of each language is the one shown in help and chips. */
+  names: Record<Lang, string[]>;
+  desc?: L;
+  icon?: IconName;
+  /** Values the first argument can take, offered by Tab and the inline suggestion. */
+  args?: (lang: Lang) => string[];
+  run(args: string[], ctx: Ctx): void;
+}
+
+/** Lowercase and strip accents so `experiência` and `experiencia` both work. */
+export const normalize = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+
+const name = (id: string, lang: Lang) =>
+  commands.find((c) => c.id === id)!.names[lang][0];
+const line = (...children: Child[]) => h("p", null, ...children);
+const muted = (...children: Child[]) => h("p", { class: "muted" }, ...children);
+const title = (text: string) => h("p", { class: "title" }, text);
+/** Opens a URL in a new tab and leaves a clickable link behind in case the popup is blocked. */
+function open(url: string, { t, print }: Ctx) {
+  print(line(t.opening, " ", link(url)));
+  if (url.startsWith("mailto:")) location.href = url;
+  else window.open(url, "_blank", "noopener");
+}
+
+const isEasy = (mode?: string) => ["facil", "easy", "wrap"].includes(normalize(mode ?? ""));
+
+/** Full-screen Snake; back on the terminal it reports the best round. Easy: the walls wrap around. */
+function startSnake({ t, print, focus }: Ctx, easy = false) {
+  playSnake({ title: easy ? t.snakeEasyTitle : "Snake", help: t.snakeHelp, start: t.gameStart, exit: t.gameExit, paused: t.gamePaused, resume: t.gameResume, score: t.gameScore, best: t.gameBest }, (best) => {
+    print(muted(t.snakeOver(best)));
+    focus();
+  }, { wrap: easy });
+}
+
+/** Full-screen Space Invaders; back on the terminal it reports the best score. */
+function startInvaders({ t, print, focus }: Ctx) {
+  playInvaders(
+    {
+      title: "Space Invaders",
+      help: t.invadersHelp,
+      start: t.gameStart,
+      exit: t.gameExit,
+      paused: t.gamePaused,
+      resume: t.gameResume,
+      over: t.invadersOverTitle,
+      restart: t.invadersRestart,
+      wave: t.invadersWave,
+      score: t.gameScore,
+      best: t.gameBest,
+      missed: t.invadersMissed,
+      powers: t.invadersPowers,
+      shots: t.invadersShots,
+      rapid: t.invadersRapid,
+    },
+    (best) => {
+      print(muted(t.invadersOver(best)));
+      focus();
+    },
+  );
+}
+
+const linkOf = (label: string) =>
+  profile.links.find((l) => l.label === label)!.url;
+const projectUrl = (name: string) => projects.find((p) => p.name === name)!.url;
+
+const sections: Record<string, (ctx: Ctx) => void> = {
+  about({ lang, print }) {
+    print(
+      title(profile.name),
+      muted(`${profile.role[lang]}, ${profile.location[lang]}`),
+      line(profile.summary[lang]),
+      muted(profile.extra[lang]),
+      line(
+        ...join(
+          ["experience", "projects", "education", "contact"].map((id) =>
+            cmd(name(id, lang)),
+          ),
+        ),
+      ),
+    );
+  },
+
+  experience({ lang, t, print }) {
+    if (!experience.length)
+      return print(line(t.emptyExperience, " ", link(linkOf("LinkedIn"))));
+    print(
+      ...experience.map((j) =>
+        h(
+          "div",
+          { class: "entry" },
+          h(
+            "p",
+            { class: "title" },
+            j.role[lang],
+            h("span", { class: "at" }, ` @ ${j.company}`),
+          ),
+          muted(`${j.period[lang]}, ${j.place[lang]}`),
+          h("ul", null, ...j.bullets.map((b) => h("li", null, b[lang]))),
+          j.stack && muted(j.stack.join(", ")),
+        ),
+      ),
+    );
+  },
+
+  projects({ lang, print }) {
+    print(
+      ...projects.map((p) =>
+        h(
+          "div",
+          { class: "project" },
+          h("img", { class: "project-logo", src: p.logo, alt: "", width: "44", height: "44" }),
+          h(
+            "div",
+            null,
+            h("p", { class: "title" }, link(p.url, p.name), h("span", { class: "at" }, ` ${p.url.replace("https://", "")}`)),
+            muted(p.status[lang]),
+            h("p", { class: "tagline" }, `"${p.tagline[lang]}"`),
+            line(p.description[lang]),
+            h("ul", null, ...p.highlights.map((x) => h("li", null, x[lang]))),
+            muted(p.stack.join(", ")),
+          ),
+        ),
+      ),
+    );
+  },
+
+  stack({ lang, print }) {
+    print(
+      h(
+        "dl",
+        { class: "pairs" },
+        ...stack.flatMap((g) => [
+          h("dt", null, g.group[lang]),
+          h("dd", null, g.items.join(", ")),
+        ]),
+      ),
+    );
+  },
+
+  education({ lang, t, print }) {
+    print(
+      ...education.map((c) =>
+        h(
+          "div",
+          { class: "entry" },
+          h("p", { class: "title" }, c.degree[lang]),
+          h("p", null, c.school, h("span", { class: "muted" }, `, ${c.period}`)),
+        ),
+      ),
+      h(
+        "div",
+        { class: "entry" },
+        h("p", { class: "title" }, t.languagesTitle),
+        h("ul", null, ...languages.map((l) => h("li", null, l[lang]))),
+      ),
+      h(
+        "div",
+        { class: "entry" },
+        h("p", { class: "title" }, t.certsTitle),
+        h("ul", null, ...certifications.map((c) => h("li", null, c))),
+      ),
+    );
+  },
+
+  contact({ t, print }) {
+    print(
+      h(
+        "dl",
+        { class: "pairs" },
+        h("dt", null, icon("email"), t.email.toLowerCase()),
+        h("dd", null, link(`mailto:${profile.email}`, profile.email)),
+        ...profile.links.flatMap((l) => [
+          h(
+            "dt",
+            null,
+            icon(l.label.toLowerCase() as IconName),
+            l.label.toLowerCase(),
+          ),
+          h("dd", null, link(l.url)),
+        ]),
+      ),
+    );
+  },
+};
+
+/** Fake filesystem: `ls`, `cat` and `cd` map file names onto the sections above. */
+const files: Record<Lang, [file: string, section: string][]> = {
+  pt: [
+    ["sobre.txt", "about"],
+    ["experiencia/", "experience"],
+    ["projetos/", "projects"],
+    ["stack.txt", "stack"],
+    ["formacao.txt", "education"],
+    ["contato.txt", "contact"],
+  ],
+  en: [
+    ["about.txt", "about"],
+    ["experience/", "experience"],
+    ["projects/", "projects"],
+    ["stack.txt", "stack"],
+    ["education.txt", "education"],
+    ["contact.txt", "contact"],
+  ],
+};
+
+const fileSection = (arg: string) => {
+  const key = normalize(arg)
+    .replace(/^\.?\/?/, "")
+    .replace(/\/$/, "");
+  for (const list of Object.values(files))
+    for (const [file, section] of list)
+      if (file.replace(/\/$/, "") === key) return section;
+  return undefined;
+};
+
+export const commands: Command[] = [
+  {
+    id: "help",
+    names: { pt: ["ajuda", "?"], en: ["help", "?"] },
+    desc: { pt: "mostra esta lista", en: "shows this list" },
+    icon: "help",
+    run(_, { lang, t, print }) {
+      const visible = commands.filter((c) => c.desc);
+      print(
+        title(t.helpTitle),
+        h(
+          "dl",
+          { class: "pairs" },
+          ...visible.flatMap((c) => [
+            h("dt", null, cmd(c.names[lang][0], undefined, c.icon)),
+            h("dd", null, c.desc![lang]),
+          ]),
+        ),
+        muted(t.helpKeys),
+      );
+    },
+  },
+  {
+    id: "menu",
+    names: { pt: ["inicio", "menu", "start"], en: ["start", "menu"] },
+    desc: { pt: "ícones para navegar sem saber os comandos", en: "icons to browse without knowing the commands" },
+    icon: "simple",
+    run(_, { lang, t, print }) {
+      // Navigation only (no theme, language or view switches): each tile is a command, typed on click.
+      const label = (id: string): string =>
+        ({
+          about: t.sectionAbout,
+          experience: t.sectionExperience,
+          projects: t.sectionProjects,
+          stack: t.sectionStack,
+          education: t.sectionEducation,
+          contact: t.sectionContact,
+          cv: t.cvLabel,
+          game: t.gamesTitle,
+          github: "GitHub",
+          linkedin: "LinkedIn",
+        })[id] ?? id;
+      print(
+        muted(t.menuTitle),
+        h(
+          "div",
+          { class: "menu" },
+          ...menuIds.map((id) => {
+            const c = commands.find((x) => x.id === id)!;
+            return h(
+              "button",
+              { type: "button", class: "tile", "data-cmd": c.names[lang][0] },
+              icon(id === "game" ? "game" : c.icon!, 28),
+              h("span", null, label(id)),
+            );
+          }),
+        ),
+        muted(t.menuHint),
+      );
+    },
+  },
+  {
+    id: "about",
+    names: { pt: ["sobre", "whoami"], en: ["about", "whoami"] },
+    desc: { pt: "quem sou eu", en: "who I am" },
+    icon: "about",
+    run: (_, ctx) => sections.about(ctx),
+  },
+  {
+    id: "experience",
+    names: { pt: ["experiencia", "exp"], en: ["experience", "exp"] },
+    desc: { pt: "onde já trabalhei", en: "where I have worked" },
+    icon: "experience",
+    run: (_, ctx) => sections.experience(ctx),
+  },
+  {
+    id: "projects",
+    names: { pt: ["projetos", "portfolio"], en: ["projects", "portfolio"] },
+    desc: { pt: "projetos em destaque", en: "featured projects" },
+    icon: "projects",
+    run: (_, ctx) => sections.projects(ctx),
+  },
+  {
+    id: "stack",
+    names: { pt: ["stack", "tecnologias", "skills"], en: ["stack", "skills", "technologies"] },
+    desc: { pt: "tecnologias que uso", en: "technologies I use" },
+    icon: "stack",
+    run: (_, ctx) => sections.stack(ctx),
+  },
+  {
+    id: "education",
+    names: { pt: ["formacao", "educacao", "estudos"], en: ["education", "studies"] },
+    desc: { pt: "formação e idiomas", en: "education and languages" },
+    icon: "education",
+    run: (_, ctx) => sections.education(ctx),
+  },
+  {
+    id: "contact",
+    names: { pt: ["contato", "contatos"], en: ["contact", "contacts"] },
+    desc: { pt: "e-mail e redes", en: "email and socials" },
+    icon: "contact",
+    run: (_, ctx) => sections.contact(ctx),
+  },
+  {
+    id: "github",
+    names: { pt: ["github", "gh"], en: ["github", "gh"] },
+    desc: { pt: "abre meu GitHub", en: "opens my GitHub" },
+    icon: "github",
+    run: (_, ctx) => open(linkOf("GitHub"), ctx),
+  },
+  {
+    id: "linkedin",
+    names: { pt: ["linkedin", "in"], en: ["linkedin", "in"] },
+    desc: { pt: "abre meu LinkedIn", en: "opens my LinkedIn" },
+    icon: "linkedin",
+    run: (_, ctx) => open(linkOf("LinkedIn"), ctx),
+  },
+  {
+    id: "vittz",
+    names: { pt: ["vittz", "vitta"], en: ["vittz", "vitta"] },
+    desc: { pt: "abre o site do Vittz", en: "opens the Vittz website" },
+    icon: "projects",
+    run: (_, ctx) => open(projectUrl("Vittz"), ctx),
+  },
+  {
+    id: "ifleethub",
+    names: { pt: ["ifleethub", "ifleet"], en: ["ifleethub", "ifleet"] },
+    desc: { pt: "abre o site do iFleetHub", en: "opens the iFleetHub website" },
+    icon: "projects",
+    run: (_, ctx) => open(projectUrl("iFleetHub"), ctx),
+  },
+  {
+    id: "email",
+    names: { pt: ["email", "e-mail", "correio"], en: ["email", "e-mail", "mail"] },
+    desc: { pt: "escreve um e-mail para mim", en: "writes me an email" },
+    icon: "email",
+    run: (_, ctx) => open(`mailto:${profile.email}`, ctx),
+  },
+  {
+    id: "cv",
+    names: { pt: ["curriculo", "cv"], en: ["resume", "cv"] },
+    desc: { pt: "currículo para imprimir ou salvar em PDF", en: "printable resume, save as PDF" },
+    icon: "cv",
+    run(_, { t, print }) {
+      if (profile.cv) {
+        print(line(t.cvOpen, " ", link(profile.cv, profile.cv)));
+        return void window.open(profile.cv, "_blank", "noopener");
+      }
+      // No PDF yet: the print stylesheet turns the simple version into a resume.
+      print(line(t.cvPrint));
+      setTimeout(() => window.print(), 400);
+    },
+  },
+  {
+    id: "game",
+    names: { pt: ["jogos", "game", "games", "jogo"], en: ["games", "game"] },
+    desc: { pt: "jogos (snake, invaders)", en: "games (snake, invaders)" },
+    icon: "terminal",
+    args: () => ["snake", "invaders"],
+    run([arg, mode], ctx) {
+      const game = normalize(arg ?? "");
+      if (!game)
+        return ctx.print(
+          title(ctx.t.gamesTitle),
+          h(
+            "dl",
+            { class: "pairs" },
+            h("dt", null, cmd(`${name("game", ctx.lang)} snake`, "snake")),
+            h("dd", null, ctx.t.snakeDesc),
+            h("dt", null, cmd(`${name("game", ctx.lang)} snake ${ctx.lang === "pt" ? "facil" : "easy"}`, `snake ${ctx.lang === "pt" ? "facil" : "easy"}`)),
+            h("dd", null, ctx.t.snakeEasyDesc),
+            h("dt", null, cmd(`${name("game", ctx.lang)} invaders`, "invaders")),
+            h("dd", null, ctx.t.invadersDesc),
+          ),
+        );
+      if (game === "snake" || game === "cobrinha") return startSnake(ctx, isEasy(mode));
+      if (["invaders", "space", "spaceinvaders", "nave"].includes(game)) return startInvaders(ctx);
+      ctx.print(muted(ctx.t.gameUsage(arg)));
+    },
+  },
+  {
+    id: "snake",
+    names: { pt: ["snake", "cobrinha"], en: ["snake"] },
+    run: ([mode], ctx) => startSnake(ctx, isEasy(mode)),
+  },
+  {
+    id: "invaders",
+    names: { pt: ["invaders", "nave"], en: ["invaders", "spaceinvaders"] },
+    run: (_, ctx) => startInvaders(ctx),
+  },
+  {
+    id: "lang",
+    names: { pt: ["idioma", "lang", "lingua"], en: ["language", "lang"] },
+    desc: { pt: "troca o idioma (pt, en)", en: "switches language (pt, en)" },
+    icon: "lang",
+    args: () => ["pt", "en"],
+    run([arg], { t, print, setLang }) {
+      const next = normalize(arg ?? "");
+      if (next !== "pt" && next !== "en") return print(muted(t.langUsage));
+      setLang(next);
+    },
+  },
+  {
+    id: "theme",
+    names: { pt: ["tema", "cores"], en: ["theme", "colors"] },
+    desc: { pt: "tema claro ou escuro", en: "light or dark theme" },
+    icon: "sun",
+    args: (lang) => (lang === "pt" ? ["claro", "escuro"] : ["light", "dark"]),
+    run([arg], { t, print, setTheme }) {
+      const a = normalize(arg ?? "");
+      const theme: Theme | undefined =
+        a === "claro" || a === "light"
+          ? "light"
+          : a === "escuro" || a === "dark"
+            ? "dark"
+            : undefined;
+      if (!theme) return print(muted(t.themeUsage));
+      setTheme(theme);
+      print(muted(t.themeSet(t.themeNames[theme])));
+    },
+  },
+  {
+    id: "simple",
+    names: { pt: ["simples", "gui"], en: ["simple", "gui"] },
+    desc: { pt: "versão sem terminal", en: "version without the terminal" },
+    icon: "simple",
+    run: (_, { showSimple }) => showSimple(),
+  },
+  {
+    id: "home",
+    names: { pt: ["home", "reset"], en: ["home", "reset"] },
+    desc: { pt: "volta ao início, com a tela limpa", en: "back to the start, screen cleared" },
+    icon: "terminal",
+    run: (_, { home }) => home(),
+  },
+  {
+    id: "clear",
+    names: { pt: ["limpar", "clear", "cls"], en: ["clear", "cls"] },
+    desc: { pt: "limpa a tela", en: "clears the screen" },
+    icon: "terminal",
+    run: (_, { clear }) => clear(),
+  },
+
+  // Hidden: shell-ish commands for people who poke around.
+  {
+    id: "history",
+    names: { pt: ["historico"], en: ["history"] },
+    run(_, { history, t, print }) {
+      if (!history.length) return print(muted(t.historyEmpty));
+      print(
+        h(
+          "ol",
+          { class: "history" },
+          ...history.map((c) => h("li", null, cmd(c))),
+        ),
+      );
+    },
+  },
+  {
+    id: "ls",
+    names: { pt: ["ls", "dir", "listar"], en: ["ls", "dir", "list"] },
+    run([arg], ctx) {
+      if (!arg)
+        return ctx.print(
+          line(
+            ...join(
+              files[ctx.lang].map(([file]) => cmd(`cat ${file}`, file)),
+              "  ",
+            ),
+          ),
+        );
+      const section = fileSection(arg);
+      if (section !== "experience" && section !== "projects")
+        return ctx.print(muted(ctx.t.lsDir(arg)));
+      sections[section](ctx);
+    },
+  },
+  {
+    id: "cat",
+    names: {
+      pt: ["cat", "cd", "less", "more"],
+      en: ["cat", "cd", "less", "more"],
+    },
+    run([arg], ctx) {
+      if (!arg) return;
+      const section = fileSection(arg);
+      if (!section) return ctx.print(muted(ctx.t.catMissing(arg)));
+      sections[section](ctx);
+    },
+  },
+  {
+    id: "icons",
+    names: { pt: ["icones", "icons"], en: ["icons"] },
+    run: (_, { print }) =>
+      print(
+        h(
+          "div",
+          { class: "gallery" },
+          ...iconNames.map((n) =>
+            h("figure", null, icon(n, 32), h("figcaption", null, n)),
+          ),
+        ),
+      ),
+  },
+  {
+    id: "pwd",
+    names: { pt: ["pwd", "ondeestou"], en: ["pwd", "whereami"] },
+    run: (_, { t, print }) => print(line(`/home/${t.user}`)),
+  },
+  {
+    id: "echo",
+    names: { pt: ["echo", "diga"], en: ["echo", "say"] },
+    run: (args, { print }) => print(line(args.join(" "))),
+  },
+  {
+    id: "sudo",
+    names: { pt: ["sudo", "su"], en: ["sudo", "su"] },
+    run: (_, { t, print }) => print(line(t.sudo)),
+  },
+  {
+    id: "rm",
+    names: { pt: ["rm", "apagar"], en: ["rm", "delete"] },
+    run: (_, { t, print }) => print(line(t.rm)),
+  },
+  {
+    id: "exit",
+    names: { pt: ["exit", "sair", "logout"], en: ["exit", "quit", "logout"] },
+    run: (_, { lang, t, print }) =>
+      print(line(t.exit, " ", cmd(name("contact", lang)))),
+  },
+];
+
+export function resolve(input: string): Command | undefined {
+  const n = normalize(input);
+  return commands.find((c) => c.names.pt.includes(n) || c.names.en.includes(n));
+}
+
+/**
+ * Tab completion. Aliases of the same command collapse into one suggestion, shown in the
+ * current language, so `exp` completes straight to `experiencia` / `experience`.
+ */
+export function complete(prefix: string, lang: Lang): string[] {
+  const p = normalize(prefix);
+  if (!p) return [];
+  // After a command name and a space: complete its first argument (`game s` → `game snake`).
+  const space = p.indexOf(" ");
+  if (space > 0) {
+    const word = prefix.slice(0, space);
+    const rest = p.slice(space + 1);
+    const command = resolve(word);
+    if (!command?.args || rest.includes(" ")) return [];
+    return command.args(lang).filter((a) => normalize(a).startsWith(rest)).map((a) => `${word} ${a}`);
+  }
+  const hits = commands.filter((c) =>
+    [...c.names.pt, ...c.names.en].some((n) => n.startsWith(p)),
+  );
+  return [
+    ...new Set(
+      hits.map(
+        (c) => c.names[lang].find((n) => n.startsWith(p)) ?? c.names[lang][0],
+      ),
+    ),
+  ];
+}
+
+/** The start menu's tiles, in reading order. */
+export const menuIds = ["about", "experience", "projects", "stack", "education", "contact", "cv", "game", "github", "linkedin"];
+
+/** Commands shown as clickable chips above the terminal, in the current language. */
+export const tabIds = [
+  "about",
+  "experience",
+  "projects",
+  "stack",
+  "education",
+  "contact",
+  "help",
+];
+
+export const chips = (lang: Lang) =>
+  tabIds.map((id, i) => {
+    const c = commands.find((c) => c.id === id)!;
+    const tab = cmd(c.names[lang][0], undefined, c.icon);
+    tab.dataset.id = id;
+    tab.prepend(
+      h("span", { class: "key", "aria-hidden": "true" }, String(i + 1)),
+    );
+    return tab;
+  });

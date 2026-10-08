@@ -1,0 +1,21 @@
+{
+  "name": "phas.dev",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "deploy": "pnpm build && wrangler deploy"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.3",
+    "wrangler": "^4.148.0"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist-mono": "^5.3.0"
+  }
+}
