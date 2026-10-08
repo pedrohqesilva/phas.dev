@@ -41,7 +41,7 @@ const MAX_ARMOUR = 4;
 export const SHIELD_TOP = SHIP_Y - 34;
 export const SHIELD_CELL = 2;
 export const UFO_Y = 24;
-const UFO_SPEED = 40;
+export const UFO_SPEED = 40;
 const MAX_RAPID = 5;
 // Share of each power-up among the drops, in percent: the extra shot and invincibility are the rare ones, a life is 10%.
 const POWER_WEIGHTS: [PowerKind, number][] = [
@@ -286,7 +286,7 @@ function fire(st: InvadersState, index: number, now: number) {
   ).size;
   if (volleysOnScreen >= 1 + Math.ceil(st.rapidLevel / 2)) return;
   const volley = ++st.volleySeq;
-  const vy = -(260 + st.rapidLevel * 20);
+  const vy = -shotSpeed(st.rapidLevel);
   const pierce = piercing(st, now);
   // Extra shots fan out to the sides, a wider angle the further from the middle.
   for (let i = 0; i < st.shotCount; i++) {
@@ -294,7 +294,7 @@ function fire(st: InvadersState, index: number, now: number) {
     st.shots.push({
       ship: index,
       x: ship.x + k * 3,
-      y: SHIP_Y - 6,
+      y: SHOT_START_Y,
       vx: k * 34,
       vy,
       volley,
@@ -303,7 +303,7 @@ function fire(st: InvadersState, index: number, now: number) {
       hits: new Set(),
     });
   }
-  ship.fireCooldown = now + Math.max(130, 220 - st.rapidLevel * 18);
+  ship.fireCooldown = now + fireCooldownMs(st.rapidLevel);
 }
 
 function loseLife(st: InvadersState, now: number, ship?: Ship) {
@@ -389,6 +389,31 @@ function end(st: InvadersState) {
 }
 
 /**
+ * Where a ship at `x` is after `dt` ms of `input`: keys move it at a steady speed, a finger pulls it
+ * there a little faster. Shared with the co-op browser, which moves its own ship ahead of the server.
+ */
+export function moveShip(x: number, input: ShipInput, dt: number): number {
+  const s = dt / 1000;
+  if (input.touchX !== null)
+    x += Math.sign(input.touchX - x) * Math.min(Math.abs(input.touchX - x), 140 * s);
+  else x += ((input.right ? 1 : 0) - (input.left ? 1 : 0)) * 110 * s;
+  return Math.max(8, Math.min(W - 8, x));
+}
+
+/** Pause between volleys of one ship, by rapid-fire level. */
+export const fireCooldownMs = (rapidLevel: number) =>
+  Math.max(130, 220 - rapidLevel * 18);
+/** A volley's upward speed, by rapid-fire level. */
+export const shotSpeed = (rapidLevel: number) => 260 + rapidLevel * 20;
+/** Where a ship's shot starts. */
+export const SHOT_START_Y = SHIP_Y - 6;
+/** Fields per entry in `InvadersView.shots` and `.bombs`. */
+export const SHOT_STRIDE = 6;
+export const BOMB_STRIDE = 3;
+/** How fast power-ups fall. */
+export const DROP_SPEED = 45;
+
+/**
  * Advances the game by `dt` ms (keep it at 16 or less, so a shot cannot jump over an 8 px invader).
  * `inputs[i]` drives ship i. On a finished game, a fresh fire press from anyone restarts it.
  */
@@ -411,12 +436,7 @@ export function stepInvaders(
   // Ships: move, and fire while the button (or the finger) is held; cooldown and the volley limit pace it.
   st.ships.forEach((ship, i) => {
     const input = inputs[i] ?? idleInput();
-    if (input.touchX !== null)
-      ship.x +=
-        Math.sign(input.touchX - ship.x) *
-        Math.min(Math.abs(input.touchX - ship.x), 140 * s);
-    else ship.x += ((input.right ? 1 : 0) - (input.left ? 1 : 0)) * 110 * s;
-    ship.x = Math.max(8, Math.min(W - 8, ship.x));
+    ship.x = moveShip(ship.x, input, dt);
     const pressed = input.fire || input.touchX !== null;
     if (pressed) fire(st, i, now);
     st.fireWas[i] = pressed;
@@ -540,7 +560,7 @@ export function stepInvaders(
 
   // Power-ups fall; any ship catches them for the team.
   st.drops = st.drops.filter((d) => {
-    d.y += 45 * s;
+    d.y += DROP_SPEED * s;
     const caught = st.ships.some((ship) => {
       const box = shipBox(ship.x);
       return inside(d, {
@@ -603,14 +623,16 @@ export interface InvadersView {
   /** Slots hit in the last 90 ms (they flash white). */
   flash: number[];
   ships: { x: number; blink: boolean }[];
-  /** Flat [x, y, piercing(0/1), …]. */
+  /** Flat [x, y, piercing(0/1), vx, vy, ship, …] (SHOT_STRIDE per shot); speeds in units per second. */
   shots: number[];
-  /** Flat [x, y, …]. */
+  /** Flat [x, y, vy, …] (BOMB_STRIDE per bomb). */
   bombs: number[];
   drops: { x: number; y: number; kind: PowerKind }[];
   /** One char per shield cell, "1" standing, "0" chipped (cells are always in the same order). */
   shields: string;
   ufoX: number | null;
+  /** -1 or 1: where the saucer is heading. */
+  ufoDir: number;
   banner: Banner | null;
   over: boolean;
 }
@@ -640,11 +662,19 @@ export function viewInvaders(st: InvadersState, now: number): InvadersView {
       x: r1(s.x),
       blink: now < s.hitUntil && Math.floor(now / 120) % 2 === 1,
     })),
-    shots: st.shots.flatMap((s) => [r1(s.x), r1(s.y), s.pierce ? 1 : 0]),
-    bombs: st.bombs.flatMap((b) => [r1(b.x), r1(b.y)]),
+    shots: st.shots.flatMap((s) => [
+      r1(s.x),
+      r1(s.y),
+      s.pierce ? 1 : 0,
+      r1(s.vx),
+      r1(s.vy),
+      s.ship,
+    ]),
+    bombs: st.bombs.flatMap((b) => [r1(b.x), r1(b.y), r1(b.vy)]),
     drops: st.drops.map((d) => ({ x: r1(d.x), y: r1(d.y), kind: d.kind })),
     shields: st.shields.map((c) => (c.alive ? "1" : "0")).join(""),
     ufoX: st.ufo ? r1(st.ufo.x) : null,
+    ufoDir: st.ufo?.dir ?? 1,
     banner: now < st.bannerUntil ? st.banner : null,
     over: st.over,
   };

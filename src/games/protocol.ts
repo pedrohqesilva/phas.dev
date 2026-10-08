@@ -22,9 +22,18 @@ export interface ArenaSnake {
   body: number[];
   alive: boolean;
   score: number;
+  /**
+   * Where it is heading, cells still to grow, and the last turn (`seq`) the server has used: what the
+   * owner's browser needs to predict its own snake ahead of the snapshots.
+   */
+  dir: Dir;
+  grow: number;
+  ack: number;
 }
 
 export interface ArenaState {
+  /** Server tick this snapshot was taken at: one every ARENA_TICK_MS. */
+  tick: number;
   snakes: ArenaSnake[];
   /** Flat [x, y, …]. */
   food: number[];
@@ -36,15 +45,28 @@ export interface ArenaState {
   online: number;
 }
 
+/**
+ * Co-op input: the browser moves its own ship (so it answers at once) and reports where it is; the server
+ * follows that position at a capped speed. `fire` is the button (or a finger on the screen).
+ */
+export interface CoopInput {
+  x: number;
+  fire: boolean;
+}
+
 export type ClientMessage =
+  /** Round-trip time: the server answers `pong` with the same `n` right away. */
+  | { t: "ping"; n: number }
   | { t: "arena.join"; name: string }
-  | { t: "arena.dir"; dir: Dir }
+  /** A turn, numbered, meant for server tick `at` (what the browser showed when it was pressed). */
+  | { t: "arena.dir"; dir: Dir; seq: number; at: number }
   | { t: "coop.create" }
   | { t: "coop.join"; room: string }
   | { t: "coop.ready" }
-  | { t: "coop.input"; input: ShipInput };
+  | { t: "coop.input"; input: CoopInput | ShipInput };
 
 export type ServerMessage =
+  | { t: "pong"; n: number }
   | { t: "arena.welcome"; you: number; name: string }
   | { t: "arena.state"; state: ArenaState }
   | { t: "arena.full" }

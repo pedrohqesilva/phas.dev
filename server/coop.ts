@@ -19,6 +19,8 @@ interface Room {
   players: (Send | null)[];
   ready: boolean[];
   inputs: ShipInput[];
+  /** Where each browser says its ship is (null: an older page sending keys instead). */
+  targets: (number | null)[];
   sim: ReturnType<typeof createInvaders>;
   timer: ReturnType<typeof setInterval> | null;
   startedAt: number;
@@ -28,10 +30,30 @@ const STEP_MS = 16;
 /** Snapshots go out every other step: about 30 per second. */
 const SEND_EVERY = 2;
 const MAX_ROOMS = 200;
+/**
+ * How fast the server lets a ship follow its browser: above the fastest the ship can move there (touch,
+ * 140 per second), so it keeps up, but capped, so a tampered page cannot teleport.
+ */
+const FOLLOW_SPEED = 260;
 
-/** Accepts only a well-formed input; anything else counts as "nothing pressed". */
-function cleanInput(raw: unknown): ShipInput {
+const finite = (n: unknown): n is number =>
+  typeof n === "number" && Number.isFinite(n);
+
+/**
+ * Accepts only a well-formed input; anything else counts as "nothing pressed". A position report (`x`)
+ * becomes the ship's target, and its fire button the only key; older pages still send keys.
+ */
+function cleanInput(raw: unknown): { input: ShipInput; target: number | null } {
   const r = (raw ?? {}) as Record<string, unknown>;
+  if (finite(r.x))
+    return {
+      input: { ...idleInput(), fire: r.fire === true },
+      target: Math.max(8, Math.min(W - 8, r.x)),
+    };
+  return { input: legacyInput(r), target: null };
+}
+
+function legacyInput(r: Record<string, unknown>): ShipInput {
   const x =
     typeof r.touchX === "number" && Number.isFinite(r.touchX)
       ? Math.max(0, Math.min(W, r.touchX))
@@ -71,6 +93,13 @@ export function createCoop() {
     let n = 0;
     room.timer = setInterval(() => {
       const now = performance.now() - room.startedAt;
+      // Ships follow where their browsers put them, at a capped speed.
+      room.targets.forEach((target, i) => {
+        const ship = room.sim.ships[i];
+        if (target === null || !ship) return;
+        const step = (FOLLOW_SPEED * STEP_MS) / 1000;
+        ship.x += Math.max(-step, Math.min(step, target - ship.x));
+      });
       stepInvaders(room.sim, room.inputs, now, STEP_MS);
       if (++n % SEND_EVERY) return;
       const msg: ServerMessage = {
@@ -105,6 +134,7 @@ export function createCoop() {
         players: [send, null],
         ready: [false, false],
         inputs: [idleInput(), idleInput()],
+        targets: [null, null],
         sim: createInvaders(2),
         timer: null,
         startedAt: 0,
@@ -137,7 +167,10 @@ export function createCoop() {
     },
     input(code: string, you: number, raw: unknown) {
       const room = rooms.get(code);
-      if (room) room.inputs[you] = cleanInput(raw);
+      if (!room) return;
+      const { input, target } = cleanInput(raw);
+      room.inputs[you] = input;
+      room.targets[you] = target;
     },
     leave(code: string, you: number) {
       const room = rooms.get(code);

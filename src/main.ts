@@ -31,7 +31,8 @@ const store = {
   },
 };
 
-const currentPath = () => location.pathname.replace(/(.)\/$/, "$1").toLowerCase();
+const currentPath = () =>
+  location.pathname.replace(/(.)\/$/, "$1").toLowerCase();
 
 /** Addresses that fix the language: each page exists in both, and the address says which one it is. */
 const PATH_LANG: Record<string, Lang> = {
@@ -42,7 +43,9 @@ const PATH_LANG: Record<string, Lang> = {
   "/simples": "pt",
 };
 /** Robots read each address in its own language: no guessing from their browser settings. */
-const isBot = /bot|crawl|spider|slurp|preview|headless|lighthouse/i.test(navigator.userAgent);
+const isBot = /bot|crawl|spider|slurp|preview|headless|lighthouse/i.test(
+  navigator.userAgent,
+);
 
 const initialLang: Lang =
   PATH_LANG[currentPath()] ??
@@ -76,7 +79,10 @@ function applyLang(lang: Lang) {
   const t = ui[lang];
   term.lang = lang;
   root.lang = lang === "pt" ? "pt-BR" : "en";
-  document.title = pageTitle(lang, root.classList.contains("simple") ? "resume" : "home");
+  document.title = pageTitle(
+    lang,
+    root.classList.contains("simple") ? "resume" : "home",
+  );
   $("prompt-user").textContent = t.user;
   $("cmd").setAttribute("aria-label", t.inputLabel);
   $("lang-toggle").replaceChildren(
@@ -105,12 +111,17 @@ function setLang(lang: Lang) {
   term.relocalize();
   // The address follows: /curriculo ⇄ /resume, / ⇄ /en (games and other addresses stay put).
   if (isSimplePath() || HOME_PATHS.includes(currentPath()))
-    history.replaceState(history.state, "", pagePath() + location.search + location.hash);
+    history.replaceState(
+      history.state,
+      "",
+      pagePath() + location.search + location.hash,
+    );
 }
 
 const HOME_PATHS = ["/", "/en"];
 /** This view's address in the current language. */
-const pagePath = () => pathFor(root.classList.contains("simple") ? "resume" : "home", term.lang);
+const pagePath = () =>
+  pathFor(root.classList.contains("simple") ? "resume" : "home", term.lang);
 
 function applyThemeLabel() {
   const current = (root.dataset.theme as Theme) ?? initialTheme;

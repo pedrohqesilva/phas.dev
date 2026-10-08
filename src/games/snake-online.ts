@@ -1,10 +1,19 @@
 // Snake in the public arena: everyone online shares one grid, simulated on the server. This side sends
 // turns and draws the snapshots: your snake in the accent, the others white with their names, the food,
 // and a live top five. Hit a wall or any snake and you turn into food, then respawn a moment later.
+//
+// The server is far (about 160 ms there and back from Brazil), so your own snake is not drawn from the
+// snapshots, which are always a little old: it is played forward here, tick by tick on the server's beat,
+// from the last snapshot and the turns the server has not confirmed yet. A turn is sent for the tick you
+// pressed it on, the server applies it on that same tick, and the snake turns on screen at once, on the
+// cell you saw. The server still decides who eats and who dies; the next snapshot corrects any slip.
+// The other snakes are drawn on the same beat, so network jitter does not make them stutter.
+import { opposite, predict } from "./arena-predict.ts";
 import { connect } from "./net.ts";
 import {
   ARENA_COLS,
   ARENA_ROWS,
+  ARENA_TICK_MS,
   type ArenaState,
   type Dir,
 } from "./protocol.ts";
@@ -44,7 +53,19 @@ export function playSnakeArena(
   let you = -1;
   let best = 0;
   let note: string | undefined;
-  let lastDir: Dir | null = null;
+  /** Recent snapshots by tick, to draw the others on a steady beat. */
+  const recent = new Map<number, ArenaState>();
+  /** Arrival time minus tick × tick length, for recent snapshots: the smallest is the beat with no jitter. */
+  const offsets: number[] = [];
+  /** Turns sent and not yet confirmed by the server. */
+  let pending: { dir: Dir; at: number; seq: number }[] = [];
+  let seq = 0;
+  let wasAlive = false;
+  /** What is on screen for your snake, updated every frame. */
+  let shown: { tick: number; dir: Dir; body: number[]; eaten: Set<number> } | null = null;
+
+  /** The tick whose snapshot should be arriving now, give or take jitter. */
+  const beat = (t: number) => (t - Math.min(...offsets)) / ARENA_TICK_MS;
   let touchFrom: { x: number; y: number } | null = null;
   let cell = 10;
   let ox = 0;
@@ -56,8 +77,17 @@ export function playSnakeArena(
       if (msg.t === "arena.welcome") you = msg.you;
       else if (msg.t === "arena.state") {
         state = msg.state;
+        recent.set(state.tick, state);
+        recent.delete(state.tick - 12);
+        offsets.push(performance.now() - state.tick * ARENA_TICK_MS);
+        if (offsets.length > 30) offsets.shift();
         const me = state.snakes.find((s) => s.id === you);
-        if (me) best = Math.max(best, me.score);
+        if (me) {
+          best = Math.max(best, me.score);
+          // Confirmed turns leave the queue; a death or a new life starts it over.
+          pending = me.alive && wasAlive ? pending.filter((p) => p.seq > me.ack) : [];
+          wasAlive = me.alive;
+        }
       } else if (msg.t === "arena.full") note = texts.full;
     },
     close(opened) {
@@ -66,10 +96,16 @@ export function playSnakeArena(
   });
 
   const turn = (dir: Dir) => {
-    // The server ignores reversals too; skipping repeats keeps the wire quiet.
-    if (dir === lastDir) return;
-    lastDir = dir;
-    net.send({ t: "arena.dir", dir });
+    if (!shown || !wasAlive || pending.length >= 3) return;
+    // Against where the snake will be heading after the turns still to come: the server ignores reversals
+    // too, and repeats would only take up a tick.
+    const last = pending.at(-1);
+    const heading = last && last.at > shown.tick ? last.dir : shown.dir;
+    if (dir === heading || opposite(dir, heading)) return;
+    // Meant for the next tick on screen (one turn per tick, like the server takes them).
+    const at = Math.max(shown.tick + 1, (last?.at ?? 0) + 1);
+    pending.push({ dir, at, seq: ++seq });
+    net.send({ t: "arena.dir", dir, seq, at });
   };
 
   const shell = openGame({
@@ -144,12 +180,26 @@ export function playSnakeArena(
       );
       return;
     }
-    const s = state;
-    const me = s.snakes.find((sn) => sn.id === you);
+    const t = performance.now();
+    // The others: the snapshot for this moment's beat (the latest if it is late).
+    const now0 = Math.floor(beat(t));
+    const s = recent.get(Math.min(now0, state.tick)) ?? state;
+    const latest = state;
+    const me = latest.snakes.find((sn) => sn.id === you);
+    // Yours: played forward to the tick a turn pressed now would reach the server on.
+    shown =
+      me?.alive && me.body.length
+        ? {
+            tick: Math.floor(beat(t) + net.rtt() / ARENA_TICK_MS),
+            ...predict(me, latest, pending, Math.floor(beat(t) + net.rtt() / ARENA_TICK_MS)),
+          }
+        : null;
+    const mineEaten = shown?.eaten ?? new Set<number>();
 
     // Food: small squares; the super grain a blinking white cell.
     g.globalAlpha = 0.85;
     for (let i = 0; i < s.food.length; i += 2) {
+      if (mineEaten.has(s.food[i + 1] * ARENA_COLS + s.food[i])) continue;
       const pad = Math.max(1, Math.round(cell * 0.3));
       g.fillRect(
         ox + s.food[i] * cell + pad,
@@ -167,9 +217,10 @@ export function playSnakeArena(
     }
 
     // Snakes: yours in the accent, the others white (bots dimmer); dead ones are already food.
-    for (const sn of s.snakes) {
+    for (const other of s.snakes) {
+      const mine = other.id === you;
+      const sn = mine ? { ...other, alive: !!shown, body: shown?.body ?? [] } : other;
       if (!sn.alive || !sn.body.length) continue;
-      const mine = sn.id === you;
       g.fillStyle = mine ? shell.accent : "#fff";
       const n = sn.body.length / 2;
       for (let i = 0; i < n; i++) {

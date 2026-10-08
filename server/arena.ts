@@ -20,7 +20,10 @@ interface Player {
   bot: boolean;
   body: P[];
   dir: Dir;
-  turns: Dir[];
+  /** Queued turns, each meant for a tick (`at`) and numbered (`seq`) so the owner knows which were used. */
+  turns: { dir: Dir; at: number; seq: number }[];
+  /** The last turn taken from the queue. */
+  ack: number;
   alive: boolean;
   respawnAt: number;
   score: number;
@@ -36,6 +39,8 @@ const SUPER_CHANCE = 0.1;
 const SUPER_MS = 6000;
 const SUPER_POINTS = 5;
 const BOT_NAMES = ["bit", "byte"];
+/** A turn may ask for a tick at most this far ahead; anything further is treated as "now". */
+const MAX_LEAD_TICKS = 4;
 
 const key = (p: P) => p.y * ARENA_COLS + p.x;
 const inBounds = (p: P) =>
@@ -52,6 +57,7 @@ export function createArena() {
   let food: P[] = [];
   let superFood: { p: P; until: number } | null = null;
   let timer: ReturnType<typeof setInterval> | null = null;
+  let tickNo = 0;
 
   const humans = () => [...players.values()].filter((p) => !p.bot);
 
@@ -172,6 +178,7 @@ export function createArena() {
 
   function tick() {
     const now = Date.now();
+    tickNo++;
     for (const p of players.values())
       if (!p.alive && now >= p.respawnAt) spawn(p, now);
     if (superFood && now > superFood.until) superFood = null;
@@ -181,8 +188,13 @@ export function createArena() {
     for (const p of living) {
       if (p.bot) steerBot(p, takenBefore);
       else {
-        const next = p.turns.shift();
-        if (next !== undefined && !opposite(next, p.dir)) p.dir = next;
+        // A turn waits for the tick it was pressed on (as the player saw it); a late one applies now.
+        const next = p.turns[0];
+        if (next && (next.at <= tickNo || next.at > tickNo + MAX_LEAD_TICKS)) {
+          p.turns.shift();
+          p.ack = next.seq;
+          if (!opposite(next.dir, p.dir)) p.dir = next.dir;
+        }
       }
     }
 
@@ -228,6 +240,7 @@ export function createArena() {
   function snapshot(now: number): ArenaState {
     const list = [...players.values()];
     return {
+      tick: tickNo,
       snakes: list.map((p) => ({
         id: p.id,
         name: p.name,
@@ -235,6 +248,9 @@ export function createArena() {
         body: p.body.flatMap((c) => [c.x, c.y]),
         alive: p.alive,
         score: p.score,
+        dir: p.dir,
+        grow: p.grow,
+        ack: p.ack,
       })),
       food: food.flatMap((f) => [f.x, f.y]),
       superFood: superFood
@@ -269,6 +285,7 @@ export function createArena() {
         body: [],
         dir: 1,
         turns: [],
+        ack: 0,
         alive: false,
         respawnAt: 0,
         score: 0,
@@ -299,6 +316,7 @@ export function createArena() {
         body: [],
         dir: 1,
         turns: [],
+        ack: 0,
         alive: false,
         respawnAt: 0,
         score: 0,
@@ -310,10 +328,10 @@ export function createArena() {
       balanceBots();
       return player.id;
     },
-    turn(id: number, dir: Dir) {
+    turn(id: number, dir: Dir, seq: number, at: number) {
       const p = players.get(id);
-      // Up to two queued turns, so a quick double tap (down, then left) is not lost between ticks.
-      if (p && p.turns.length < 2) p.turns.push(dir);
+      // Up to three queued turns, so a quick double tap (down, then left) is not lost between ticks.
+      if (p && p.turns.length < 3) p.turns.push({ dir, seq, at });
     },
     leave(id: number) {
       if (!players.delete(id)) return;

@@ -2,11 +2,20 @@
 // invaders-sim.ts; here are the controls and the drawing.
 // ← → or A D move, Space (or ↑ / W) fires; on touch the ship follows the finger and fires while held.
 //
-// Solo runs the simulation in the browser. Co-op runs it on the server: this side only sends what the
-// player is pressing and draws the snapshots it gets back (your ship in the accent, your partner's white).
+// Solo runs the simulation in the browser. Co-op runs it on the server, which is a long way off (about
+// 160 ms there and back from Brazil), so this side hides the wait: your ship moves here at once and the
+// server follows it, your shots appear the moment you fire, and everything else is drawn where it is now,
+// projected from the last snapshot by its speed, instead of where it was when the snapshot left.
 import {
+  BOMB_STRIDE,
   createInvaders,
+  DROP_SPEED,
+  fireCooldownMs,
   H,
+  moveShip,
+  SHOT_START_Y,
+  SHOT_STRIDE,
+  shotSpeed,
   idleInput,
   restartInvaders,
   SHIELD_CELL,
@@ -14,6 +23,7 @@ import {
   SHIP_Y,
   slotBox,
   stepInvaders,
+  UFO_SPEED,
   UFO_Y,
   viewInvaders,
   W,
@@ -260,9 +270,9 @@ function draw(
   });
   g.fillStyle = shell.accent;
 
-  for (let i = 0; i < v.shots.length; i += 3)
+  for (let i = 0; i < v.shots.length; i += SHOT_STRIDE)
     g.fillRect(v.shots[i], v.shots[i + 1], v.shots[i + 2] ? 2 : 1, 5);
-  for (let i = 0; i < v.bombs.length; i += 2)
+  for (let i = 0; i < v.bombs.length; i += BOMB_STRIDE)
     g.fillRect(v.bombs[i], v.bombs[i + 1], 1, 4);
   if (v.flashLeft > 0) {
     g.globalAlpha = (v.flashLeft / 220) * 0.5;
@@ -352,6 +362,20 @@ export function playInvaders(
 }
 
 /**
+ * A shot fired here, drawn from the moment you press. The server fires it a little later (when the press
+ * arrives), so its copy trails behind: that copy only confirms the shot, and the one drawn stays this one,
+ * until the server's is gone (it hit something) or this one reaches an invader.
+ */
+type Ghost = {
+  x: number;
+  vx: number;
+  vy: number;
+  at: number;
+  /** When the server's copy was last seen; 0 until it first shows up. */
+  seen: number;
+};
+
+/**
  * Co-op: two ships, simulated on the server. `room` joins an existing room (from a shared link);
  * without it a new room is created and `onRoom` gets its code to share.
  */
@@ -373,11 +397,21 @@ export function playInvadersCoop(
   // Before the first snapshot arrives, an empty two-ship field is drawn behind the waiting message.
   const placeholder = viewInvaders(createInvaders(2), 0);
   let view: InvadersView | null = null;
+  /** When the last snapshot arrived (performance.now()). */
+  let viewAt = 0;
   let you = 0;
   let note: string | undefined;
   let overlay: string[] = [coop.waiting];
   let best = 0;
+  /** Your ship, moved here as you press; the server follows it. Null until a snapshot places it. */
+  let myX: number | null = null;
+  /** Your partner's ship, eased towards each snapshot so it glides instead of stepping 30 times a second. */
+  let partnerX: number | null = null;
+  let ghosts: Ghost[] = [];
+  let lastVolley = -Infinity;
   let sent = "";
+  let sentFire = false;
+  let sentAt = 0;
 
   const net = connect({
     open: () =>
@@ -393,7 +427,10 @@ export function playInvadersCoop(
       } else if (msg.t === "coop.start") overlay = [];
       else if (msg.t === "coop.state") {
         view = msg.view;
+        viewAt = performance.now();
         best = Math.max(best, msg.view.best);
+        myX ??= msg.view.ships[you]?.x ?? null;
+        if (msg.view.over) ghosts = [];
       } else if (msg.t === "coop.left") {
         note = coop.partnerLeft;
         overlay = [note];
@@ -423,14 +460,107 @@ export function playInvadersCoop(
     },
   });
 
-  shell.loop((now) => {
-    // Only changes go over the wire; the pause panel or a hidden tab sends "nothing pressed".
-    const input = shell.started && !shell.paused ? pad.input() : idleInput();
-    const key = JSON.stringify(input);
-    if (key !== sent) {
-      sent = key;
-      net.send({ t: "coop.input", input });
+  /** The last snapshot, moved forward to the present and with your ship and shots as they are here. */
+  function present(v: InvadersView, t: number): InvadersView {
+    // The snapshot left the server half a round trip ago, plus however long it has been here.
+    const lead = Math.min(0.3, (net.rtt() / 2 + (t - viewAt)) / 1000);
+    const shots: number[] = [];
+    const claimed = new Set<number>();
+    for (let i = 0; i < v.shots.length; i += SHOT_STRIDE) {
+      const [x, y, pierce, vx, vy, ship] = v.shots.slice(i, i + SHOT_STRIDE);
+      const px = x + vx * lead;
+      const py = y + vy * lead;
+      if (py < -6) continue;
+      // Your server shot confirms the ghost just ahead of it on the same line, and is not drawn itself.
+      if (ship === you) {
+        const gh = ghosts.find(
+          (g, k) =>
+            !claimed.has(k) &&
+            Math.abs(g.x + g.vx * age(g, t) - px) < 6 &&
+            py - ghostY(g, t) > -10 &&
+            py - ghostY(g, t) < 45,
+        );
+        if (gh) {
+          claimed.add(ghosts.indexOf(gh));
+          gh.seen = t;
+          continue;
+        }
+      }
+      shots.push(px, py, pierce, vx, vy, ship);
     }
-    draw(shell, f, view ?? placeholder, texts, now, { you, coop, overlay });
+    for (const gh of ghosts)
+      shots.push(gh.x + gh.vx * age(gh, t), ghostY(gh, t), v.pierceLeft > 0 ? 1 : 0, gh.vx, gh.vy, you);
+    const bombs: number[] = [];
+    for (let i = 0; i < v.bombs.length; i += BOMB_STRIDE)
+      bombs.push(v.bombs[i], v.bombs[i + 1] + v.bombs[i + 2] * lead, v.bombs[i + 2]);
+    return {
+      ...v,
+      ships: v.ships.map((ship, i) => ({
+        ...ship,
+        x: i === you ? (myX ?? ship.x) : (partnerX ?? ship.x),
+      })),
+      shots,
+      bombs,
+      drops: v.drops.map((d) => ({ ...d, y: d.y + DROP_SPEED * lead })),
+      ufoX: v.ufoX === null ? null : v.ufoX + v.ufoDir * UFO_SPEED * lead,
+    };
+  }
+
+  const age = (gh: Ghost, t: number) => (t - gh.at) / 1000;
+  const ghostY = (gh: Ghost, t: number) => SHOT_START_Y + gh.vy * age(gh, t);
+
+  shell.loop((now, dt) => {
+    const t = performance.now();
+    const active = shell.started && !shell.paused;
+    const input = active ? pad.input() : idleInput();
+    const fire = input.fire || input.touchX !== null;
+    const v = view;
+
+    if (v && myX !== null && active && !v.over) myX = moveShip(myX, input, dt);
+    const partner = v?.ships[1 - you];
+    if (partner) partnerX = partnerX === null ? partner.x : partnerX + (partner.x - partnerX) * Math.min(1, dt / 50);
+
+    // Fire: the volley shows at once, under the same pacing the server uses (cooldown, volleys on screen).
+    if (v && myX !== null && active && fire && !v.over) {
+      const myShots = v.shots.filter((_, i) => i % SHOT_STRIDE === 5 && v.shots[i] === you).length;
+      const volleys = Math.ceil(myShots / v.shotCount) + new Set(ghosts.map((gh) => gh.at)).size;
+      if (t - lastVolley >= fireCooldownMs(v.rapidLevel) && volleys < 1 + Math.ceil(v.rapidLevel / 2)) {
+        lastVolley = t;
+        for (let i = 0; i < v.shotCount; i++) {
+          const k = i - (v.shotCount - 1) / 2;
+          ghosts.push({ x: myX + k * 3, vx: k * 34, vy: -shotSpeed(v.rapidLevel), at: t, seen: 0 });
+        }
+      }
+    }
+    // A ghost goes when its server copy is gone (the shot hit something), when it reaches an invader (unless
+    // piercing), or, never confirmed, after a round trip and a bit (the server did not fire it).
+    if (v)
+      ghosts = ghosts.filter((gh) => {
+        const y = ghostY(gh, t);
+        const x = gh.x + gh.vx * age(gh, t);
+        const hitInvader =
+          v.pierceLeft <= 0 &&
+          v.hp.some((hp, k) => {
+            if (!hp) return false;
+            const b = slotBox(v, k);
+            return x >= b.x && x <= b.x + 11 && y >= b.y && y <= b.y + 8;
+          });
+        const alive = gh.seen ? t - gh.seen < 90 : t - gh.at < net.rtt() + 250;
+        return y > -6 && !hitInvader && alive;
+      });
+
+    // Report the ship's place up to 30 times a second; a fire press or release goes at once.
+    if (myX !== null) {
+      const firing = active && fire;
+      const key = `${Math.round(myX * 10)}|${firing}`;
+      if (key !== sent && (firing !== sentFire || t - sentAt >= 33)) {
+        sent = key;
+        sentFire = firing;
+        sentAt = t;
+        net.send({ t: "coop.input", input: { x: Math.round(myX * 10) / 10, fire: firing } });
+      }
+    }
+
+    draw(shell, f, v ? present(v, t) : placeholder, texts, now, { you, coop, overlay });
   });
 }

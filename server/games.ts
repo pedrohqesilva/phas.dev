@@ -31,7 +31,14 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
   }
 
   const MAX_CONNECTIONS = 300;
-  const MESSAGES_PER_SECOND = 40;
+  // Co-op reports the ship's position up to 30 times a second, plus fire presses and pings.
+  const MESSAGES_PER_SECOND = 60;
+  /**
+   * Development only: GAME_LAG_MS delays every message both ways, to play here as it plays from far away
+   * (e.g. GAME_LAG_MS=80 is about Brazil to the server in Virginia).
+   */
+  const lag = Number(process.env.GAME_LAG_MS ?? 0);
+  const later = (fn: () => void) => (lag > 0 ? setTimeout(fn, lag) : fn());
 
   const wss = new WebSocketServer({ noServer: true, maxPayload: 1024 });
 
@@ -55,9 +62,12 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
       alive: true,
     };
     const send = (msg: ServerMessage) => {
+      const data = JSON.stringify(msg);
       // A slow client that falls behind skips snapshots instead of growing a backlog.
-      if (ws.readyState === ws.OPEN && ws.bufferedAmount < 256 * 1024)
-        ws.send(JSON.stringify(msg));
+      later(() => {
+        if (ws.readyState === ws.OPEN && ws.bufferedAmount < 256 * 1024)
+          ws.send(data);
+      });
     };
     const refill = setInterval(
       () => (session.budget = MESSAGES_PER_SECOND),
@@ -65,7 +75,8 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
     );
 
     ws.on("pong", () => (session.alive = true));
-    ws.on("message", (data) => {
+    ws.on("message", (data) => later(() => handle(data)));
+    const handle = (data: unknown) => {
       if (--session.budget < 0) return;
       let msg: ClientMessage;
       try {
@@ -74,6 +85,9 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
         return;
       }
       switch (msg?.t) {
+        case "ping":
+          if (typeof msg.n === "number") send({ t: "pong", n: msg.n });
+          break;
         case "arena.join":
           if (session.arenaId === null) {
             const id = arena.join(
@@ -87,7 +101,12 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
           break;
         case "arena.dir":
           if (session.arenaId !== null && [0, 1, 2, 3].includes(msg.dir))
-            arena.turn(session.arenaId, msg.dir as Dir);
+            arena.turn(
+              session.arenaId,
+              msg.dir as Dir,
+              Number.isFinite(msg.seq) ? msg.seq : 0,
+              Number.isFinite(msg.at) ? msg.at : 0,
+            );
           break;
         case "coop.create":
           if (!session.room) session.room = coop.create(send);
@@ -107,7 +126,7 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
             coop.input(session.room.code, session.room.you, msg.input);
           break;
       }
-    });
+    };
     ws.on("close", () => {
       clearInterval(refill);
       if (session.arenaId !== null) arena.leave(session.arenaId);
