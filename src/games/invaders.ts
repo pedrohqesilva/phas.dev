@@ -420,7 +420,7 @@ export function playInvadersCoop(
   let best = 0;
   /** Your ship, moved here as you press; the server follows it. Null until a snapshot places it. */
   let myX: number | null = null;
-  /** How fast your ship is moving, sent along so the server can check bombs where it really is. */
+  /** How fast your ship is moving: a start or a stop is reported at once. */
   let myVx = 0;
   /** Your partner's ship, eased towards each snapshot so it glides instead of stepping 30 times a second. */
   let partnerX: number | null = null;
@@ -613,7 +613,7 @@ export function playInvadersCoop(
         return y > -6 && !hitInvader && alive;
       });
 
-    // Report the ship's place (and speed) up to 30 times a second; a fire press or release goes at once.
+    // Report the ship's place up to 30 times a second; a fire press or release goes at once.
     if (myX !== null) {
       const firing = active && fire;
       const key = `${Math.round(myX * 10)}|${firing}|${Math.sign(Math.round(myVx))}`;
@@ -626,7 +626,6 @@ export function playInvadersCoop(
           input: {
             x: Math.round(myX * 10) / 10,
             fire: firing,
-            vx: Math.round(myVx),
             rtt: Math.round(net.rtt()),
           },
         });

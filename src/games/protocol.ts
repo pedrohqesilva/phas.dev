@@ -52,11 +52,7 @@ export interface ArenaState {
 export interface CoopInput {
   x: number;
   fire: boolean;
-  /**
-   * The ship's speed right now and the measured round trip: the server uses them to place the ship where
-   * it really is on the player's screen when a bomb arrives, not where the last report left it.
-   */
-  vx?: number;
+  /** The measured round trip: with it the server places the ship where it is on the player's screen. */
   rtt?: number;
 }
 

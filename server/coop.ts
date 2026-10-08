@@ -20,7 +20,10 @@ import {
 
 type Send = (msg: ServerMessage) => void;
 
-/** Where a browser last said its ship was, how fast it was going, and when that report arrived. */
+/**
+ * Where a browser last said its ship was, when that report arrived, and how fast the ship is going: worked
+ * out here from the last two reports (a page could claim any speed; it cannot fake its own reports' pace).
+ */
 type Report = { x: number; vx: number; oneWay: number; at: number };
 
 interface Room {
@@ -72,7 +75,7 @@ function cleanInput(raw: unknown): {
       input: { ...idleInput(), fire: r.fire === true },
       report: {
         x: clamp(r.x, 8, W - 8),
-        vx: finite(r.vx) ? clamp(r.vx, -MAX_SHIP_SPEED, MAX_SHIP_SPEED) : 0,
+        vx: 0,
         oneWay: finite(r.rtt) ? clamp(r.rtt / 2, 0, 150) : 0,
       },
     };
@@ -233,7 +236,15 @@ export function createCoop() {
       if (!room) return;
       const { input, report } = cleanInput(raw);
       room.inputs[you] = input;
-      room.reports[you] = report && { ...report, at: performance.now() };
+      const at = performance.now();
+      const prev = room.reports[you];
+      if (report && prev && at - prev.at > 8)
+        report.vx = clamp(
+          ((report.x - prev.x) * 1000) / (at - prev.at),
+          -MAX_SHIP_SPEED,
+          MAX_SHIP_SPEED,
+        );
+      room.reports[you] = report && { ...report, at };
       if (!report) room.sim.ships[you].hitX = undefined;
     },
     /** A connection dropped: the seat waits RESUME_MS for its player; then the room closes. */

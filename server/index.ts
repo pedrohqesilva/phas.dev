@@ -160,7 +160,15 @@ function serveStatic(req: IncomingMessage, res: ServerResponse) {
       .end();
     return;
   }
-  const path = decodeURIComponent(new URL(req.url ?? "/", "http://x").pathname);
+  // A malformed address (bad percent-encoding) is a 400, never an exception: one request must not be able
+  // to take the server down.
+  let path: string;
+  try {
+    path = decodeURIComponent(new URL(req.url ?? "/", "http://x").pathname);
+  } catch {
+    res.writeHead(400, SECURITY_HEADERS).end();
+    return;
+  }
   if (path === "/health") {
     res.writeHead(200, { "Content-Type": "text/plain" }).end("ok");
     return;
@@ -188,7 +196,17 @@ function serveStatic(req: IncomingMessage, res: ServerResponse) {
   res.end(req.method === "HEAD" ? undefined : body);
 }
 
-const server = createServer(serveStatic);
+// Last line of defence: whatever slips through a handler is answered with a 500 and logged; the process,
+// with everyone's games in it, keeps running.
+const server = createServer((req, res) => {
+  try {
+    serveStatic(req, res);
+  } catch (error) {
+    console.error(error);
+    if (!res.headersSent) res.writeHead(500, SECURITY_HEADERS);
+    res.end();
+  }
+});
 attachGames(server);
 
 server.listen(PORT, () =>

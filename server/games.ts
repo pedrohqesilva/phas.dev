@@ -1,7 +1,7 @@
 // The game WebSocket (/ws): the public Snake arena and the co-op Space Invaders rooms. Attached to an
 // HTTP server: the production one (server/index.ts) and, in development, Vite's (vite.config.ts), so
 // `pnpm dev` plays online without a second process.
-import type { Server } from "node:http";
+import type { IncomingMessage, Server } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 import {
   cleanName,
@@ -31,6 +31,26 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
   }
 
   const MAX_CONNECTIONS = 300;
+  /** One person (one address) cannot take all the seats: a few tabs are plenty. */
+  const MAX_PER_ADDRESS = 8;
+  const perAddress = new Map<string, number>();
+  /**
+   * Pages allowed to open the game socket: this site (and local development). Browsers send the page's
+   * origin and other sites cannot fake it; a request with no origin is not a browser and gains nothing.
+   */
+  const allowedOrigin = (origin: string | undefined) =>
+    !origin ||
+    /^https:\/\/(www\.)?phas\.dev$/.test(origin) ||
+    /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+  /** The visitor's address: Cloudflare's header first, then the proxy chain, then the socket. */
+  const addressOf = (req: IncomingMessage) => {
+    const cf = req.headers["cf-connecting-ip"];
+    if (typeof cf === "string" && cf) return cf;
+    const chain = String(req.headers["x-forwarded-for"] ?? "")
+      .split(",")[0]
+      .trim();
+    return chain || req.socket.remoteAddress || "?";
+  };
   // Co-op reports the ship's position up to 30 times a second, plus fire presses and pings.
   const MESSAGES_PER_SECOND = 60;
   /**
@@ -43,15 +63,32 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
   const wss = new WebSocketServer({ noServer: true, maxPayload: 1024 });
 
   server.on("upgrade", (req, socket, head) => {
+    socket.on("error", () => socket.destroy());
     if (new URL(req.url ?? "/", "http://x").pathname !== "/ws") {
       if (exclusive) socket.destroy();
       return;
     }
-    if (wss.clients.size >= MAX_CONNECTIONS) {
+    const address = addressOf(req);
+    if (
+      !allowedOrigin(req.headers.origin) ||
+      wss.clients.size >= MAX_CONNECTIONS ||
+      (perAddress.get(address) ?? 0) >= MAX_PER_ADDRESS
+    ) {
       socket.destroy();
       return;
     }
-    wss.handleUpgrade(req, socket, head, (ws) => wss.emit("connection", ws));
+    perAddress.set(address, (perAddress.get(address) ?? 0) + 1);
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      // A broken or oversized frame is that connection's problem: an "error" with no listener would
+      // crash the whole process.
+      ws.on("error", () => ws.terminate());
+      ws.once("close", () => {
+        const n = (perAddress.get(address) ?? 1) - 1;
+        if (n > 0) perAddress.set(address, n);
+        else perAddress.delete(address);
+      });
+      wss.emit("connection", ws);
+    });
   });
 
   wss.on("connection", (ws: WebSocket) => {
@@ -75,7 +112,16 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
     );
 
     ws.on("pong", () => (session.alive = true));
-    ws.on("message", (data) => later(() => handle(data)));
+    // A message that trips a handler is dropped (and logged), never allowed to take the server down.
+    ws.on("message", (data) =>
+      later(() => {
+        try {
+          handle(data);
+        } catch (error) {
+          console.error(error);
+        }
+      }),
+    );
     const handle = (data: unknown) => {
       if (--session.budget < 0) return;
       let msg: ClientMessage;
