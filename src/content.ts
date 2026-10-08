@@ -14,6 +14,8 @@ export interface Job {
   role: L;
   period: L;
   place: L;
+  /** One line on what the company is and what the role was about, read before the bullets. */
+  about?: L;
   bullets: L[];
   stack?: string[];
 }
@@ -52,12 +54,12 @@ export const profile = {
     en: "Belo Horizonte, Brazil",
   } satisfies L,
   summary: {
-    pt: "Engenheiro de software com foco em backend C#/.NET e experiência em Angular e React. Já trabalhei na criação de um banco digital no Canadá, em marketplaces do varejo brasileiro e em soluções para o setor financeiro norte-americano. Gosto de arquiteturas limpas e cloud-first (Azure e AWS), com DDD, microsserviços, monólitos modulares e Vertical Slice.",
-    en: "Software engineer focused on C#/.NET backends, with Angular and React experience. I have helped build a digital bank in Canada, marketplaces for Brazilian retail and solutions for the US financial sector. I like clean, cloud-first architectures (Azure and AWS) using DDD, microservices, modular monoliths and Vertical Slice.",
+    pt: "Engenheiro de software sênior com 9 anos construindo backends em C# e .NET para fintechs, varejo e setor público. Ajudei a criar um banco digital no Canadá, evoluí plataformas do varejo brasileiro e hoje defino arquitetura e padrões de código numa fintech americana.",
+    en: "Senior software engineer with 9 years building C# and .NET backends for fintech, retail and the public sector. I helped build a digital bank in Canada, evolved platforms for Brazilian retail and now define architecture and code standards at a US fintech.",
   } satisfies L,
   extra: {
-    pt: "Testo as versões alpha do .NET em projetos pessoais, crio POCs para validar ideias e gosto de compartilhar conhecimento com quem está começando.",
-    en: "I try .NET alpha releases in personal projects, build POCs to validate ideas and enjoy sharing knowledge with less experienced developers.",
+    pt: "Gosto de arquitetura que continua simples de manter: DDD, monólito modular e Vertical Slice quando bastam, microsserviços quando são necessários. Fora do trabalho, testo as versões alpha do .NET, crio POCs para validar ideias e gosto de ensinar quem está começando.",
+    en: "I like architecture that stays easy to maintain: DDD, modular monoliths and Vertical Slice when they are enough, microservices when they are needed. Outside work I try .NET alpha releases, build POCs to test ideas and enjoy teaching people who are starting out.",
   } satisfies L,
   email: "pedro@phas.dev",
   links: [
@@ -75,13 +77,7 @@ export const stack: StackGroup[] = [
   },
   {
     group: { pt: "Arquitetura", en: "Architecture" },
-    items: [
-      "DDD",
-      "Microsserviços",
-      "Monólito modular",
-      "Vertical Slice",
-      "Hexagonal",
-    ],
+    items: ["DDD", "Microservices", "Modular Monolith", "Vertical Slice", "Hexagonal", "Event-driven"],
   },
   {
     group: { pt: "Frontend", en: "Frontend" },
@@ -120,85 +116,96 @@ export const stack: StackGroup[] = [
 export const experience: Job[] = [
   {
     company: "Paysign",
-    role: {
-      pt: "Engenheiro de Software Sênior",
-      en: "Senior Software Engineer",
-    },
+    role: { pt: "Engenheiro de Software Sênior", en: "Senior Software Engineer" },
     period: { pt: "dez 2021 - atual", en: "Dec 2021 - present" },
     place: { pt: "remoto, EUA", en: "remote, US" },
+    about: {
+      pt: "Fintech americana de pagamentos. Atuo nos produtos novos e nos padrões técnicos usados por toda a empresa.",
+      en: "US payments fintech. I work on new products and on the technical standards used across the company.",
+    },
     bullets: [
       {
-        pt: "Defini a arquitetura base das novas APIs usando Vertical Slice.",
-        en: "Defined the base architecture for new APIs using Vertical Slice.",
+        pt: "Defini e implementei a arquitetura base das novas APIs, em Vertical Slice.",
+        en: "Defined and built the base architecture for new APIs, using Vertical Slice.",
       },
       {
-        pt: "Criei o SharedKernel, pacote NuGet corporativo que padroniza logs, erros, validações e entidades DDD.",
-        en: "Built SharedKernel, a company-wide NuGet package that standardises logging, errors, validation and DDD entities.",
+        pt: "Criei o SharedKernel, pacote NuGet interno que padroniza logs (Serilog e OpenTelemetry), erros, validações, objetos de valor e entidades DDD.",
+        en: "Created SharedKernel, an internal NuGet package that standardises logging (Serilog and OpenTelemetry), errors, validation, value objects and DDD entities.",
       },
       {
-        pt: "Levei a cultura de testes unitários e de integração para o pipeline de CI/CD.",
-        en: "Brought unit and integration testing into the CI/CD pipeline as a team habit.",
+        pt: "Implantei a cultura de testes automatizados: unitários e de integração rodando a cada entrega no pipeline de CI/CD.",
+        en: "Established automated testing as a habit: unit and integration tests running on every delivery in the CI/CD pipeline.",
+      },
+      {
+        pt: "Desenvolvo funcionalidades novas e melhorias em sistemas legados, de ponta a ponta.",
+        en: "Build new features and improve legacy systems, end to end.",
       },
     ],
-    stack: [".NET", "EF Core", "AWS", "Docker", "TDD", "DDD"],
+    stack: [".NET", "EF Core", "AWS (Lambda, ECS, RDS)", "Docker", "TDD", "DDD"],
   },
   {
     company: "Lojas Riachuelo",
-    role: {
-      pt: "Engenheiro de Software Sênior",
-      en: "Senior Software Engineer",
-    },
+    role: { pt: "Engenheiro de Software Sênior", en: "Senior Software Engineer" },
     period: { pt: "mar 2021 - nov 2021", en: "Mar 2021 - Nov 2021" },
     place: { pt: "Brasil", en: "Brazil" },
+    about: {
+      pt: "Uma das maiores varejistas de moda do Brasil.",
+      en: "One of Brazil's largest fashion retailers.",
+    },
     bullets: [
       {
-        pt: "Evoluí o DoMeuJeito, plataforma de listas para casamentos, chás de bebê e outros eventos.",
-        en: "Evolved DoMeuJeito, a gift-list platform for weddings, baby showers and other events.",
+        pt: "Evoluí o DoMeuJeito, plataforma colaborativa de listas para casamentos, chás de bebê e outras celebrações.",
+        en: "Evolved DoMeuJeito, a collaborative list platform for weddings, baby showers and other celebrations.",
       },
       {
-        pt: "Microsserviços com REST e filas, e Azure Functions escaladas com KEDA via CRON e Kafka.",
-        en: "Microservices over REST and queues, plus Azure Functions scaled with KEDA via CRON and Kafka.",
+        pt: "Trabalhei numa arquitetura de microsserviços integrados por REST e filas, com Azure Functions escaladas pelo KEDA a partir de agendamentos e eventos do Kafka.",
+        en: "Worked on a microservices architecture connected by REST and queues, with Azure Functions scaled by KEDA from schedules and Kafka events.",
       },
     ],
-    stack: [".NET", "Azure", "Kafka", "Docker"],
+    stack: [".NET", "Azure Functions", "KEDA", "Kafka", "Azure DevOps", "Docker"],
   },
   {
     company: "Questrade Financial Group",
     role: { pt: "Engenheiro de Software", en: "Software Engineer" },
     period: { pt: "jun 2020 - mar 2021", en: "Jun 2020 - Mar 2021" },
     place: { pt: "Belo Horizonte", en: "Belo Horizonte" },
+    about: {
+      pt: "Grupo financeiro canadense, que estava criando o seu banco digital.",
+      en: "Canadian financial group, which was building its digital bank.",
+    },
     bullets: [
       {
-        pt: "Desenvolvi módulos de um novo banco digital no Canadá, em equipe internacional.",
-        en: "Built modules for a new digital bank in Canada, in an international team.",
+        pt: "Desenvolvi módulos estratégicos do banco digital, num time internacional e multidisciplinar.",
+        en: "Built core modules of the digital bank, in an international, cross-functional team.",
       },
       {
-        pt: "Participei das definições de arquitetura com microsserviços e micro front-ends.",
-        en: "Took part in architecture decisions with microservices and micro front-ends.",
+        pt: "Participei das decisões de arquitetura, com microsserviços e micro front-ends, e da entrega no dia a dia com Scrum.",
+        en: "Took part in the architecture decisions, with microservices and micro front-ends, and in day-to-day delivery with Scrum.",
       },
     ],
-    stack: [".NET", "GCP", "Kubernetes", "TDD"],
+    stack: [".NET", "EF Core", "GCP", "Kubernetes", "TDD", "DDD"],
   },
   {
     company: "Tribunal de Contas de Minas Gerais",
-    role: {
-      pt: "Desenvolvedor, de júnior a analista sênior",
-      en: "Developer, from junior to senior analyst",
-    },
+    role: { pt: "Desenvolvedor Júnior → Analista Desenvolvedor Sênior", en: "Junior Developer → Senior Developer Analyst" },
     period: { pt: "ago 2017 - mai 2020", en: "Aug 2017 - May 2020" },
     place: { pt: "Belo Horizonte", en: "Belo Horizonte" },
+    about: {
+      pt: "O tribunal que fiscaliza as contas públicas do estado. Entrei como júnior e cheguei a sênior em dois anos.",
+      en: "The court that audits the state's public accounts. I joined as a junior and reached senior in two years.",
+    },
     bullets: [
       {
-        pt: "Migrei regras de negócio de procedures Oracle para código .NET limpo e testável.",
-        en: "Moved business rules out of Oracle procedures into clean, testable .NET code.",
+        pt: "Tirei regras de negócio de procedures Oracle e levei para código .NET organizado e coberto por testes (TDD e BDD com Cucumber).",
+        en: "Moved business rules out of Oracle procedures into well-structured .NET code covered by tests (TDD, and BDD with Cucumber).",
       },
       {
-        pt: "Desenvolvi o sistema de acesso externo para envio digital de documentos ao tribunal.",
-        en: "Built the external access system for submitting documents to the court digitally.",
+        pt: "Desenvolvi o sistema de acesso externo, que permite enviar documentos ao tribunal pelo meio digital.",
+        en: "Built the external access system that lets documents be submitted to the court digitally.",
       },
       {
-        pt: "Participei da migração completa do sistema núcleo, da proposta à entrega.",
-        en: "Worked on the full migration of the core system, from proposal to delivery.",
+        pt: "Participei da migração do sistema núcleo para uma arquitetura hexagonal, da proposta à entrega.",
+        en: "Took part in migrating the core system to a hexagonal architecture, from proposal to delivery.",
       },
     ],
     stack: [".NET", "Angular", "Oracle PL/SQL", "Cucumber", "Azure DevOps"],
@@ -210,8 +217,12 @@ export const experience: Job[] = [
     place: { pt: "Belo Horizonte", en: "Belo Horizonte" },
     bullets: [
       {
-        pt: "Banco de dados (PostgreSQL) e desenvolvimento web em um ERP .NET WebForms.",
-        en: "Databases (PostgreSQL) and web development on a .NET WebForms ERP.",
+        pt: "ASPPrev: manutenção, análise e modelagem do banco do sistema de contabilidade (PostgreSQL).",
+        en: "ASPPrev: maintained, analysed and modelled the accounting system's database (PostgreSQL).",
+      },
+      {
+        pt: "Athos Negócios: funcionalidades num ERP para associações de seguro e rastreamento veicular (.NET WebForms, SQL Server).",
+        en: "Athos Negócios: built features for an ERP serving insurance associations and vehicle tracking (.NET WebForms, SQL Server).",
       },
     ],
   },

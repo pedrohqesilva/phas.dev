@@ -35,6 +35,7 @@ export function renderStatic(lang: Lang): string {
           (j) => `<article class="job">
   <h3>${esc(j.role[lang])} <span>${esc(j.company)}</span></h3>
   <p class="meta">${esc(j.period[lang])}, ${esc(j.place[lang])}</p>
+  ${j.about ? `<p>${esc(j.about[lang])}</p>` : ""}
   <ul>${j.bullets.map((b) => `<li>${esc(b[lang])}</li>`).join("")}</ul>
 </article>`,
         )

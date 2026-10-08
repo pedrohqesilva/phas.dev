@@ -315,6 +315,7 @@ const sections: Record<string, (ctx: Ctx) => void> = {
             h("span", { class: "at" }, ` @ ${j.company}`),
           ),
           muted(`${j.period[lang]}, ${j.place[lang]}`),
+          j.about && line(j.about[lang]),
           h("ul", null, ...j.bullets.map((b) => h("li", null, b[lang]))),
           j.stack && muted(j.stack.join(", ")),
         ),
