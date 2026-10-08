@@ -12,6 +12,7 @@ import { extname, join, relative, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { attachGames } from "./games.ts";
+import { fromCloudflare } from "./origin.ts";
 
 const PORT = Number(process.env.PORT ?? 8080);
 const DIST = resolve(process.env.DIST ?? "dist");
@@ -171,6 +172,11 @@ function serveStatic(req: IncomingMessage, res: ServerResponse) {
   }
   if (path === "/health") {
     res.writeHead(200, { "Content-Type": "text/plain" }).end("ok");
+    return;
+  }
+  // Everything else only through Cloudflare: the Railway addresses answer 403 to direct visits.
+  if (!fromCloudflare(req)) {
+    res.writeHead(403, SECURITY_HEADERS).end();
     return;
   }
   const route = ROUTES[path.replace(/(.)\/$/, "$1").toLowerCase()];

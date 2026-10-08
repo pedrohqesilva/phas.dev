@@ -12,6 +12,7 @@ import {
 } from "../src/games/protocol.ts";
 import { createArena } from "./arena.ts";
 import { createCoop } from "./coop.ts";
+import { fromCloudflare } from "./origin.ts";
 
 /**
  * `exclusive`: this server owns every upgrade, so anything but /ws is refused. Off under Vite, whose own
@@ -70,6 +71,7 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
     }
     const address = addressOf(req);
     if (
+      !fromCloudflare(req) ||
       !allowedOrigin(req.headers.origin) ||
       wss.clients.size >= MAX_CONNECTIONS ||
       (perAddress.get(address) ?? 0) >= MAX_PER_ADDRESS
