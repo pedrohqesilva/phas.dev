@@ -77,46 +77,45 @@ export const profile = {
 };
 
 export const stack: StackGroup[] = [
+  { group: { pt: "Linguagens", en: "Languages" }, items: ["C#", "TypeScript", "JavaScript", "SQL"] },
   {
     group: { pt: "Backend", en: "Backend" },
-    items: ["C#", ".NET", "Entity Framework", "Dapper"],
+    items: [".NET", "ASP.NET Core", "Entity Framework", "Dapper", "Hangfire", "Node.js"],
+  },
+  {
+    group: { pt: "Frontend e mobile", en: "Frontend and mobile" },
+    items: ["React", "Angular", "React Native (Expo)", "Vite", "Tailwind CSS"],
   },
   {
     group: { pt: "Arquitetura", en: "Architecture" },
-    items: ["DDD", "Microservices", "Modular Monolith", "Vertical Slice", "Hexagonal", "Event-driven"],
-  },
-  {
-    group: { pt: "Frontend", en: "Frontend" },
-    items: ["Angular", "React", "TypeScript"],
+    items: ["DDD", "Microservices", "Modular Monolith", "Vertical Slice", "Hexagonal", "Event-driven", "SAGA"],
   },
   {
     group: { pt: "Dados", en: "Data" },
-    items: [
-      "SQL Server",
-      "PostgreSQL",
-      "Oracle PL/SQL",
-      "MongoDB",
-      "CosmosDB",
-      "DynamoDB",
-      "Redis",
-    ],
+    items: ["SQL Server", "PostgreSQL", "Oracle PL/SQL", "MySQL", "MongoDB", "CosmosDB", "DynamoDB", "Redis", "Convex"],
+  },
+  { group: { pt: "Mensageria", en: "Messaging" }, items: ["Kafka", "RabbitMQ", "Azure Service Bus", "WebSocket"] },
+  {
+    group: { pt: "Nuvem e infra", en: "Cloud and infra" },
+    items: ["Azure", "AWS", "GCP", "Docker", "Kubernetes", "Railway", "Cloudflare"],
   },
   {
-    group: { pt: "Mensageria", en: "Messaging" },
-    items: ["Kafka", "RabbitMQ", "Azure Service Bus"],
+    group: { pt: "Observabilidade", en: "Observability" },
+    items: ["OpenTelemetry", "Serilog", "Datadog", "PostHog"],
   },
   {
-    group: { pt: "Nuvem", en: "Cloud" },
-    items: ["Azure", "AWS", "GCP", "Docker", "Kubernetes"],
+    group: { pt: "Autenticação", en: "Authentication" },
+    items: ["OAuth2 / OIDC", "IdentityServer", "Keycloak", "Okta", "WorkOS", "JWT"],
   },
   {
-    group: { pt: "Testes", en: "Testing" },
-    items: ["xUnit (TDD)", "Cucumber (BDD)", "TestCafe"],
+    group: { pt: "Qualidade e CI/CD", en: "Quality and CI/CD" },
+    items: ["xUnit (TDD)", "Cucumber (BDD)", "TestCafe", "SonarQube", "GitHub Actions", "Azure DevOps"],
   },
   {
     group: { pt: "IA", en: "AI" },
-    items: ["OpenAI", "Gemini", "Claude", "MCP"],
+    items: ["OpenAI", "Claude", "Gemini", "Vercel AI SDK", "MCP", "Claude Code"],
   },
+  { group: { pt: "Ferramentas", en: "Tools" }, items: ["Visual Studio", "Swagger", "n8n", "Jira"] },
 ];
 
 export const experience: Job[] = [
