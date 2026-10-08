@@ -96,7 +96,8 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
         case "coop.join":
           if (!session.room && isRoomCode(String(msg.room ?? "")))
             session.room = coop.join(String(msg.room), send);
-          else if (!session.room) send({ t: "coop.error", reason: "not-found" });
+          else if (!session.room)
+            send({ t: "coop.error", reason: "not-found" });
           break;
         case "coop.ready":
           if (session.room) coop.ready(session.room.code, session.room.you);

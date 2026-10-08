@@ -1,4 +1,5 @@
 import "@fontsource-variable/geist-mono";
+import { handleBack } from "./back.ts";
 import { banner } from "./banner.ts";
 import { resolve, tabIds, type Theme } from "./commands.ts";
 import { profile, type Lang } from "./content.ts";
@@ -45,9 +46,11 @@ const term = new Terminal(
     setLang,
     setTheme,
     showSimple: () => setSimple(true),
-    onCommand(id) {
+    onCommand(id, run) {
       // Every section ends with the way back to the icons, for visitors who never type.
       if (tabIds.includes(id) && id !== "help") {
+        // Each section is a step in the browser history, so the phone's Back returns to the previous one.
+        if (!run.replaying && !restoring) history.pushState({ run: run.n, cmd: run.input }, "");
         const t = ui[term.lang];
         term.print(
           h(
@@ -131,7 +134,26 @@ function setSimple(on: boolean, push = true) {
   if (on) $("static").focus();
   else term.focus();
 }
-addEventListener("popstate", () => setSimple(isSimplePath(), false));
+/** True while Back re-runs a section that is no longer on screen (that must not add a new step). */
+let restoring = false;
+
+addEventListener("popstate", (e) => {
+  // A game open: Back closes it.
+  if (handleBack()) return;
+  // The simple version has its own address.
+  const simple = isSimplePath();
+  if (simple !== root.classList.contains("simple")) return setSimple(simple, false);
+  // Sections: back to the previous one on screen (run again if it was cleared), or to the top.
+  const state = e.state as { run?: number; cmd?: string } | null;
+  if (!state?.run) return term.scrollToTop();
+  if (term.scrollToRun(state.run) || !state.cmd) return;
+  restoring = true;
+  try {
+    term.run(state.cmd);
+  } finally {
+    restoring = false;
+  }
+});
 
 // The top bar buttons run real commands, so visitors learn the terminal by clicking.
 for (const id of ["lang-toggle", "theme-toggle"])
@@ -205,8 +227,13 @@ function startMenu() {
 }
 
 /** /snake and /invaders (and /cobrinha) open straight on that game's start screen. */
-const GAME_PATHS: Record<string, string> = { "/snake": "snake", "/cobrinha": "snake", "/invaders": "invaders" };
-const gameFromPath = () => GAME_PATHS[location.pathname.replace(/\/$/, "").toLowerCase()];
+const GAME_PATHS: Record<string, string> = {
+  "/snake": "snake",
+  "/cobrinha": "snake",
+  "/invaders": "invaders",
+};
+const gameFromPath = () =>
+  GAME_PATHS[location.pathname.replace(/\/$/, "").toLowerCase()];
 
 async function boot() {
   const t = ui[term.lang];

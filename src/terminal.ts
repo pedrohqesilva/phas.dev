@@ -14,7 +14,8 @@ interface Hooks {
   setLang(lang: Lang): void;
   setTheme(theme: Theme): void;
   showSimple(): void;
-  onCommand(id: string): void;
+  /** A command ran: its id, its run number (as on its echo line) and the line as typed. */
+  onCommand(id: string, run: { n: number; input: string; replaying: boolean }): void;
   /** The screen was cleared: nothing is open any more. */
   onClear(): void;
   /** Back to the welcome screen. */
@@ -58,6 +59,8 @@ export class Terminal {
    */
   private transcript: (string | (() => void))[] = [];
   private replaying = false;
+  /** Numbers each command line on screen (data-run on its echo), so Back can scroll to it. */
+  private runs = 0;
   private streaming = false;
 
   constructor(
@@ -205,6 +208,20 @@ export class Terminal {
     this.hooks.onClear();
   }
 
+  /** Scrolls so command line `n` sits at the top; false when it is no longer on screen. */
+  scrollToRun(n: number): boolean {
+    const line = this.out.querySelector<HTMLElement>(`.echo[data-run="${n}"]`);
+    if (!line) return false;
+    this.flush();
+    this.screen.scrollTop += line.getBoundingClientRect().top - this.screen.getBoundingClientRect().top - 8;
+    return true;
+  }
+
+  scrollToTop() {
+    this.flush();
+    this.screen.scrollTop = 0;
+  }
+
   /** Records a block printed outside a command, with how to print it again. */
   remember(render: () => void) {
     this.transcript.push(render);
@@ -275,8 +292,9 @@ export class Terminal {
     const input = raw.trim();
     // A command typed while redrawing must not redraw again (`lang en` itself is in the transcript).
     if (!this.replaying) this.flush();
+    const n = ++this.runs;
     if (echo) {
-      this.echo(raw);
+      this.echo(raw, "", n);
       this.transcript.push(raw);
     }
     if (!input) return;
@@ -292,14 +310,14 @@ export class Terminal {
         h("p", { class: "muted" }, this.t.tryHelp),
       );
     command.run(args, this.ctx());
-    this.hooks.onCommand(command.id);
+    this.hooks.onCommand(command.id, { n, input, replaying: this.replaying });
   }
 
-  private echo(text: string, suffix = "") {
+  private echo(text: string, suffix = "", run?: number) {
     this.printNow(
       h(
         "p",
-        { class: "echo" },
+        { class: "echo", "data-run": run === undefined ? undefined : String(run) },
         h("span", { class: "prompt" }, this.prompt),
         " ",
         text,

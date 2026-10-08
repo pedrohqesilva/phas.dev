@@ -838,7 +838,6 @@ html:not(.js) .back {
   }
 }
 
-
 /* A game's start screen: its name and its modes, in the same black frame as the games. */
 .game-menu {
   display: grid;

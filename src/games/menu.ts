@@ -1,6 +1,7 @@
 // A game's start screen: the game's name and its modes, full screen on black like the games themselves.
 // ↑ ↓ (or W S) move, Enter or a click picks, Esc goes back to the terminal. A mode can ask for a short
 // text first (a nickname, a room code): picking it shows the field, Enter confirms.
+import { gameLayer } from "../back.ts";
 
 export interface MenuOption {
   label: string;
@@ -96,8 +97,17 @@ export function openGameMenu(
     overlay.remove();
   }
 
+  /** Back to the terminal from inside (Esc, ✕): the history entry goes back too. */
+  function leave() {
+    close();
+    gameLayer.leave();
+    onExit();
+  }
+
   function begin(option: MenuOption, value: string) {
     close();
+    // The game takes over this screen's history entry, so Back closes the game.
+    gameLayer.handoff();
     option.start(value);
   }
 
@@ -153,8 +163,7 @@ export function openGameMenu(
         asking = null;
         return;
       }
-      close();
-      onExit();
+      leave();
       return;
     }
     if (e.key === "Enter") {
@@ -173,7 +182,9 @@ export function openGameMenu(
   }
 
   addEventListener("keydown", onKey, true);
-  exit.addEventListener("click", () => {
+  exit.addEventListener("click", leave);
+  // The phone's Back closes the start screen.
+  gameLayer.enter(() => {
     close();
     onExit();
   });

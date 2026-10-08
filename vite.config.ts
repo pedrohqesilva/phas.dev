@@ -8,14 +8,16 @@ export default defineConfig({
     {
       // Bake the full portfolio content into index.html for crawlers and no-JS visitors.
       name: "static-content",
-      transformIndexHtml: (html) => html.replace("<!--static-->", renderStatic("pt")),
+      transformIndexHtml: (html) =>
+        html.replace("<!--static-->", renderStatic("pt")),
     },
     {
       // In dev the game WebSocket (/ws) runs inside Vite's own server, so `pnpm dev` plays online too.
       // Not exclusive: Vite's hot-reload socket shares the server.
       name: "games",
       configureServer(server) {
-        if (server.httpServer) attachGames(server.httpServer as Server, { exclusive: false });
+        if (server.httpServer)
+          attachGames(server.httpServer as Server, { exclusive: false });
       },
     },
   ],

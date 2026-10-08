@@ -202,7 +202,11 @@ function snakeMenu(ctx: Ctx) {
     "Snake",
     [
       { label: t.modeClassic, hint: t.snakeDesc, start: () => startSnake(ctx) },
-      { label: t.modeEasy, hint: t.snakeEasyDesc, start: () => startSnake(ctx, true) },
+      {
+        label: t.modeEasy,
+        hint: t.snakeEasyDesc,
+        start: () => startSnake(ctx, true),
+      },
       {
         label: t.modeOnline,
         hint: t.arenaDesc,
@@ -222,12 +226,26 @@ function invadersMenu(ctx: Ctx) {
   openGameMenu(
     "Space Invaders",
     [
-      { label: t.modeSolo, hint: t.invadersDesc, start: () => startInvaders(ctx) },
-      { label: t.modeCoopCreate, hint: t.coopDesc, start: () => startCoop(ctx) },
+      {
+        label: t.modeSolo,
+        hint: t.invadersDesc,
+        start: () => startInvaders(ctx),
+      },
+      {
+        label: t.modeCoopCreate,
+        hint: t.coopDesc,
+        start: () => startCoop(ctx),
+      },
       {
         label: t.modeCoopJoin,
         hint: t.coopJoinDesc,
-        input: { placeholder: t.roomPlaceholder, maxLength: 4, required: true, valid: isRoomCode, invalid: t.coopNotFound },
+        input: {
+          placeholder: t.roomPlaceholder,
+          maxLength: 4,
+          required: true,
+          valid: isRoomCode,
+          invalid: t.coopNotFound,
+        },
         start: (code) => startCoop(ctx, code.toUpperCase()),
       },
     ],
@@ -240,13 +258,19 @@ function invadersMenu(ctx: Ctx) {
 function playSnakeMode(ctx: Ctx, mode?: string, extra?: string) {
   if (isOnline(mode)) return startArena(ctx, cleanName(extra ?? ""));
   if (isEasy(mode)) return startSnake(ctx, true);
-  if (["classico", "classic", "normal"].includes(normalize(mode ?? ""))) return startSnake(ctx);
+  if (["classico", "classic", "normal"].includes(normalize(mode ?? "")))
+    return startSnake(ctx);
   snakeMenu(ctx);
 }
 
 function playInvadersMode(ctx: Ctx, mode?: string, extra?: string) {
-  if (isCoop(mode)) return startCoop(ctx, extra && isRoomCode(extra) ? extra.toUpperCase() : undefined);
-  if (["solo", "single"].includes(normalize(mode ?? ""))) return startInvaders(ctx);
+  if (isCoop(mode))
+    return startCoop(
+      ctx,
+      extra && isRoomCode(extra) ? extra.toUpperCase() : undefined,
+    );
+  if (["solo", "single"].includes(normalize(mode ?? "")))
+    return startInvaders(ctx);
   invadersMenu(ctx);
 }
 
@@ -622,8 +646,10 @@ export const commands: Command[] = [
           ),
         );
       }
-      if (game === "snake" || game === "cobrinha") return playSnakeMode(ctx, mode, extra);
-      if (["invaders", "space", "spaceinvaders", "nave"].includes(game)) return playInvadersMode(ctx, mode, extra);
+      if (game === "snake" || game === "cobrinha")
+        return playSnakeMode(ctx, mode, extra);
+      if (["invaders", "space", "spaceinvaders", "nave"].includes(game))
+        return playInvadersMode(ctx, mode, extra);
       ctx.print(muted(ctx.t.gameUsage(arg)));
     },
   },

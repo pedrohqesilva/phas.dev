@@ -2,6 +2,8 @@
 // button, and a short tutorial that holds the game until the first key or tap. Esc pauses (and resumes);
 // on the pause panel Q or "Sair" leaves. Game time stops while paused, so timed power-ups wait too.
 
+import { gameLayer } from "../back.ts";
+
 export interface GameTexts {
   title: string;
   /** How to play, one short line each. */
@@ -214,9 +216,11 @@ export function openGame(options: Options): Shell {
     raf = requestAnimationFrame(tick);
   }
 
-  function close() {
+  /** `byBack`: the phone's Back already took the history entry, so it isn't given back again. */
+  function close(byBack = false) {
     if (closed) return;
     closed = true;
+    if (!byBack) gameLayer.leave();
     cancelAnimationFrame(raf);
     removeEventListener("keydown", onKeyDown, true);
     removeEventListener("keyup", onKeyUp, true);
@@ -225,6 +229,9 @@ export function openGame(options: Options): Shell {
     overlay.remove();
     options.onExit();
   }
+
+  // While the game is open, the phone's Back closes it (after a start screen, it reuses that entry).
+  gameLayer.enter(() => close(true));
 
   return shell;
 }
