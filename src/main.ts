@@ -307,6 +307,27 @@ function runQuery(): boolean {
   return true;
 }
 
+// Phones: the terminal follows the visible area, which shrinks when the on-screen keyboard opens, and the
+// output scrolls to the end so the prompt stays in sight while typing.
+const viewport = window.visualViewport;
+if (viewport) {
+  const prompt = $<HTMLInputElement>("cmd");
+  const screen = $("screen");
+  const fitViewport = () => {
+    root.style.setProperty("--app-height", `${viewport.height}px`);
+    root.style.setProperty("--app-top", `${viewport.offsetTop}px`);
+    if (document.activeElement === prompt) screen.scrollTop = screen.scrollHeight;
+  };
+  viewport.addEventListener("resize", fitViewport);
+  viewport.addEventListener("scroll", fitViewport);
+  // The keyboard animates in after focus: catch the end of it too.
+  prompt.addEventListener("focus", () => {
+    fitViewport();
+    setTimeout(fitViewport, 300);
+  });
+  fitViewport();
+}
+
 root.dataset.theme = initialTheme;
 applyLang(initialLang);
 // /simples opens straight on the simple version; the terminal boots behind it.
