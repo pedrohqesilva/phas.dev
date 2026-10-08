@@ -1,4 +1,5 @@
-/* Tokens. Dark is the default; light follows the system or the `tema` command. */
+/* Tokens. Dark is the default; light follows the system or the `tema` command, which also offers a few
+   classic terminal palettes (each keeps body text at 7:1 and muted text at 4.5:1 or better). */
 :root {
   --bg: #111214;
   --surface: #17191c;
@@ -21,6 +22,39 @@
   --border: #d3d4d1;
   --focus: #9a5200;
   color-scheme: light;
+}
+
+:root[data-theme="dracula"] {
+  --bg: #282a36;
+  --surface: #21222c;
+  --fg: #f8f8f2;
+  --muted: #a4abd0;
+  --accent: #bd93f9;
+  --border: #44475a;
+  --focus: #ff79c6;
+  color-scheme: dark;
+}
+
+:root[data-theme="gruvbox"] {
+  --bg: #282828;
+  --surface: #32302f;
+  --fg: #ebdbb2;
+  --muted: #a89984;
+  --accent: #fabd2f;
+  --border: #3c3836;
+  --focus: #fe8019;
+  color-scheme: dark;
+}
+
+:root[data-theme="matrix"] {
+  --bg: #000;
+  --surface: #050c06;
+  --fg: #b6f5bd;
+  --muted: #5fae69;
+  --accent: #00ff41;
+  --border: #12301a;
+  --focus: #00ff41;
+  color-scheme: dark;
 }
 
 * {
@@ -1111,4 +1145,21 @@ html:not(.js) .back {
 }
 .job-head a:hover {
   text-decoration: underline;
+}
+
+/* Easter eggs: ASCII art keeps its columns and scrolls sideways on a narrow screen. */
+.ascii {
+  margin: 0;
+  overflow-x: auto;
+  font: inherit;
+  line-height: 1.25;
+  white-space: pre;
+}
+.matrix-rain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
 }

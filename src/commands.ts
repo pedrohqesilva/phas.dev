@@ -9,6 +9,15 @@ import {
   type Lang,
 } from "./content.ts";
 import { cmd, h, join, link, type Child } from "./dom.ts";
+import {
+  cowsay,
+  fortune,
+  HIRE,
+  isHire,
+  JOKES,
+  matrixRain,
+  neofetch,
+} from "./fun.ts";
 import { icon, iconNames, type IconName } from "./icons.ts";
 import {
   playInvaders,
@@ -19,9 +28,16 @@ import { openGameMenu } from "./games/menu.ts";
 import { cleanName, isRoomCode } from "./games/protocol.ts";
 import { playSnakeArena } from "./games/snake-online.ts";
 import { playSnake } from "./games/snake.ts";
-import type { UI } from "./i18n.ts";
+import { ui, type UI } from "./i18n.ts";
 
-export type Theme = "light" | "dark";
+export const THEMES = [
+  "dark",
+  "light",
+  "dracula",
+  "gruvbox",
+  "matrix",
+] as const;
+export type Theme = (typeof THEMES)[number];
 
 export interface Ctx {
   lang: Lang;
@@ -49,6 +65,9 @@ interface Command {
   args?: (lang: Lang) => string[];
   run(args: string[], ctx: Ctx): void;
 }
+
+/** When this visit began, for neofetch's uptime. */
+const SESSION_START = Date.now();
 
 /** Lowercase and strip accents so `experiência` and `experiencia` both work. */
 export const normalize = (s: string) =>
@@ -582,6 +601,7 @@ export const commands: Command[] = [
           ]),
         ),
         muted(t.helpKeys),
+        muted(t.helpHidden),
       );
     },
   },
@@ -815,17 +835,19 @@ export const commands: Command[] = [
   {
     id: "theme",
     names: { pt: ["tema", "cores"], en: ["theme", "colors"] },
-    desc: { pt: "tema claro ou escuro", en: "light or dark theme" },
+    desc: {
+      pt: "cores: claro, escuro, dracula, gruvbox, matrix",
+      en: "colors: light, dark, dracula, gruvbox, matrix",
+    },
     icon: "sun",
-    args: (lang) => (lang === "pt" ? ["claro", "escuro"] : ["light", "dark"]),
+    args: (lang) => THEMES.map((th) => ui[lang].themeNames[th]),
     run([arg], { t, print, setTheme }) {
       const a = normalize(arg ?? "");
-      const theme: Theme | undefined =
-        a === "claro" || a === "light"
-          ? "light"
-          : a === "escuro" || a === "dark"
-            ? "dark"
-            : undefined;
+      // Either language's name works, so `tema dark` is fine too.
+      const theme = THEMES.find(
+        (th) =>
+          normalize(ui.pt.themeNames[th]) === a || ui.en.themeNames[th] === a,
+      );
       if (!theme) return print(muted(t.themeUsage));
       setTheme(theme);
     },
@@ -929,12 +951,106 @@ export const commands: Command[] = [
   {
     id: "sudo",
     names: { pt: ["sudo", "su"], en: ["sudo", "su"] },
-    run: (_, { t, print }) => print(line(t.sudo)),
+    run(args, { lang, t, print }) {
+      if (!isHire(args)) return print(line(t.sudo));
+      print(
+        h("pre", { class: "ascii" }, HIRE[lang]),
+        line(
+          ...join(
+            [name("email", lang), name("linkedin", lang), name("contact", lang)].map(
+              (c) => cmd(c),
+            ),
+          ),
+        ),
+      );
+    },
   },
   {
     id: "rm",
     names: { pt: ["rm", "apagar"], en: ["rm", "delete"] },
     run: (_, { t, print }) => print(line(t.rm)),
+  },
+  {
+    id: "neofetch",
+    names: { pt: ["neofetch", "fastfetch", "sistema"], en: ["neofetch", "fastfetch", "system"] },
+    run: (_, { lang, t, print }) =>
+      print(
+        h(
+          "pre",
+          { class: "ascii" },
+          neofetch(
+            lang,
+            {
+              user: t.user,
+              theme: document.documentElement.dataset.theme ?? "dark",
+              commands: commands.length,
+              since: SESSION_START,
+            },
+            innerWidth >= 720,
+          ),
+        ),
+      ),
+  },
+  {
+    id: "fortune",
+    names: { pt: ["fortune", "sorte", "frase"], en: ["fortune", "quote"] },
+    run: (_, { lang, print }) => print(line(fortune(lang))),
+  },
+  {
+    id: "cowsay",
+    names: { pt: ["cowsay", "vaca"], en: ["cowsay", "cow"] },
+    run: (args, { lang, print }) =>
+      print(h("pre", { class: "ascii" }, cowsay(args.join(" ") || fortune(lang)))),
+  },
+  {
+    id: "matrix",
+    names: { pt: ["matrix", "neo"], en: ["matrix", "neo"] },
+    run(_, { replaying, focus }) {
+      if (!replaying) matrixRain(focus);
+    },
+  },
+  {
+    id: "vim",
+    names: { pt: ["vim", "vi", "nano", "emacs"], en: ["vim", "vi", "nano", "emacs"] },
+    run: (_, { lang, print }) => print(line(JOKES.vim[lang])),
+  },
+  {
+    id: "vimquit",
+    names: { pt: [":q", ":q!", ":wq", ":x"], en: [":q", ":q!", ":wq", ":x"] },
+    run: (_, { lang, print }) => print(line(JOKES.quit[lang])),
+  },
+  {
+    id: "coffee",
+    names: { pt: ["cafe", "coffee", "brew"], en: ["coffee", "brew"] },
+    run: (_, { lang, print }) => print(line(JOKES.coffee[lang])),
+  },
+  {
+    id: "whoami",
+    names: { pt: ["whoami", "quemsoueu"], en: ["whoami"] },
+    run: (_, { lang, print }) => print(line(JOKES.whoami[lang])),
+  },
+  {
+    id: "make",
+    names: { pt: ["make"], en: ["make"] },
+    run: (_, { lang, print }) => print(line(JOKES.make[lang])),
+  },
+  {
+    id: "hello",
+    names: { pt: ["oi", "ola", "hello", "hi"], en: ["hello", "hi", "hey"] },
+    run: (_, { lang, print }) => print(line(JOKES.hello[lang])),
+  },
+  {
+    id: "date",
+    names: { pt: ["date", "data", "hora"], en: ["date", "time"] },
+    run: (_, { lang, print }) =>
+      print(
+        line(
+          new Date().toLocaleString(lang === "pt" ? "pt-BR" : "en-US", {
+            dateStyle: "full",
+            timeStyle: "medium",
+          }),
+        ),
+      ),
   },
   {
     id: "exit",

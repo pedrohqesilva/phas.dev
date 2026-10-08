@@ -1,7 +1,7 @@
 import "@fontsource-variable/geist-mono";
 import { handleBack } from "./back.ts";
 import { banner } from "./banner.ts";
-import { resolve, tabIds, type Theme } from "./commands.ts";
+import { resolve, tabIds, THEMES, type Theme } from "./commands.ts";
 import { profile, type Lang } from "./content.ts";
 import { cmd, h } from "./dom.ts";
 import { ui } from "./i18n.ts";
@@ -52,8 +52,9 @@ const initialLang: Lang =
   (isBot ? "pt" : null) ??
   (store.get("lang") as Lang | null) ??
   (navigator.language.toLowerCase().startsWith("pt") ? "pt" : "en");
+const saved = store.get("theme") as Theme | null;
 const initialTheme: Theme =
-  (store.get("theme") as Theme | null) ??
+  (saved && THEMES.includes(saved) ? saved : null) ??
   (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
 
 const term = new Terminal(
@@ -125,7 +126,8 @@ const pagePath = () =>
 
 function applyThemeLabel() {
   const current = (root.dataset.theme as Theme) ?? initialTheme;
-  const next: Theme = current === "dark" ? "light" : "dark";
+  // The button flips between light and dark; the other palettes are reached with the `tema` command.
+  const next: Theme = current === "light" ? "dark" : "light";
   const t = ui[term.lang];
   // Icon-only button: shows where it goes (sun = switch to light), name for screen readers.
   $("theme-toggle").replaceChildren(icon(next === "light" ? "sun" : "moon"));

@@ -20,6 +20,7 @@ export const ui = {
         : " ou clique em um ícone abaixo.",
     ],
     helpTitle: "Comandos disponíveis",
+    helpHidden: "Há alguns comandos escondidos. Boa caça.",
     helpKeys: touch
       ? "Toque num comando para rodá-lo."
       : "Tab completa, ↑ ↓ navegam no histórico (ou rolam a saída enquanto ela aparece), Shift+↑ ↓ e PageUp/PageDown rolam, Esc mostra tudo, Ctrl+L limpa a tela.",
@@ -30,8 +31,14 @@ export const ui = {
     emptyProjects: "Projetos sendo adicionados. Enquanto isso, veja o GitHub:",
     cvOpen: "Abrindo o currículo em PDF.",
     langUsage: "uso: lang pt | en",
-    themeUsage: "uso: tema claro | escuro",
-    themeNames: { light: "claro", dark: "escuro" },
+    themeUsage: "uso: tema claro | escuro | dracula | gruvbox | matrix",
+    themeNames: {
+      light: "claro",
+      dark: "escuro",
+      dracula: "dracula",
+      gruvbox: "gruvbox",
+      matrix: "matrix",
+    },
     historyEmpty: "Histórico vazio.",
     simpleView: "versão simples",
     download: "Baixar",
@@ -174,6 +181,7 @@ export const ui = {
       touch ? " or tap an icon below." : " or click an icon below.",
     ],
     helpTitle: "Available commands",
+    helpHidden: "A few commands are hidden. Happy hunting.",
     helpKeys: touch
       ? "Tap a command to run it."
       : "Tab completes, ↑ ↓ browse history (or scroll the output while it streams), Shift+↑ ↓ and PageUp/PageDown scroll, Esc shows everything, Ctrl+L clears the screen.",
@@ -183,8 +191,14 @@ export const ui = {
     emptyProjects: "Projects are being added. Meanwhile, see GitHub:",
     cvOpen: "Opening the PDF resume.",
     langUsage: "usage: lang pt | en",
-    themeUsage: "usage: theme light | dark",
-    themeNames: { light: "light", dark: "dark" },
+    themeUsage: "usage: theme light | dark | dracula | gruvbox | matrix",
+    themeNames: {
+      light: "light",
+      dark: "dark",
+      dracula: "dracula",
+      gruvbox: "gruvbox",
+      matrix: "matrix",
+    },
     historyEmpty: "History is empty.",
     simpleView: "simple version",
     download: "Download",
