@@ -1021,3 +1021,38 @@ html:not(.js) .back {
 .stack-group.after-timeline {
   margin-top: 22px;
 }
+
+/* Experience in full: role steps as a small nested list, and the "see details" link under each job. */
+.job .step {
+  margin-top: 8px;
+}
+.job .step-head {
+  font-weight: 500;
+}
+.job .para + .step,
+.job .step + ul {
+  margin-top: 10px;
+}
+.job .more {
+  margin-top: 8px;
+}
+
+/* Projects read like jobs: the role line is stronger than the status after it; the tagline steps back. */
+.project .tagline {
+  margin: 4px 0 0 !important;
+  font-style: italic;
+}
+.project .para {
+  margin-top: 10px;
+}
+.project li strong,
+.static .project li strong {
+  font-weight: 600;
+  color: var(--fg);
+}
+.project ul {
+  margin-top: 8px !important;
+}
+.project li + li {
+  margin-top: 3px;
+}

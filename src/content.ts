@@ -9,7 +9,24 @@ export interface Link {
   url: string;
 }
 
+/** A step inside a job, for the detailed view (a promotion, a role change). */
+export interface JobStep {
+  title: L;
+  period: L;
+  text: L;
+}
+
+/** The longer version of a job, shown by `experiencia <slug>`; the resume keeps the summary. */
+export interface JobDetails {
+  intro: L;
+  steps?: JobStep[];
+  bullets?: L[];
+  stack?: string[];
+}
+
 export interface Job {
+  /** Short name for `experiencia <slug>`. */
+  slug: string;
   company: string;
   role: L;
   period: L;
@@ -18,6 +35,7 @@ export interface Job {
   about?: L;
   bullets: L[];
   stack?: string[];
+  details?: JobDetails;
 }
 
 export interface Project {
@@ -120,6 +138,7 @@ export const stack: StackGroup[] = [
 
 export const experience: Job[] = [
   {
+    slug: "paysign",
     company: "Paysign",
     role: { pt: "Engenheiro de Software Sênior", en: "Senior Software Engineer" },
     period: { pt: "dez 2021 - atual", en: "Dec 2021 - present" },
@@ -147,8 +166,31 @@ export const experience: Job[] = [
       },
     ],
     stack: [".NET", "EF Core", "AWS", "Docker", "Serilog", "OpenTelemetry", "TDD", "DDD"],
+    details: {
+      intro: {
+        pt: "Trabalho direto com um cliente do setor financeiro: ajudo a desenhar os projetos novos, defino a arquitetura e crio os pacotes e padrões de código que os times da empresa usam. Também entrego funcionalidades de ponta a ponta, em sistemas novos e legados.",
+        en: "I work directly with a client in the financial sector: I help shape new projects, define the architecture and build the packages and code standards the company's teams use. I also ship features end to end, on new and legacy systems.",
+      },
+      bullets: [
+        {
+          pt: "O SharedKernel padroniza logs com Serilog e OpenTelemetry, tratamento de erros, validações, objetos de valor, entidades DDD e filas.",
+          en: "SharedKernel standardises logging with Serilog and OpenTelemetry, error handling, validation, value objects, DDD entities and queues.",
+        },
+        {
+          pt: "Microsserviços e Backend for Frontends na AWS: Lambda, EC2, ECS, RDS e CloudWatch.",
+          en: "Microservices and Backends for Frontends on AWS: Lambda, EC2, ECS, RDS and CloudWatch.",
+        },
+        {
+          pt: "Testes unitários e de integração rodando continuamente no pipeline de CI/CD.",
+          en: "Unit and integration tests running continuously in the CI/CD pipeline.",
+        },
+        { pt: "Scrum com Jira.", en: "Scrum with Jira." },
+      ],
+      stack: [".NET", "EF Core", "AWS Lambda", "EC2", "ECS", "RDS", "CloudWatch", "Docker", "Serilog", "OpenTelemetry", "NuGet", "TDD", "DDD", "BFF", "Jira"],
+    },
   },
   {
+    slug: "riachuelo",
     company: "Lojas Riachuelo",
     role: { pt: "Engenheiro de Software Sênior", en: "Senior Software Engineer" },
     period: { pt: "mar 2021 - nov 2021", en: "Mar 2021 - Nov 2021" },
@@ -168,8 +210,30 @@ export const experience: Job[] = [
       },
     ],
     stack: [".NET", "Azure Functions", "KEDA", "Kafka", "Azure DevOps", "Docker"],
+    details: {
+      intro: {
+        pt: "O DoMeuJeito é a plataforma colaborativa de listas da Riachuelo, para casamentos, chás de bebê e outras celebrações. Trabalhei na sua evolução, numa arquitetura de microsserviços.",
+        en: "DoMeuJeito is Riachuelo's collaborative list platform, for weddings, baby showers and other celebrations. I worked on evolving it, on a microservices architecture.",
+      },
+      bullets: [
+        {
+          pt: "Microsserviços que conversam por REST APIs e filas de mensagens.",
+          en: "Microservices talking through REST APIs and message queues.",
+        },
+        {
+          pt: "Azure Functions com KEDA para tarefas esporádicas, disparadas por agendamentos (CRON) e por eventos do Kafka.",
+          en: "Azure Functions with KEDA for occasional jobs, triggered by schedules (CRON) and Kafka events.",
+        },
+        {
+          pt: "Backend for Frontends, TDD e DDD; Scrum e CI/CD no Azure DevOps.",
+          en: "Backends for Frontends, TDD and DDD; Scrum and CI/CD on Azure DevOps.",
+        },
+      ],
+      stack: [".NET", "EF Core", "Azure Functions", "KEDA", "Kafka", "Azure Storage", "Azure Queues", "Azure DevOps", "Docker", "TDD", "DDD", "BFF"],
+    },
   },
   {
+    slug: "questrade",
     company: "Questrade Financial Group",
     role: { pt: "Engenheiro de Software", en: "Software Engineer" },
     period: { pt: "jun 2020 - mar 2021", en: "Jun 2020 - Mar 2021" },
@@ -189,8 +253,27 @@ export const experience: Job[] = [
       },
     ],
     stack: [".NET", "EF Core", "GCP", "Kubernetes", "TDD", "DDD", "Scrum"],
+    details: {
+      intro: {
+        pt: "Um banco digital novo no Canadá, construído por uma equipe internacional e multidisciplinar. Participei das reuniões de definição de arquitetura e da execução do dia a dia.",
+        en: "A brand-new digital bank in Canada, built by an international, cross-functional team. I took part in the architecture meetings and in day-to-day delivery.",
+      },
+      bullets: [
+        {
+          pt: "Módulos estratégicos em .NET Core e EF Core, cobertos por testes (TDD).",
+          en: "Core modules in .NET Core and EF Core, covered by tests (TDD).",
+        },
+        {
+          pt: "Microsserviços e micro front-ends rodando em Kubernetes no Google Cloud.",
+          en: "Microservices and micro front-ends running on Kubernetes on Google Cloud.",
+        },
+        { pt: "Scrum, com o time distribuído entre países.", en: "Scrum, with the team spread across countries." },
+      ],
+      stack: [".NET", "EF Core", "GCP", "Kubernetes", "Docker", "TDD", "DDD", "Micro front-ends", "Scrum"],
+    },
   },
   {
+    slug: "tce",
     company: "Tribunal de Contas de Minas Gerais",
     role: { pt: "Desenvolvedor Júnior → Analista Desenvolvedor Sênior", en: "Junior Developer → Senior Developer Analyst" },
     period: { pt: "ago 2017 - mai 2020", en: "Aug 2017 - May 2020" },
@@ -214,8 +297,50 @@ export const experience: Job[] = [
       },
     ],
     stack: [".NET", "Angular", "Oracle PL/SQL", "TDD", "BDD (Cucumber)", "Azure DevOps"],
+    details: {
+      intro: {
+        pt: "Quase três anos no tribunal, passando por quatro cargos. Comecei tirando regras de negócio do banco de dados e terminei desenvolvendo numa arquitetura hexagonal moderna, sempre próximo dos usuários.",
+        en: "Almost three years at the court, through four roles. I started by moving business rules out of the database and ended up building on a modern hexagonal architecture, always close to the users.",
+      },
+      steps: [
+        {
+          title: { pt: "Desenvolvedor Júnior", en: "Junior Developer" },
+          period: { pt: "ago 2017 - jul 2018", en: "Aug 2017 - Jul 2018" },
+          text: {
+            pt: "Na migração do sistema núcleo, tirei regras de negócio guardadas em procedures do banco e levei para código .NET limpo e organizado.",
+            en: "On the core system migration, I moved business rules stored in database procedures into clean, well-organised .NET code.",
+          },
+        },
+        {
+          title: { pt: "Desenvolvedor Pleno", en: "Mid-level Developer" },
+          period: { pt: "ago 2018 - mai 2019", en: "Aug 2018 - May 2019" },
+          text: {
+            pt: "Desenvolvi o sistema de acesso externo para envio digital de documentos e reforcei o time de manutenção, onde aprendi a fundo as regras de negócio.",
+            en: "Built the external access system for submitting documents digitally and joined the maintenance team, where I learned the business rules in depth.",
+          },
+        },
+        {
+          title: { pt: "Analista de Sistemas", en: "Systems Analyst" },
+          period: { pt: "jun 2019 - ago 2019", en: "Jun 2019 - Aug 2019" },
+          text: {
+            pt: "Participei da migração completa do sistema núcleo para os padrões de mercado, da proposta ao desenvolvimento.",
+            en: "Took part in the full migration of the core system to current industry standards, from proposal to development.",
+          },
+        },
+        {
+          title: { pt: "Analista Desenvolvedor Sênior", en: "Senior Developer Analyst" },
+          period: { pt: "set 2019 - mai 2020", en: "Sep 2019 - May 2020" },
+          text: {
+            pt: "Desenvolvi funcionalidades numa arquitetura hexagonal, do entendimento da tarefa à entrega, em contato constante com os usuários.",
+            en: "Built features on a hexagonal architecture, from understanding the task to delivery, in constant contact with the users.",
+          },
+        },
+      ],
+      stack: [".NET Framework", ".NET Core", "EF 6", "EF Core", "Angular", "jQuery", "Oracle PL/SQL", "TDD", "BDD (Cucumber)", "Hexagonal", "Azure DevOps", "Scrum"],
+    },
   },
   {
+    slug: "estagios",
     company: "ASPPrev e Athos Negócios",
     role: { pt: "Estagiário", en: "Intern" },
     period: { pt: "jan 2017 - ago 2017", en: "Jan 2017 - Aug 2017" },
@@ -231,6 +356,31 @@ export const experience: Job[] = [
       },
     ],
     stack: ["PostgreSQL", ".NET WebForms", "SQL Server"],
+    details: {
+      intro: {
+        pt: "Dois estágios no mesmo ano, um em banco de dados e outro em desenvolvimento web.",
+        en: "Two internships in the same year, one in databases and one in web development.",
+      },
+      steps: [
+        {
+          title: { pt: "ASPPrev, estágio em banco de dados", en: "ASPPrev, database intern" },
+          period: { pt: "jul 2017 - ago 2017", en: "Jul 2017 - Aug 2017" },
+          text: {
+            pt: "Manutenção, análise e modelagem do banco do sistema de contabilidade, e apoio aos colegas com queries SQL.",
+            en: "Maintained, analysed and modelled the accounting system's database, and helped colleagues with SQL queries.",
+          },
+        },
+        {
+          title: { pt: "Athos Negócios, estágio em desenvolvimento web", en: "Athos Negócios, web development intern" },
+          period: { pt: "jan 2017 - jun 2017", en: "Jan 2017 - Jun 2017" },
+          text: {
+            pt: "Funcionalidades novas e manutenção num ERP para associações de seguro e rastreamento veicular.",
+            en: "New features and maintenance on an ERP for insurance associations and vehicle tracking.",
+          },
+        },
+      ],
+      stack: ["PostgreSQL", ".NET WebForms", "SQL Server", "jQuery"],
+    },
   },
 ];
 
@@ -252,16 +402,16 @@ export const projects: Project[] = [
         en: "AI on real data: the assistant looks up patients, schedules and leads, and turns consultation audio into SOAP clinical notes.",
       },
       {
-        pt: "Odontograma preenchido por comando de voz.",
-        en: "Dental chart filled in by voice.",
+        pt: "Odontograma por voz: o dentista preenche o odontograma falando.",
+        en: "Voice dental chart: the dentist fills in the chart by speaking.",
       },
       {
         pt: "Paciente sem login: formulários, orçamentos, assinaturas, agendamento e check-in por links seguros.",
         en: "No patient logins: forms, quotes, signatures, booking and check-in through secure links.",
       },
       {
-        pt: "WhatsApp com bot de fluxos visuais, cobrança integrada e importação de notas fiscais por OCR.",
-        en: "WhatsApp with a visual flow bot, built-in billing and OCR import of supplier invoices.",
+        pt: "Operação integrada: bot de WhatsApp com fluxos visuais, cobrança e importação de notas fiscais por OCR.",
+        en: "Integrated operations: a WhatsApp bot with visual flows, billing and OCR import of supplier invoices.",
       },
       {
         pt: "Feito para a saúde: assinatura digital ICP-Brasil, trilha de auditoria LGPD e permissões por perfil.",
@@ -295,16 +445,16 @@ export const projects: Project[] = [
         en: "Load Journey: every delivery tracked step by step, against its deadline.",
       },
       {
-        pt: "Modo motorista no app, com login sem senha e desbloqueio por Face ID.",
-        en: "Driver mode in the app, with passwordless login and Face ID unlock.",
+        pt: "Modo motorista: login sem senha e desbloqueio por Face ID no app.",
+        en: "Driver mode: passwordless login and Face ID unlock in the app.",
       },
       {
-        pt: "WhatsApp da transportadora integrado, com transcrição de áudios, resumo de conversas e revisão de texto por IA.",
-        en: "The company's WhatsApp built in, with AI audio transcription, chat summaries and writing review.",
+        pt: "WhatsApp integrado: transcrição de áudios, resumo de conversas e revisão de texto por IA.",
+        en: "Built-in WhatsApp: AI audio transcription, chat summaries and writing review.",
       },
       {
-        pt: "Cada transportadora monta a sua equipe: convites por e-mail e perfis de acesso personalizáveis.",
-        en: "Each company sets up its own team: email invites and custom access profiles.",
+        pt: "Equipe da transportadora: convites por e-mail e perfis de acesso personalizáveis.",
+        en: "Company team: email invites and custom access profiles.",
       },
       {
         pt: "Por dentro: monorepo com web, app e site num código só, multi-tenant e tempo real com Convex.",
@@ -341,6 +491,7 @@ export const languages: L[] = [
   { pt: "Inglês (profissional)", en: "English (full professional)" },
 ];
 
+/** Not shown on the site or the resume (kept in case they come back). */
 export const certifications = [
   "Software Architecture: Domain-Driven Design",
   "Software Architecture Foundations",

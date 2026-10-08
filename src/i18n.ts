@@ -131,6 +131,8 @@ export const ui = {
     catMissing: (f: string) => `cat: ${f}: arquivo não encontrado`,
     sectionAbout: "Sobre",
     sectionExperience: "Experiência",
+    moreDetails: "ver detalhes",
+    jobNotFound: (x: string) => `experiência não encontrada: ${x}`,
     sectionProjects: "Projetos",
     sectionStack: "Stack",
     sectionContact: "Contato",
@@ -138,7 +140,6 @@ export const ui = {
     opening: "Abrindo",
     sectionEducation: "Formação",
     languagesTitle: "Idiomas",
-    certsTitle: "Certificações",
   },
   en: {
     user: "guest",
@@ -269,6 +270,8 @@ export const ui = {
     catMissing: (f: string) => `cat: ${f}: no such file`,
     sectionAbout: "About",
     sectionExperience: "Experience",
+    moreDetails: "see details",
+    jobNotFound: (x: string) => `no such job: ${x}`,
     sectionProjects: "Projects",
     sectionStack: "Stack",
     sectionContact: "Contact",
@@ -276,7 +279,6 @@ export const ui = {
     opening: "Opening",
     sectionEducation: "Education",
     languagesTitle: "Languages",
-    certsTitle: "Certifications",
   },
 } satisfies Record<Lang, unknown>;
 

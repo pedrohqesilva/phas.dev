@@ -1,5 +1,4 @@
 import {
-  certifications,
   education,
   experience,
   languages,
@@ -286,6 +285,36 @@ const projectUrl = (name: string) => projects.find((p) => p.name === name)!.url;
 /** Technologies as tags, the same look everywhere (stack, jobs, projects). */
 const tags = (items: string[]) => h("p", { class: "tags" }, ...items.map((item) => h("span", { class: "tag" }, item)));
 
+/** One job in full: the summary's head, the longer context, the role steps, every point and the whole stack. */
+function jobInFull(j: (typeof experience)[number], lang: Lang): HTMLElement {
+  const d = j.details!;
+  return h(
+    "div",
+    { class: "entry job" },
+    h("p", { class: "job-head" }, h("span", { class: "title" }, j.company), h("span", { class: "muted" }, j.period[lang])),
+    h("p", { class: "job-role" }, j.role[lang], h("span", { class: "muted" }, `, ${j.place[lang]}`)),
+    j.about && muted(j.about[lang]),
+    h("p", { class: "para" }, d.intro[lang]),
+    ...(d.steps ?? []).map((step) =>
+      h(
+        "div",
+        { class: "step" },
+        h("p", { class: "step-head" }, step.title[lang], h("span", { class: "muted" }, ` ${step.period[lang]}`)),
+        h("p", null, step.text[lang]),
+      ),
+    ),
+    h("ul", null, ...[...j.bullets, ...(d.bullets ?? [])].map((b) => h("li", null, b[lang]))),
+    tags(d.stack ?? j.stack ?? []),
+  );
+}
+
+/** A highlight "Label: text" with the label in bold, so a list of them scans by label. */
+function highlight(text: string): HTMLElement {
+  const cut = text.indexOf(": ");
+  if (cut < 0 || cut > 40) return h("li", null, text);
+  return h("li", null, h("strong", null, text.slice(0, cut + 1)), text.slice(cut + 1));
+}
+
 const sections: Record<string, (ctx: Ctx) => void> = {
   about({ lang, print }) {
     print(
@@ -319,6 +348,8 @@ const sections: Record<string, (ctx: Ctx) => void> = {
           j.about && muted(j.about[lang]),
           h("ul", null, ...j.bullets.map((b) => h("li", null, b[lang]))),
           j.stack && tags(j.stack),
+          // The longer version is one click (or `experiencia <slug>`) away.
+          j.details && h("p", { class: "more" }, cmd(`${name("experience", lang)} ${j.slug}`, `+ ${t.moreDetails}`)),
         ),
       ),
     );
@@ -340,16 +371,12 @@ const sections: Record<string, (ctx: Ctx) => void> = {
           h(
             "div",
             null,
-            h(
-              "p",
-              { class: "title" },
-              link(p.url, p.name),
-              h("span", { class: "at" }, ` ${p.url.replace("https://", "")}`),
-            ),
-            muted(`${p.status[lang]}. ${p.role[lang]}`),
-            h("p", { class: "tagline" }, `"${p.tagline[lang]}"`),
-            line(p.description[lang]),
-            h("ul", null, ...p.highlights.map((x) => h("li", null, x[lang]))),
+            // Same reading order as a job: name and address, my role and the status, then the pitch and the details.
+            h("p", { class: "job-head" }, h("span", { class: "title" }, link(p.url, p.name)), h("span", { class: "muted" }, p.url.replace("https://", ""))),
+            h("p", { class: "job-role" }, p.role[lang], h("span", { class: "muted" }, ` ${p.status[lang]}.`)),
+            h("p", { class: "tagline muted" }, p.tagline[lang]),
+            h("p", { class: "para" }, p.description[lang]),
+            h("ul", null, ...p.highlights.map((x) => highlight(x[lang]))),
             tags(p.stack),
           ),
         ),
@@ -372,7 +399,7 @@ const sections: Record<string, (ctx: Ctx) => void> = {
   },
 
   education({ lang, t, print }) {
-    // Courses on the same timeline as the jobs; languages and certifications as tag groups, like the stack.
+    // Courses on the same timeline as the jobs; languages as tags, like the stack.
     print(
       ...education.map((c) =>
         h(
@@ -388,7 +415,6 @@ const sections: Record<string, (ctx: Ctx) => void> = {
         h("p", { class: "stack-title" }, t.languagesTitle),
         tags(languages.map((l) => l[lang])),
       ),
-      h("div", { class: "stack-group" }, h("p", { class: "stack-title" }, t.certsTitle), tags(certifications)),
     );
   },
 
@@ -524,7 +550,17 @@ export const commands: Command[] = [
     names: { pt: ["experiencia", "exp"], en: ["experience", "exp"] },
     desc: { pt: "onde já trabalhei", en: "where I have worked" },
     icon: "experience",
-    run: (_, ctx) => sections.experience(ctx),
+    // `experiencia paysign` shows that job in full; `experiencia completa` shows every job in full.
+    args: () => [...experience.map((j) => j.slug), "completa"],
+    run([arg], ctx) {
+      const which = normalize(arg ?? "");
+      if (!which) return sections.experience(ctx);
+      if (["completa", "full", "tudo", "all"].includes(which))
+        return ctx.print(...experience.filter((j) => j.details).map((j) => jobInFull(j, ctx.lang)));
+      const job = experience.find((j) => j.slug === which || normalize(j.company).startsWith(which));
+      if (!job?.details) return ctx.print(muted(ctx.t.jobNotFound(arg)));
+      ctx.print(jobInFull(job, ctx.lang));
+    },
   },
   {
     id: "projects",

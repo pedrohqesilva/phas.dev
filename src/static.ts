@@ -1,7 +1,6 @@
 // Plain HTML version of the portfolio. Rendered into index.html at build time so crawlers
 // and no-JS visitors get the full content, and reused at runtime for the "simple version".
 import {
-  certifications,
   education,
   experience,
   languages,
@@ -24,6 +23,12 @@ const esc = (s: string) =>
 
 const tags = (items: string[]) =>
   `<p class="tags">${items.map((i) => `<span class="tag">${esc(i)}</span>`).join("")}</p>`;
+
+/** "Label: text" with the label in bold, like the terminal. */
+const highlight = (text: string) => {
+  const cut = text.indexOf(": ");
+  return cut < 0 || cut > 40 ? esc(text) : `<strong>${esc(text.slice(0, cut + 1))}</strong>${esc(text.slice(cut + 1))}`;
+};
 
 const a = (url: string, label: string) =>
   `<a href="${esc(url)}" rel="noopener" target="_blank">${esc(label)}</a>`;
@@ -51,11 +56,11 @@ export function renderStatic(lang: Lang): string {
       (p) => `<article class="project">
   <img class="project-logo" src="${p.logo}" alt="" width="44" height="44" />
   <div>
-    <h3>${a(p.url, p.name)} <span>${esc(p.url.replace("https://", ""))}</span></h3>
-    <p class="meta">${esc(p.status[lang])}. ${esc(p.role[lang])}</p>
-    <p class="tagline">"${esc(p.tagline[lang])}"</p>
+    <h3 class="job-head">${a(p.url, p.name)} <span class="meta">${esc(p.url.replace("https://", ""))}</span></h3>
+    <p class="job-role">${esc(p.role[lang])}<span class="meta"> ${esc(p.status[lang])}.</span></p>
+    <p class="tagline meta">${esc(p.tagline[lang])}</p>
     <p>${esc(p.description[lang])}</p>
-    <ul>${p.highlights.map((x) => `<li>${esc(x[lang])}</li>`).join("")}</ul>
+    <ul>${p.highlights.map((x) => `<li>${highlight(x[lang])}</li>`).join("")}</ul>
     ${tags(p.stack)}
   </div>
 </article>`,
@@ -82,8 +87,7 @@ export function renderStatic(lang: Lang): string {
         `<article class="job"><h3 class="job-head">${esc(c.school)} <span class="meta">${c.period}</span></h3><p class="job-role">${esc(c.degree[lang])}</p></article>`,
     )
     .join("\n")}
-<div class="stack-group after-timeline"><p class="stack-title">${t.languagesTitle}</p>${tags(languages.map((l) => l[lang]))}</div>
-<div class="stack-group"><p class="stack-title">${t.certsTitle}</p>${tags(certifications)}</div></section>
+<div class="stack-group after-timeline"><p class="stack-title">${t.languagesTitle}</p>${tags(languages.map((l) => l[lang]))}</div></section>
 <section id="contato"><h2>${iconSvg("contact")}${t.sectionContact}</h2><ul>
   <li>${iconSvg("email")}<a href="mailto:${profile.email}">${profile.email}</a></li>
   ${profile.links
