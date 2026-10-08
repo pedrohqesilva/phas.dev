@@ -1236,3 +1236,49 @@ html:not(.js) .back {
   position: relative;
   z-index: 1;
 }
+
+/* Achievements: the toast (over a game too) and the list. */
+.achievement-toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  z-index: 1000;
+  display: grid;
+  gap: 2px;
+  padding: 10px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.4 "Geist Mono Variable", ui-monospace, monospace;
+  text-align: center;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.35);
+  transform: translateX(-50%);
+  animation: toast-in 0.25s ease-out;
+  transition: opacity 0.4s;
+}
+.achievement-toast span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.achievement-toast strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+.achievement-toast.gone {
+  opacity: 0;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .achievement-toast {
+    animation: none;
+  }
+}
+.pairs.achievements dt.got {
+  color: var(--accent);
+}

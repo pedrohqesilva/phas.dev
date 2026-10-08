@@ -63,7 +63,7 @@
     </td>
     <td valign="top">
       <h3>🥚 Easter eggs</h3>
-      <code>neofetch</code>, <code>sudo hire pedro</code>, <code>fortune</code>, <code>cowsay</code>, <code>vim</code> (good luck leaving)… and a few more.
+      <code>neofetch</code>, <code>sudo hire pedro</code>, <code>fortune</code>, <code>cowsay</code>, <code>vim</code> (good luck leaving)… and 17 <code>achievements</code> to unlock, a few of them secret.
     </td>
   </tr>
   <tr>
@@ -215,6 +215,7 @@ src/
   seo.ts            head tags, JSON-LD, sitemap, robots, llms.txt
   pwa.ts            manifest and service worker (offline mode)
   fun.ts            the hidden commands
+  achievements.ts   the achievements (kept in the browser)
   games/            the games: *-sim.ts are the rules, shared with the server
 server/
   index.ts          static files, headers, routes, scores API

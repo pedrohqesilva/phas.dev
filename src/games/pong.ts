@@ -4,6 +4,7 @@
 // Online, you are always drawn on the left. Your paddle moves here at once and the server follows it; the
 // ball is drawn where it is now, played forward from the last snapshot with the same physics (bouncing
 // off the walls and the paddles as they are on your screen), and the other paddle glides between snapshots.
+import { unlock } from "../achievements.ts";
 import { connect, pingLabel } from "./net.ts";
 import {
   BALL,
@@ -201,6 +202,7 @@ export function playPongCpu(
       firePrev = fire;
     }
     const over = st.winner !== null;
+    if (st.winner === 0) unlock("wall");
     draw(
       shell.g,
       shell.accent,
@@ -285,6 +287,7 @@ export function playPongOnline(
       } else if (msg.t === "pong.state") {
         view = msg.view;
         viewAt = performance.now();
+        if (msg.view.winner === you) unlock("champion");
       } else if (msg.t === "pong.away") overlay = [versus.partnerAway];
       else if (msg.t === "pong.back") overlay = [];
       else if (msg.t === "pong.left") overlay = [(note = versus.partnerLeft)];

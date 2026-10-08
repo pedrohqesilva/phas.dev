@@ -6,6 +6,7 @@
 // 160 ms there and back from Brazil), so this side hides the wait: your ship moves here at once and the
 // server follows it, your shots appear the moment you fire, and everything else is drawn where it is now,
 // projected from the last snapshot by its speed, instead of where it was when the snapshot left.
+import { unlock } from "../achievements.ts";
 import {
   BOMB_STRIDE,
   createInvaders,
@@ -439,6 +440,8 @@ export function playInvaders(
           now - Math.max(0, left - 16),
           Math.min(16, left),
         );
+    if (st.wave >= 3) unlock("defender");
+    if (st.shots.some((s) => s.special)) unlock("special");
     if (st.over && !wasOver) onRound?.(st.score);
     wasOver = st.over;
     draw(shell, f, viewInvaders(st, now), texts, now);
@@ -529,6 +532,7 @@ export function playInvadersCoop(
         viewAt = performance.now();
         best = Math.max(best, msg.view.best);
         myX ??= msg.view.ships[you]?.x ?? null;
+        if (msg.view.wave >= 3) unlock("defender");
         if (msg.view.over) ghosts = [];
       } else if (msg.t === "coop.away") overlay = [coop.partnerAway];
       else if (msg.t === "coop.back") overlay = [];
@@ -680,6 +684,7 @@ export function playInvadersCoop(
       heldSince ??= t;
       if (v.ships[you]?.special && t - heldSince >= SPECIAL_HOLD_MS) {
         heldSince = Infinity;
+        unlock("special");
         ghosts.push({
           x: myX,
           vx: 0,

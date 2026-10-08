@@ -7,6 +7,7 @@
 // few times a second (drawn small beside the other's well) and its attacks: clearing 2, 3 or 4 lines at
 // once sends 1, 2 or 4 garbage lines. Incoming garbage waits for your next piece to land, and lines you
 // clear first cancel it. Top out and the other player wins; then both press to play again.
+import { unlock } from "../achievements.ts";
 import { connect, pingLabel } from "./net.ts";
 import type { VersusTexts } from "./pong.ts";
 import { openGame, type GameTexts } from "./shell.ts";
@@ -365,8 +366,9 @@ export function playTetris(
       st = createTetris(Math.floor(Math.random() * 2 ** 31), now);
     }
     if (shell.started && !shell.paused && !st.over) {
+      st.cleared = 0;
       pad.apply(st, now);
-      stepTetris(st, now);
+      if (stepTetris(st, now) >= 4) unlock("tetris");
     }
     if (st.over && !wasOver) {
       best = Math.max(best, st.score);
@@ -445,8 +447,10 @@ export function playTetrisVersus(
       else if (msg.t === "tetris.garbage") {
         incoming += msg.lines;
         incomingHole = msg.hole;
-      } else if (msg.t === "tetris.result") result = msg.won;
-      else if (msg.t === "tetris.away") overlay = [versus.partnerAway];
+      } else if (msg.t === "tetris.result") {
+        result = msg.won;
+        if (msg.won) unlock("champion");
+      } else if (msg.t === "tetris.away") overlay = [versus.partnerAway];
       else if (msg.t === "tetris.back") overlay = [];
       else if (msg.t === "tetris.left") overlay = [(note = versus.partnerLeft)];
       else if (msg.t === "tetris.error")
@@ -493,6 +497,7 @@ export function playTetrisVersus(
       st.cleared = 0;
       pad.apply(st, now);
       const cleared = stepTetris(st, now);
+      if (cleared >= 4) unlock("tetris");
       // Lines cleared cancel garbage waiting for you first; what is left goes to the other player.
       let attack = ATTACK[cleared] ?? 0;
       const cancel = Math.min(incoming, attack);

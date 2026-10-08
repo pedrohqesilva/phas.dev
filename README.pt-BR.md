@@ -63,7 +63,7 @@
     </td>
     <td valign="top">
       <h3>🥚 Easter eggs</h3>
-      <code>neofetch</code>, <code>sudo contratar pedro</code>, <code>fortune</code>, <code>cowsay</code>, <code>vim</code> (boa sorte para sair)… e mais alguns.
+      <code>neofetch</code>, <code>sudo contratar pedro</code>, <code>fortune</code>, <code>cowsay</code>, <code>vim</code> (boa sorte para sair)… e 17 <code>conquistas</code> para desbloquear, algumas secretas.
     </td>
   </tr>
   <tr>
@@ -215,6 +215,7 @@ src/
   seo.ts            head, JSON-LD, sitemap, robots, llms.txt
   pwa.ts            manifest e service worker (modo offline)
   fun.ts            os comandos escondidos
+  achievements.ts   as conquistas (guardadas no navegador)
   games/            os jogos: *-sim.ts são as regras, compartilhadas com o servidor
 server/
   index.ts          arquivos, cabeçalhos, rotas, API do ranking

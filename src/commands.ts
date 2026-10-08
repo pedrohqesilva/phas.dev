@@ -8,6 +8,7 @@ import {
   type L,
   type Lang,
 } from "./content.ts";
+import { ACHIEVEMENTS, unlock, unlocked } from "./achievements.ts";
 import { cmd, h, join, link, type Child } from "./dom.ts";
 import {
   cowsay,
@@ -132,6 +133,7 @@ function leaderboardRun(game: Game, nick: string) {
     /** The line for the terminal, or nothing if no place was reached. */
     report({ t, lang }: Ctx): Child {
       if (today === null && all === null) return null;
+      unlock("ranked");
       return line(
         t.rankPlaced(today, all),
         " ",
@@ -165,7 +167,13 @@ function startSnake(ctx: Ctx, easy = false, nick = savedNick.get()) {
       setTimeout(() => print(ranked.report(ctx)), 600);
       focus();
     },
-    { wrap: easy, onRound: ranked.round },
+    {
+      wrap: easy,
+      onRound(score) {
+        ranked.round(score);
+        if (score >= 50) unlock("snake");
+      },
+    },
   );
 }
 
@@ -235,6 +243,7 @@ const takeNick = (raw: string) => {
 /** Co-op Space Invaders on the server: creates a room (and prints its link) or joins `room`. */
 function startCoop({ t, print, focus, replaying, lang }: Ctx, room?: string) {
   if (replaying) return;
+  unlock("social");
   playInvadersCoop(
     {
       ...invadersTexts(t, t.coopTitle),
@@ -277,6 +286,7 @@ function startCoop({ t, print, focus, replaying, lang }: Ctx, room?: string) {
 /** The public Snake arena, as `name` (or an anonymous one the server picks). */
 function startArena({ t, print, focus, replaying }: Ctx, name = "") {
   if (replaying) return;
+  unlock("social");
   playSnakeArena(
     {
       title: t.arenaTitle,
@@ -463,6 +473,7 @@ const announceRoom =
 function startInvadersVersus(ctx: Ctx, room?: string) {
   const { t, print, focus, replaying } = ctx;
   if (replaying) return;
+  unlock("social");
   playInvadersVersus(
     {
       ...invadersTexts(t, t.invadersVersusTitle),
@@ -495,6 +506,7 @@ function startPong(ctx: Ctx, mode: "cpu" | "online", room?: string) {
       print(muted(t.pongOver(a, b)));
       focus();
     });
+  unlock("social");
   playPongOnline(pongTexts(t, t.gameLiveMenu), versusTexts(t), {
     room: room?.toUpperCase(),
     onRoom: announceRoom(ctx, "pong"),
@@ -508,6 +520,7 @@ function startPong(ctx: Ctx, mode: "cpu" | "online", room?: string) {
 function startTetris(ctx: Ctx, mode: "solo" | "versus", nickOrRoom?: string) {
   const { t, print, focus, replaying } = ctx;
   if (replaying) return;
+  if (mode === "versus") unlock("social");
   if (mode === "versus")
     return playTetrisVersus(tetrisTexts(t, t.gameLiveMenu), versusTexts(t), {
       room: nickOrRoom?.toUpperCase(),
@@ -1189,6 +1202,46 @@ export const commands: Command[] = [
     run: ([mode, extra], ctx) => playTetrisMode(ctx, mode, extra),
   },
   {
+    id: "achievements",
+    names: {
+      pt: ["conquistas", "trofeus", "achievements"],
+      en: ["achievements", "trophies"],
+    },
+    desc: {
+      pt: "suas conquistas no site (guardadas neste navegador)",
+      en: "your achievements on the site (kept in this browser)",
+    },
+    icon: "terminal",
+    run(_, { lang, print }) {
+      const have = unlocked();
+      print(
+        title(
+          `${lang === "pt" ? "Conquistas" : "Achievements"} ${have.size}/${ACHIEVEMENTS.length}`,
+        ),
+        h(
+          "dl",
+          { class: "pairs achievements" },
+          ...ACHIEVEMENTS.flatMap((a) => {
+            const got = have.has(a.id);
+            const hidden = a.secret && !got;
+            return [
+              h(
+                "dt",
+                { class: got ? "got" : "locked" },
+                `${got ? a.icon : "·"} ${hidden ? "???" : a.name[lang]}`,
+              ),
+              h(
+                "dd",
+                got ? null : { class: "muted" },
+                hidden ? (lang === "pt" ? "secreta" : "secret") : a.how[lang],
+              ),
+            ];
+          }),
+        ),
+      );
+    },
+  },
+  {
     id: "ranking",
     names: {
       pt: ["ranking", "placar", "recordes"],
@@ -1401,6 +1454,7 @@ export const commands: Command[] = [
     names: { pt: ["sudo", "su"], en: ["sudo", "su"] },
     run(args, { lang, t, print }) {
       if (!isHire(args)) return print(line(t.sudo));
+      unlock("recruiter");
       print(
         h("pre", { class: "ascii" }, HIRE[lang]),
         line(

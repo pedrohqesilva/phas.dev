@@ -1,5 +1,10 @@
 import "@fontsource-variable/geist-mono";
 import { handleBack } from "./back.ts";
+import {
+  onCommand as achievementCommand,
+  progress,
+  unlock,
+} from "./achievements.ts";
 import { banner } from "./banner.ts";
 import { resolve, tabIds, THEMES, type Theme } from "./commands.ts";
 import { profile, type Lang } from "./content.ts";
@@ -72,6 +77,7 @@ const term = new Terminal(
     setTheme,
     showSimple: () => setSimple(true),
     onCommand(id, run) {
+      if (!run.replaying) achievementCommand(id);
       // Each section is a step in the browser history, so the phone's Back returns to the previous one.
       if (tabIds.includes(id) && id !== "help" && !run.replaying && !restoring)
         history.pushState({ run: run.n, cmd: run.input }, "");
@@ -112,6 +118,7 @@ function applyLang(lang: Lang) {
 
 /** Switching language redraws the whole screen in it, including what was already there. */
 function setLang(lang: Lang) {
+  if (lang !== term.lang) unlock("polyglot");
   store.set("lang", lang);
   applyLang(lang);
   term.relocalize();
@@ -143,6 +150,7 @@ function applyThemeLabel() {
 }
 
 function setTheme(theme: Theme) {
+  progress("stylish", theme, THEMES.length);
   root.dataset.theme = theme;
   matrixBackdrop(theme === "matrix");
   store.set("theme", theme);
@@ -158,8 +166,10 @@ function setSimple(on: boolean, push = true) {
   root.classList.toggle("simple", on);
   document.title = pageTitle(term.lang, on ? "resume" : "home");
   if (push && on !== isSimplePath()) history.pushState(null, "", pagePath());
-  if (on) $("static").focus();
-  else term.focus();
+  if (on) {
+    $("static").focus();
+    unlock("reader");
+  } else term.focus();
 }
 /** True while Back re-runs a section that is no longer on screen (that must not add a new step). */
 let restoring = false;

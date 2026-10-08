@@ -3,6 +3,7 @@
 // flipped upside down. As in co-op, your ship moves here at once and the server follows it, your shots
 // show the moment you fire, and everything else is drawn where it is now, played forward from the last
 // snapshot by its speed.
+import { unlock } from "../achievements.ts";
 import {
   bannerText,
   controls,
@@ -130,6 +131,7 @@ export function playInvadersVersus(
         viewAt = performance.now();
         myX ??= msg.view.players[you].x;
         if (msg.view.winner !== null) ghosts = [];
+        if (msg.view.winner === you) unlock("champion");
       } else if (msg.t === "invaders.away") overlay = [versus.partnerAway];
       else if (msg.t === "invaders.back") overlay = [];
       else if (msg.t === "invaders.left")
@@ -436,6 +438,7 @@ export function playInvadersVersus(
       heldSince ??= t;
       if (v.players[you].special && t - heldSince >= SPECIAL_HOLD_MS) {
         heldSince = Infinity;
+        unlock("special");
         ghosts.push({
           x: myX,
           vx: 0,
