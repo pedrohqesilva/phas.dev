@@ -175,7 +175,12 @@ function renderWelcome() {
   term.print(
     banner(),
     // The role sits beside the name on wide screens and drops below it on phones (CSS).
-    h("p", { class: "title welcome-name" }, profile.name, h("span", { class: "welcome-role" }, profile.role[term.lang])),
+    h(
+      "p",
+      { class: "title welcome-name" },
+      profile.name,
+      h("span", { class: "welcome-role" }, profile.role[term.lang]),
+    ),
     h(
       "p",
       null,
@@ -199,10 +204,15 @@ function startMenu() {
   term.run(term.lang === "pt" ? "inicio" : "start");
 }
 
+/** /snake and /invaders (and /cobrinha) open straight on that game's start screen. */
+const GAME_PATHS: Record<string, string> = { "/snake": "snake", "/cobrinha": "snake", "/invaders": "invaders" };
+const gameFromPath = () => GAME_PATHS[location.pathname.replace(/\/$/, "").toLowerCase()];
+
 async function boot() {
   const t = ui[term.lang];
-  // A key or a tap skips the rest; reduced motion never animates.
-  let fast = reducedMotion;
+  const game = gameFromPath();
+  // A key or a tap skips the rest; reduced motion never animates; a game link skips it too.
+  let fast = reducedMotion || !!game;
   const skip = () => (fast = true);
   addEventListener("keydown", skip, { once: true });
   addEventListener("pointerdown", skip, { once: true });
@@ -225,7 +235,11 @@ async function boot() {
   welcome();
 
   // Deep links: phas.dev/#projetos runs that command after boot.
-  if (!runHash()) startMenu();
+  if (game) {
+    // The game opens over the terminal; leaving it lands on the home address.
+    history.replaceState(null, "", "/");
+    term.run(`${term.lang === "pt" ? "jogos" : "games"} ${game}`);
+  } else if (!runQuery() && !runHash()) startMenu();
   term.focus();
 }
 
@@ -239,7 +253,9 @@ function runHash(): boolean {
   if (invite) {
     // An invite is used once: a reload must not try to join the same room again.
     history.replaceState(null, "", location.pathname);
-    term.run(`${term.lang === "pt" ? "jogos" : "games"} invaders coop ${invite[1].toUpperCase()}`);
+    term.run(
+      `${term.lang === "pt" ? "jogos" : "games"} invaders coop ${invite[1].toUpperCase()}`,
+    );
     return true;
   }
   if (hash && resolve(hash)) {
@@ -250,6 +266,19 @@ function runHash(): boolean {
 }
 
 addEventListener("hashchange", () => runHash());
+
+/**
+ * `?q=sobre` (any command line, e.g. `?q=jogos snake`) runs it right after boot, as if typed.
+ * The query is then dropped from the address, so a reload starts clean. True when it ran something.
+ */
+function runQuery(): boolean {
+  const q = new URLSearchParams(location.search).get("q")?.trim().slice(0, 80);
+  if (!q) return false;
+  history.replaceState(null, "", location.pathname + location.hash);
+  if (!resolve(q.split(/\s+/)[0])) return false;
+  term.run(q);
+  return true;
+}
 
 root.dataset.theme = initialTheme;
 applyLang(initialLang);

@@ -632,11 +632,6 @@ html:not(.js) .back {
   color: var(--accent);
 }
 
-
-
-
-
-
 .bar-actions {
   display: flex;
   flex: none;
@@ -699,8 +694,6 @@ html:not(.js) .back {
     height: 44px;
     padding-left: 8px;
   }
-
-
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -845,9 +838,78 @@ html:not(.js) .back {
   }
 }
 
-/* Game modes under each game's description, on their own line. */
-.modes {
-  display: block;
-  margin-top: 2px;
-  color: var(--muted);
+
+/* A game's start screen: its name and its modes, in the same black frame as the games. */
+.game-menu {
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+}
+.game-menu-panel {
+  width: min(480px, calc(100vw - 32px));
+  padding: 24px 0;
+  color: #d6d6d6;
+}
+.game-menu-title {
+  margin: 0 0 18px;
+  color: var(--accent);
+  font-size: 22px;
+  font-weight: 600;
+}
+.game-menu-list {
+  display: grid;
+  gap: 10px;
+}
+.game-menu-option {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: none;
+  color: #d6d6d6;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.game-menu-option .label {
+  font-weight: 600;
+}
+.game-menu-option .hint {
+  color: #8e8a83;
+  font-size: 13px;
+}
+.game-menu-option[aria-selected="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.game-menu-option[aria-selected="true"] .label::before {
+  content: "> ";
+  color: var(--accent);
+}
+.game-menu-input {
+  display: grid;
+  gap: 4px;
+  margin: -2px 0 2px;
+}
+.game-menu-input input {
+  padding: 10px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: #0b0b0b;
+  color: #f2f2f2;
+  font: inherit;
+  /* 16px stops iOS from zooming into the field. */
+  font-size: 16px;
+  outline: none;
+}
+.game-menu-input .error {
+  min-height: 1em;
+  color: var(--accent);
+  font-size: 13px;
+}
+.game-menu-keys {
+  margin: 18px 0 0;
+  color: #8e8a83;
+  font-size: 12px;
 }

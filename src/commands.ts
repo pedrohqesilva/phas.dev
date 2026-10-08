@@ -11,8 +11,13 @@ import {
 } from "./content.ts";
 import { cmd, h, join, link, type Child } from "./dom.ts";
 import { icon, iconNames, type IconName } from "./icons.ts";
-import { playInvaders, playInvadersCoop, type InvadersTexts } from "./games/invaders.ts";
-import { isRoomCode } from "./games/protocol.ts";
+import {
+  playInvaders,
+  playInvadersCoop,
+  type InvadersTexts,
+} from "./games/invaders.ts";
+import { openGameMenu } from "./games/menu.ts";
+import { cleanName, isRoomCode } from "./games/protocol.ts";
 import { playSnakeArena } from "./games/snake-online.ts";
 import { playSnake } from "./games/snake.ts";
 import type { UI } from "./i18n.ts";
@@ -123,7 +128,11 @@ function startInvaders({ t, print, focus, replaying }: Ctx) {
 function startCoop({ t, print, focus, replaying }: Ctx, room?: string) {
   if (replaying) return;
   playInvadersCoop(
-    { ...invadersTexts(t, t.coopTitle), help: t.coopHelp, paused: t.gameLiveMenu },
+    {
+      ...invadersTexts(t, t.coopTitle),
+      help: t.coopHelp,
+      paused: t.gameLiveMenu,
+    },
     {
       waiting: t.coopWaiting,
       share: t.coopShare,
@@ -143,7 +152,11 @@ function startCoop({ t, print, focus, replaying }: Ctx, room?: string) {
         print(line(t.coopLink, " ", link(url)));
       },
       onExit(best, note) {
-        print(muted(note ? `${note} ${t.invadersOver(best)}` : t.invadersOver(best)));
+        print(
+          muted(
+            note ? `${note} ${t.invadersOver(best)}` : t.invadersOver(best),
+          ),
+        );
         focus();
       },
     },
@@ -179,8 +192,66 @@ function startArena({ t, print, focus, replaying }: Ctx, name = "") {
   );
 }
 
-const isOnline = (mode?: string) => ["online", "arena", "multi", "multiplayer"].includes(normalize(mode ?? ""));
-const isCoop = (mode?: string) => ["coop", "co-op", "dupla", "duo", "2p"].includes(normalize(mode ?? ""));
+/** Snake's start screen: classic, easy or the online arena (with an optional nickname). */
+function snakeMenu(ctx: Ctx) {
+  if (ctx.replaying) return;
+  const { t } = ctx;
+  openGameMenu(
+    "Snake",
+    [
+      { label: t.modeClassic, hint: t.snakeDesc, start: () => startSnake(ctx) },
+      { label: t.modeEasy, hint: t.snakeEasyDesc, start: () => startSnake(ctx, true) },
+      {
+        label: t.modeOnline,
+        hint: t.arenaDesc,
+        input: { placeholder: t.nicknamePlaceholder, maxLength: 12 },
+        start: (nick) => startArena(ctx, cleanName(nick)),
+      },
+    ],
+    { keys: t.gameMenuKeys, exit: t.gameExit },
+    ctx.focus,
+  );
+}
+
+/** Space Invaders' start screen: solo, or co-op by creating a room or joining one with its code. */
+function invadersMenu(ctx: Ctx) {
+  if (ctx.replaying) return;
+  const { t } = ctx;
+  openGameMenu(
+    "Space Invaders",
+    [
+      { label: t.modeSolo, hint: t.invadersDesc, start: () => startInvaders(ctx) },
+      { label: t.modeCoopCreate, hint: t.coopDesc, start: () => startCoop(ctx) },
+      {
+        label: t.modeCoopJoin,
+        hint: t.coopJoinDesc,
+        input: { placeholder: t.roomPlaceholder, maxLength: 4, required: true, valid: isRoomCode, invalid: t.coopNotFound },
+        start: (code) => startCoop(ctx, code.toUpperCase()),
+      },
+    ],
+    { keys: t.gameMenuKeys, exit: t.gameExit },
+    ctx.focus,
+  );
+}
+
+/** Without a mode, the game's start screen; a mode typed in the command (or an invite) goes straight in. */
+function playSnakeMode(ctx: Ctx, mode?: string, extra?: string) {
+  if (isOnline(mode)) return startArena(ctx, cleanName(extra ?? ""));
+  if (isEasy(mode)) return startSnake(ctx, true);
+  if (["classico", "classic", "normal"].includes(normalize(mode ?? ""))) return startSnake(ctx);
+  snakeMenu(ctx);
+}
+
+function playInvadersMode(ctx: Ctx, mode?: string, extra?: string) {
+  if (isCoop(mode)) return startCoop(ctx, extra && isRoomCode(extra) ? extra.toUpperCase() : undefined);
+  if (["solo", "single"].includes(normalize(mode ?? ""))) return startInvaders(ctx);
+  invadersMenu(ctx);
+}
+
+const isOnline = (mode?: string) =>
+  ["online", "arena", "multi", "multiplayer"].includes(normalize(mode ?? ""));
+const isCoop = (mode?: string) =>
+  ["coop", "co-op", "dupla", "duo", "2p"].includes(normalize(mode ?? ""));
 
 const linkOf = (label: string) =>
   profile.links.find((l) => l.label === label)!.url;
@@ -406,7 +477,12 @@ export const commands: Command[] = [
             const c = commands.find((x) => x.id === id)!;
             return h(
               "button",
-              { type: "button", class: "tile", "data-cmd": c.names[lang][0], "data-id": id },
+              {
+                type: "button",
+                class: "tile",
+                "data-cmd": c.names[lang][0],
+                "data-id": id,
+              },
               icon(id === "game" ? "game" : c.icon!, 28),
               h("span", null, label(id)),
             );
@@ -530,51 +606,34 @@ export const commands: Command[] = [
     run([arg, mode, extra], ctx) {
       const game = normalize(arg ?? "");
       if (!game) {
-        // Two games; easy, online and co-op are modes of each, clickable under its description.
+        // Two games; their modes are picked on each game's own start screen.
         const g = name("game", ctx.lang);
-        const modeButton = (line: string, label: string, hint: string) => {
-          const b = cmd(line, label);
-          b.title = hint;
-          return b;
-        };
-        const modes = (...buttons: HTMLElement[]) =>
-          h("span", { class: "modes" }, `${ctx.t.gameModes} `, ...join(buttons, "  "));
         return ctx.print(
           title(ctx.t.gamesTitle),
           h(
             "dl",
             { class: "pairs" },
             h("dt", null, cmd(`${g} snake`, "snake")),
-            h(
-              "dd",
-              null,
-              ctx.t.snakeDesc,
-              modes(
-                modeButton(`${g} snake ${ctx.lang === "pt" ? "facil" : "easy"}`, ctx.t.modeEasy, ctx.t.snakeEasyDesc),
-                modeButton(`${g} snake online`, "online", ctx.t.arenaDesc),
-              ),
-            ),
+            h("dd", null, ctx.t.snakeDesc),
             h("dt", null, cmd(`${g} invaders`, "invaders")),
-            h("dd", null, ctx.t.invadersDesc, modes(modeButton(`${g} invaders coop`, "co-op", ctx.t.coopDesc))),
+            h("dd", null, ctx.t.invadersDesc),
           ),
         );
       }
-      if (game === "snake" || game === "cobrinha")
-        return isOnline(mode) ? startArena(ctx, extra) : startSnake(ctx, isEasy(mode));
-      if (["invaders", "space", "spaceinvaders", "nave"].includes(game))
-        return isCoop(mode) ? startCoop(ctx, extra && isRoomCode(extra) ? extra : undefined) : startInvaders(ctx);
+      if (game === "snake" || game === "cobrinha") return playSnakeMode(ctx, mode, extra);
+      if (["invaders", "space", "spaceinvaders", "nave"].includes(game)) return playInvadersMode(ctx, mode, extra);
       ctx.print(muted(ctx.t.gameUsage(arg)));
     },
   },
   {
     id: "snake",
     names: { pt: ["snake", "cobrinha"], en: ["snake"] },
-    run: ([mode, extra], ctx) => (isOnline(mode) ? startArena(ctx, extra) : startSnake(ctx, isEasy(mode))),
+    run: ([mode, extra], ctx) => playSnakeMode(ctx, mode, extra),
   },
   {
     id: "invaders",
     names: { pt: ["invaders", "nave"], en: ["invaders", "spaceinvaders"] },
-    run: ([mode, extra], ctx) => (isCoop(mode) ? startCoop(ctx, extra && isRoomCode(extra) ? extra : undefined) : startInvaders(ctx)),
+    run: ([mode, extra], ctx) => playInvadersMode(ctx, mode, extra),
   },
   {
     id: "lang",
@@ -774,13 +833,13 @@ export function complete(prefix: string, lang: Lang): string[] {
 
 /** The start menu's tiles, in reading order. */
 export const menuIds = [
+  "cv",
   "about",
   "experience",
   "projects",
   "stack",
   "education",
   "contact",
-  "cv",
   "game",
   "github",
   "linkedin",
