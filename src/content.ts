@@ -60,8 +60,8 @@ export const profile = {
     en: "Nine years building software in C# and .NET, now focused on architecture and product. I think like an owner: I understand the business problem, design the solution and stay with it until it runs in production.",
   } satisfies L,
   now: {
-    pt: "Na Paysign, defino a base das novas APIs e os padrões técnicos da empresa. Por conta própria, criei e mantenho o Vittz, SaaS para clínicas com clientes beta, e lidero o iFleetHub. Antes, ajudei a construir um banco digital no Canadá e plataformas do varejo brasileiro.",
-    en: "At Paysign I define the foundation of new APIs and the company's technical standards. On my own, I built and run Vittz, a SaaS for clinics with beta customers, and I lead iFleetHub. Before that, I helped build a digital bank in Canada and platforms for Brazilian retail.",
+    pt: "Na Paysign, defino a base das novas APIs e os padrões técnicos da empresa. Por conta própria, criei sozinho dois SaaS: o Vittz, para clínicas, já com clientes beta, e o iFleetHub, para transportadoras, em pré-lançamento. Antes, ajudei a construir um banco digital no Canadá e plataformas do varejo brasileiro.",
+    en: "At Paysign I define the foundation of new APIs and the company's technical standards. On my own, I built two SaaS products: Vittz, for clinics, already with beta customers, and iFleetHub, for trucking companies, in pre-launch. Before that, I helped build a digital bank in Canada and platforms for Brazilian retail.",
   } satisfies L,
   extra: {
     pt: "Prefiro soluções simples de evoluir: DDD, monólito modular e Vertical Slice quando bastam, microsserviços quando são necessários. Uso IA no dia a dia e dentro dos produtos (assistentes com dados reais, transcrição, MCP) e gosto de ensinar quem está começando.",
@@ -125,28 +125,28 @@ export const experience: Job[] = [
     period: { pt: "dez 2021 - atual", en: "Dec 2021 - present" },
     place: { pt: "remoto, EUA", en: "remote, US" },
     about: {
-      pt: "Fintech americana de pagamentos. Atuo nos produtos novos e nos padrões técnicos usados por toda a empresa.",
-      en: "US payments fintech. I work on new products and on the technical standards used across the company.",
+      pt: "Fintech americana de pagamentos. Atuo em produtos novos e nos padrões técnicos da empresa.",
+      en: "US payments fintech. I work on new products and on the company's technical standards.",
     },
     bullets: [
       {
-        pt: "Defini e implementei a arquitetura base das novas APIs, em Vertical Slice.",
-        en: "Defined and built the base architecture for new APIs, using Vertical Slice.",
+        pt: "Defini a arquitetura base das novas APIs, em Vertical Slice.",
+        en: "Defined the base architecture for new APIs, using Vertical Slice.",
       },
       {
-        pt: "Criei o SharedKernel, pacote NuGet interno que padroniza logs (Serilog e OpenTelemetry), erros, validações, objetos de valor e entidades DDD.",
-        en: "Created SharedKernel, an internal NuGet package that standardises logging (Serilog and OpenTelemetry), errors, validation, value objects and DDD entities.",
+        pt: "Criei o SharedKernel, pacote NuGet que padroniza logs, erros, validações e entidades DDD em toda a empresa.",
+        en: "Created SharedKernel, a NuGet package that standardises logging, errors, validation and DDD entities across the company.",
       },
       {
-        pt: "Implantei a cultura de testes automatizados: unitários e de integração rodando a cada entrega no pipeline de CI/CD.",
-        en: "Established automated testing as a habit: unit and integration tests running on every delivery in the CI/CD pipeline.",
+        pt: "Levei testes unitários e de integração para o CI/CD, rodando a cada entrega.",
+        en: "Brought unit and integration tests into CI/CD, running on every delivery.",
       },
       {
-        pt: "Desenvolvo funcionalidades novas e melhorias em sistemas legados, de ponta a ponta.",
-        en: "Build new features and improve legacy systems, end to end.",
+        pt: "Entrego funcionalidades novas e evoluo sistemas legados, de ponta a ponta.",
+        en: "Ship new features and evolve legacy systems, end to end.",
       },
     ],
-    stack: [".NET", "EF Core", "AWS (Lambda, ECS, RDS)", "Docker", "TDD", "DDD"],
+    stack: [".NET", "EF Core", "AWS", "Docker", "Serilog", "OpenTelemetry", "TDD", "DDD"],
   },
   {
     company: "Lojas Riachuelo",
@@ -159,12 +159,12 @@ export const experience: Job[] = [
     },
     bullets: [
       {
-        pt: "Evoluí o DoMeuJeito, plataforma colaborativa de listas para casamentos, chás de bebê e outras celebrações.",
-        en: "Evolved DoMeuJeito, a collaborative list platform for weddings, baby showers and other celebrations.",
+        pt: "Evoluí o DoMeuJeito, plataforma de listas de presentes para casamentos, chás de bebê e outros eventos.",
+        en: "Evolved DoMeuJeito, a gift-list platform for weddings, baby showers and other events.",
       },
       {
-        pt: "Trabalhei numa arquitetura de microsserviços integrados por REST e filas, com Azure Functions escaladas pelo KEDA a partir de agendamentos e eventos do Kafka.",
-        en: "Worked on a microservices architecture connected by REST and queues, with Azure Functions scaled by KEDA from schedules and Kafka events.",
+        pt: "Trabalhei em microsserviços integrados por REST e filas, com Azure Functions escaladas sob demanda por agendamentos e eventos.",
+        en: "Worked on microservices connected by REST and queues, with Azure Functions scaled on demand by schedules and events.",
       },
     ],
     stack: [".NET", "Azure Functions", "KEDA", "Kafka", "Azure DevOps", "Docker"],
@@ -180,15 +180,15 @@ export const experience: Job[] = [
     },
     bullets: [
       {
-        pt: "Desenvolvi módulos estratégicos do banco digital, num time internacional e multidisciplinar.",
-        en: "Built core modules of the digital bank, in an international, cross-functional team.",
+        pt: "Desenvolvi módulos estratégicos do banco digital, num time internacional.",
+        en: "Built core modules of the digital bank, in an international team.",
       },
       {
-        pt: "Participei das decisões de arquitetura, com microsserviços e micro front-ends, e da entrega no dia a dia com Scrum.",
-        en: "Took part in the architecture decisions, with microservices and micro front-ends, and in day-to-day delivery with Scrum.",
+        pt: "Participei das decisões de arquitetura: microsserviços e micro front-ends.",
+        en: "Took part in the architecture decisions: microservices and micro front-ends.",
       },
     ],
-    stack: [".NET", "EF Core", "GCP", "Kubernetes", "TDD", "DDD"],
+    stack: [".NET", "EF Core", "GCP", "Kubernetes", "TDD", "DDD", "Scrum"],
   },
   {
     company: "Tribunal de Contas de Minas Gerais",
@@ -196,40 +196,41 @@ export const experience: Job[] = [
     period: { pt: "ago 2017 - mai 2020", en: "Aug 2017 - May 2020" },
     place: { pt: "Belo Horizonte", en: "Belo Horizonte" },
     about: {
-      pt: "O tribunal que fiscaliza as contas públicas do estado. Entrei como júnior e cheguei a sênior em dois anos.",
-      en: "The court that audits the state's public accounts. I joined as a junior and reached senior in two years.",
+      pt: "O tribunal que fiscaliza as contas públicas do estado. De júnior a sênior em dois anos.",
+      en: "The court that audits the state's public accounts. From junior to senior in two years.",
     },
     bullets: [
       {
-        pt: "Tirei regras de negócio de procedures Oracle e levei para código .NET organizado e coberto por testes (TDD e BDD com Cucumber).",
-        en: "Moved business rules out of Oracle procedures into well-structured .NET code covered by tests (TDD, and BDD with Cucumber).",
+        pt: "Tirei regras de negócio de procedures Oracle e levei para .NET, com testes.",
+        en: "Moved business rules out of Oracle procedures into tested .NET code.",
       },
       {
-        pt: "Desenvolvi o sistema de acesso externo, que permite enviar documentos ao tribunal pelo meio digital.",
-        en: "Built the external access system that lets documents be submitted to the court digitally.",
+        pt: "Desenvolvi o sistema de envio digital de documentos ao tribunal.",
+        en: "Built the system for submitting documents to the court digitally.",
       },
       {
-        pt: "Participei da migração do sistema núcleo para uma arquitetura hexagonal, da proposta à entrega.",
-        en: "Took part in migrating the core system to a hexagonal architecture, from proposal to delivery.",
+        pt: "Participei da migração do sistema núcleo para arquitetura hexagonal, da proposta à entrega.",
+        en: "Took part in moving the core system to a hexagonal architecture, from proposal to delivery.",
       },
     ],
-    stack: [".NET", "Angular", "Oracle PL/SQL", "Cucumber", "Azure DevOps"],
+    stack: [".NET", "Angular", "Oracle PL/SQL", "TDD", "BDD (Cucumber)", "Azure DevOps"],
   },
   {
     company: "ASPPrev e Athos Negócios",
-    role: { pt: "Estágios", en: "Internships" },
+    role: { pt: "Estagiário", en: "Intern" },
     period: { pt: "jan 2017 - ago 2017", en: "Jan 2017 - Aug 2017" },
     place: { pt: "Belo Horizonte", en: "Belo Horizonte" },
     bullets: [
       {
-        pt: "ASPPrev: manutenção, análise e modelagem do banco do sistema de contabilidade (PostgreSQL).",
-        en: "ASPPrev: maintained, analysed and modelled the accounting system's database (PostgreSQL).",
+        pt: "ASPPrev: manutenção e modelagem do banco do sistema de contabilidade.",
+        en: "ASPPrev: maintained and modelled the accounting system's database.",
       },
       {
-        pt: "Athos Negócios: funcionalidades num ERP para associações de seguro e rastreamento veicular (.NET WebForms, SQL Server).",
-        en: "Athos Negócios: built features for an ERP serving insurance associations and vehicle tracking (.NET WebForms, SQL Server).",
+        pt: "Athos Negócios: funcionalidades num ERP para associações de seguro e rastreamento veicular.",
+        en: "Athos Negócios: built features for an ERP serving insurance associations and vehicle tracking.",
       },
     ],
+    stack: ["PostgreSQL", ".NET WebForms", "SQL Server"],
   },
 ];
 
@@ -278,14 +279,11 @@ export const projects: Project[] = [
     logo: "/projects/ifleethub.svg",
     url: "https://ifleethub.com.br",
     status: { pt: "Pré-lançamento, lista de espera aberta", en: "Pre-launch, waitlist open" },
-    role: {
-      pt: "Desenvolvedor principal: arquitetura, backend, web e app.",
-      en: "Lead developer: architecture, backend, web and app.",
-    },
+    role: { pt: "Produto meu, do conceito ao código.", en: "My own product, from concept to code." },
     tagline: { pt: "Menos planilha. Mais estrada.", en: "Less spreadsheet. More road." },
     description: {
-      pt: "Torre de controle para transportadoras: cada caminhão no mapa em tempo real e cada carga acompanhada até a entrega. Para a equipe de operação no escritório e para o motorista na estrada.",
-      en: "A control tower for trucking companies: every truck on a live map and every load tracked until delivery. For the operations team in the office and the driver on the road.",
+      pt: "A torre de controle da transportadora: cada caminhão no mapa em tempo real e cada carga acompanhada até a entrega. Para a equipe de operação no escritório e para o motorista na estrada, na web e no celular.",
+      en: "A control tower for trucking companies: every truck on a live map and every load tracked until delivery. For the operations team in the office and the driver on the road, on the web and on mobile.",
     },
     highlights: [
       {
@@ -301,15 +299,19 @@ export const projects: Project[] = [
         en: "Driver mode in the app, with passwordless login and Face ID unlock.",
       },
       {
-        pt: "WhatsApp da empresa integrado, com transcrição de áudios e resumo de conversas por IA.",
-        en: "The company's WhatsApp built in, with AI audio transcription and chat summaries.",
+        pt: "WhatsApp da transportadora integrado, com transcrição de áudios, resumo de conversas e revisão de texto por IA.",
+        en: "The company's WhatsApp built in, with AI audio transcription, chat summaries and writing review.",
       },
       {
-        pt: "Por dentro: multi-tenant, perfis de acesso personalizáveis e as mesmas funções na web, na web mobile e no app.",
-        en: "Under the hood: multi-tenant, custom access profiles and the same features on web, mobile web and the app.",
+        pt: "Cada transportadora monta a sua equipe: convites por e-mail e perfis de acesso personalizáveis.",
+        en: "Each company sets up its own team: email invites and custom access profiles.",
+      },
+      {
+        pt: "Por dentro: monorepo com web, app e site num código só, multi-tenant e tempo real com Convex.",
+        en: "Under the hood: one monorepo for web, app and site, multi-tenant and real time with Convex.",
       },
     ],
-    stack: ["TypeScript", "React", "Vite", "Convex", "Expo", "MapLibre", "WorkOS", "OpenAI Whisper", "Railway"],
+    stack: ["TypeScript", "React", "Vite", "Convex", "Expo", "MapLibre", "WorkOS", "OpenAI Whisper", "Turborepo", "Railway"],
   },
 ];
 

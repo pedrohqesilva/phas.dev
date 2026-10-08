@@ -968,3 +968,51 @@ html:not(.js) .back {
 .static article .tags {
   margin-top: 8px !important;
 }
+
+/* Experience as a timeline: a rule down the left, a pixel marker per company, the company with its period
+   right after it (dropping below on narrow screens), then the role. */
+.job {
+  position: relative;
+  padding-left: 16px;
+  border-left: 1px solid var(--border);
+}
+.job::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 0.55em;
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+}
+.entry.job + .entry.job,
+.static article.job + article.job {
+  margin-top: 22px;
+}
+.job-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 1.5ch;
+}
+.job-head .muted,
+.static .job-head .meta {
+  font-weight: 400;
+  font-size: 0.92em;
+}
+.job-role {
+  font-weight: 500;
+}
+.job .muted + ul,
+.static .job p.meta + ul {
+  margin-top: 6px;
+}
+.job li + li {
+  margin-top: 3px;
+}
+.static .job-head {
+  margin: 0;
+}
+.static .job-role {
+  margin: 2px 0 0;
+}

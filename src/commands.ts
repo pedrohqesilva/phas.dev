@@ -310,17 +310,13 @@ const sections: Record<string, (ctx: Ctx) => void> = {
       return print(line(t.emptyExperience, " ", link(linkOf("LinkedIn"))));
     print(
       ...experience.map((j) =>
+        // A timeline entry: company and period, then role and place, the context, what I did, the stack.
         h(
           "div",
-          { class: "entry" },
-          h(
-            "p",
-            { class: "title" },
-            j.role[lang],
-            h("span", { class: "at" }, ` @ ${j.company}`),
-          ),
-          muted(`${j.period[lang]}, ${j.place[lang]}`),
-          j.about && line(j.about[lang]),
+          { class: "entry job" },
+          h("p", { class: "job-head" }, h("span", { class: "title" }, j.company), h("span", { class: "muted" }, j.period[lang])),
+          h("p", { class: "job-role" }, j.role[lang], h("span", { class: "muted" }, `, ${j.place[lang]}`)),
+          j.about && muted(j.about[lang]),
           h("ul", null, ...j.bullets.map((b) => h("li", null, b[lang]))),
           j.stack && tags(j.stack),
         ),

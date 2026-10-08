@@ -36,9 +36,9 @@ export function renderStatic(lang: Lang): string {
     ? experience
         .map(
           (j) => `<article class="job">
-  <h3>${esc(j.role[lang])} <span>${esc(j.company)}</span></h3>
-  <p class="meta">${esc(j.period[lang])}, ${esc(j.place[lang])}</p>
-  ${j.about ? `<p>${esc(j.about[lang])}</p>` : ""}
+  <h3 class="job-head">${esc(j.company)} <span class="meta">${esc(j.period[lang])}</span></h3>
+  <p class="job-role">${esc(j.role[lang])}<span class="meta">, ${esc(j.place[lang])}</span></p>
+  ${j.about ? `<p class="meta">${esc(j.about[lang])}</p>` : ""}
   <ul>${j.bullets.map((b) => `<li>${esc(b[lang])}</li>`).join("")}</ul>
   ${j.stack ? tags(j.stack) : ""}
 </article>`,
