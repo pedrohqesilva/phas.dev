@@ -56,16 +56,16 @@ export const profile = {
     en: "Belo Horizonte, Brazil",
   } satisfies L,
   summary: {
-    pt: "Engenheiro de software sênior, com 9 anos em C# e .NET e foco em arquitetura e produto. Penso como dono: entendo o problema do negócio, desenho a solução e acompanho até ela estar em produção, sendo usada.",
-    en: "Senior software engineer with 9 years in C# and .NET, focused on architecture and product. I think like an owner: I understand the business problem, design the solution and follow it until it is in production and being used.",
+    pt: "Nove anos construindo software em C# e .NET, hoje com foco em arquitetura e produto. Penso como dono: entendo o problema do negócio, desenho a solução e acompanho até ela rodar em produção.",
+    en: "Nine years building software in C# and .NET, now focused on architecture and product. I think like an owner: I understand the business problem, design the solution and stay with it until it runs in production.",
   } satisfies L,
   now: {
-    pt: "Na Paysign, defino a arquitetura base das APIs e os padrões técnicos de toda a empresa. Por conta própria, criei e mantenho o Vittz, SaaS para clínicas já em produção, e lidero o desenvolvimento do iFleetHub. Antes, ajudei a construir um banco digital no Canadá e plataformas do varejo brasileiro.",
-    en: "At Paysign I define the base architecture for APIs and the technical standards for the whole company. On my own, I built and run Vittz, a SaaS for clinics already in production, and I lead development of iFleetHub. Before that, I helped build a digital bank in Canada and platforms for Brazilian retail.",
+    pt: "Na Paysign, defino a base das novas APIs e os padrões técnicos da empresa. Por conta própria, criei e mantenho o Vittz, SaaS para clínicas com clientes beta, e lidero o iFleetHub. Antes, ajudei a construir um banco digital no Canadá e plataformas do varejo brasileiro.",
+    en: "At Paysign I define the foundation of new APIs and the company's technical standards. On my own, I built and run Vittz, a SaaS for clinics with beta customers, and I lead iFleetHub. Before that, I helped build a digital bank in Canada and platforms for Brazilian retail.",
   } satisfies L,
   extra: {
-    pt: "Gosto de arquitetura que continua simples de evoluir: DDD, monólito modular e Vertical Slice quando bastam, microsserviços quando são necessários. Uso IA no dia a dia de desenvolvimento e dentro dos produtos (assistentes que consultam dados reais, transcrição, integrações com MCP), e gosto de ensinar quem está começando.",
-    en: "I like architecture that stays easy to evolve: DDD, modular monoliths and Vertical Slice when they are enough, microservices when they are needed. I use AI every day to build software and inside the products (assistants on real data, transcription, MCP integrations), and I enjoy teaching people who are starting out.",
+    pt: "Prefiro soluções simples de evoluir: DDD, monólito modular e Vertical Slice quando bastam, microsserviços quando são necessários. Uso IA no dia a dia e dentro dos produtos (assistentes com dados reais, transcrição, MCP) e gosto de ensinar quem está começando.",
+    en: "I prefer solutions that stay easy to evolve: DDD, modular monoliths and Vertical Slice when they are enough, microservices when they are needed. I use AI every day and inside the products (assistants on real data, transcription, MCP), and I enjoy teaching people who are starting out.",
   } satisfies L,
   email: "pedro@phas.dev",
   links: [
