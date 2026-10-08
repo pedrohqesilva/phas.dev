@@ -249,3 +249,60 @@ export function matrixRain(done: () => void) {
     addEventListener("pointerdown", stop, true);
   }, 300);
 }
+
+let backdrop: { stop(): void } | null = null;
+
+/**
+ * The Matrix theme's backdrop: the same rain, slower and faint, behind the terminal for as long as the
+ * theme is on. Not shown to people who asked for less motion; it rests while the tab is hidden.
+ */
+export function matrixBackdrop(on: boolean) {
+  if (!on || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    backdrop?.stop();
+    backdrop = null;
+    return;
+  }
+  if (backdrop) return;
+  const canvas = document.createElement("canvas");
+  canvas.className = "matrix-backdrop";
+  canvas.setAttribute("aria-hidden", "true");
+  document.body.prepend(canvas);
+  const g = canvas.getContext("2d")!;
+  const size = 16;
+  let drops: number[] = [];
+  const resize = () => {
+    const dpr = devicePixelRatio || 1;
+    canvas.width = innerWidth * dpr;
+    canvas.height = innerHeight * dpr;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drops = Array.from({ length: Math.ceil(innerWidth / size) }, () => Math.random() * -60);
+    g.fillStyle = "#000";
+    g.fillRect(0, 0, innerWidth, innerHeight);
+  };
+  resize();
+  addEventListener("resize", resize);
+  const glyphs = "アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789phasDEV<>{}=;";
+  let last = 0;
+  let raf = 0;
+  const frame = (now: number) => {
+    raf = requestAnimationFrame(frame);
+    if (document.hidden || now - last < 75) return;
+    last = now;
+    g.fillStyle = "rgba(0, 0, 0, 0.1)";
+    g.fillRect(0, 0, innerWidth, innerHeight);
+    g.font = `${size}px "Geist Mono Variable", ui-monospace, monospace`;
+    drops.forEach((y, i) => {
+      g.fillStyle = Math.random() > 0.98 ? "#d8ffd8" : "#00ff41";
+      g.fillText(glyphs[Math.floor(Math.random() * glyphs.length)], i * size, y * size);
+      drops[i] = y * size > innerHeight && Math.random() > 0.975 ? 0 : y + 1;
+    });
+  };
+  raf = requestAnimationFrame(frame);
+  backdrop = {
+    stop() {
+      cancelAnimationFrame(raf);
+      removeEventListener("resize", resize);
+      canvas.remove();
+    },
+  };
+}

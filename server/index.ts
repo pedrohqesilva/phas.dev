@@ -52,6 +52,8 @@ const ROUTES: Record<string, string> = {
   "/snake": "/index.html",
   "/cobrinha": "/index.html",
   "/invaders": "/index.html",
+  "/pong": "/index.html",
+  "/tetris": "/index.html",
 };
 
 type File = { body: Buffer; gzip: Buffer | null; type: string };

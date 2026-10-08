@@ -12,6 +12,8 @@ import {
 } from "../src/games/protocol.ts";
 import { createArena } from "./arena.ts";
 import { createCoop } from "./coop.ts";
+import { createPongRooms } from "./pong.ts";
+import { createTetrisRooms } from "./tetris.ts";
 import { fromCloudflare, visitorAddress } from "./origin.ts";
 
 /**
@@ -21,11 +23,16 @@ import { fromCloudflare, visitorAddress } from "./origin.ts";
 export function attachGames(server: Server, { exclusive = true } = {}) {
   const arena = createArena();
   const coop = createCoop();
+  const pong = createPongRooms();
+  const tetris = createTetrisRooms();
 
   /** What one connection is doing: at most one arena seat and one co-op seat. */
   interface Session {
     arenaId: number | null;
     room: { code: string; you: number } | null;
+    /** A seat in a Pong or a Tetris versus room. */
+    pong: { code: string; you: number } | null;
+    tetris: { code: string; you: number } | null;
     /** Messages this second, for a simple rate limit. */
     budget: number;
     alive: boolean;
@@ -89,6 +96,8 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
     const session: Session = {
       arenaId: null,
       room: null,
+      pong: null,
+      tetris: null,
       budget: MESSAGES_PER_SECOND,
       alive: true,
     };
@@ -170,12 +179,79 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
           if (session.room)
             coop.input(session.room.code, session.room.you, msg.input);
           break;
+        // Pong and Tetris versus: the same room flow as co-op (create, join by code or link, resume).
+        case "pong.create":
+          session.pong ??= pong.create(send);
+          if (!session.pong) send({ t: "pong.error", reason: "full" });
+          break;
+        case "pong.join":
+          if (!session.pong && isRoomCode(String(msg.room ?? "")))
+            session.pong = pong.join(
+              String(msg.room),
+              send,
+              typeof msg.resume === "string" ? msg.resume : undefined,
+            );
+          else if (!session.pong)
+            send({ t: "pong.error", reason: "not-found" });
+          break;
+        case "pong.ready":
+          if (session.pong) pong.ready(session.pong.code, session.pong.you);
+          break;
+        case "pong.input":
+          if (session.pong)
+            pong.input(session.pong.code, session.pong.you, msg.y, msg.rtt);
+          break;
+        case "pong.again":
+          if (session.pong) pong.again(session.pong.code, session.pong.you);
+          break;
+        case "tetris.create":
+          session.tetris ??= tetris.create(send);
+          if (!session.tetris) send({ t: "tetris.error", reason: "full" });
+          break;
+        case "tetris.join":
+          if (!session.tetris && isRoomCode(String(msg.room ?? "")))
+            session.tetris = tetris.join(
+              String(msg.room),
+              send,
+              typeof msg.resume === "string" ? msg.resume : undefined,
+            );
+          else if (!session.tetris)
+            send({ t: "tetris.error", reason: "not-found" });
+          break;
+        case "tetris.ready":
+          if (session.tetris)
+            tetris.ready(session.tetris.code, session.tetris.you);
+          break;
+        case "tetris.board":
+          if (session.tetris)
+            tetris.board(
+              session.tetris.code,
+              session.tetris.you,
+              msg.cells,
+              msg.score,
+              msg.lines,
+            );
+          break;
+        case "tetris.attack":
+          if (session.tetris)
+            tetris.attack(session.tetris.code, session.tetris.you, msg.lines);
+          break;
+        case "tetris.over":
+          if (session.tetris)
+            tetris.over(session.tetris.code, session.tetris.you);
+          break;
+        case "tetris.again":
+          if (session.tetris)
+            tetris.again(session.tetris.code, session.tetris.you);
+          break;
       }
     };
     ws.on("close", () => {
       clearInterval(refill);
       if (session.arenaId !== null) arena.leave(session.arenaId);
       if (session.room) coop.leave(session.room.code, session.room.you);
+      if (session.pong) pong.leave(session.pong.code, session.pong.you);
+      if (session.tetris) tetris.leave(session.tetris.code, session.tetris.you);
     });
     (ws as WebSocket & { session?: Session }).session = session;
   });

@@ -44,11 +44,7 @@ export const ui = {
     download: "Baixar",
     gamesTitle: "Jogos",
     modeClassic: "Clássico",
-    modeEasy: "Fácil",
     modeOnline: "Online",
-    modeSolo: "Solo",
-    modeCoopCreate: "Co-op: criar sala",
-    modeCoopJoin: "Co-op: entrar com código",
     coopJoinDesc: "recebeu um código de 4 letras? Digite e entre na sala.",
     nicknamePlaceholder: "seu apelido (opcional), Enter para jogar",
     roomPlaceholder: "código da sala, ex.: ABCD",
@@ -63,8 +59,6 @@ export const ui = {
     snakeDesc: touch
       ? "a cobrinha clássica. Deslize o dedo para virar."
       : "a cobrinha clássica. Setas, WASD ou deslize; Esc pausa.",
-    snakeEasyDesc:
-      "a mesma cobrinha, mas as paredes atravessam: bom para começar.",
     snakeEasyTitle: "Snake (fácil)",
     invadersDesc: touch
       ? "a navinha contra a invasão. Arraste para mover; ela atira sozinha."
@@ -171,7 +165,7 @@ export const ui = {
     email: "E-mail",
     opening: "Abrindo",
     sectionEducation: "Formação",
-    nickRanking: "apelido para o ranking (opcional), Enter para jogar",
+    nickRanking: "apelido para o ranking (opcional)",
     rankPlaced: (today: number | null, all: number | null) =>
       all !== null
         ? `Você entrou no ranking de sempre em ${all}º lugar${today !== null ? ` (e em ${today}º hoje)` : ""}!`
@@ -182,6 +176,55 @@ export const ui = {
     rankingAll: "De sempre",
     rankingEmpty: "Ninguém ainda. Seja o primeiro.",
     rankingOffline: "Não consegui buscar o ranking agora.",
+    pongDesc: touch
+      ? "o clássico de raquete. Arraste para mover; quem fizer 7 vence."
+      : "o clássico de raquete. ↑ ↓ ou W S movem; quem fizer 7 vence.",
+    pongCpuDesc: "contra o computador, para treinar.",
+    pongOnlineDesc: "1x1 online: crie uma sala e mande o link.",
+    pongHelp: [
+      "Rebata a bola com a sua raquete (à esquerda). Quem deixar passar perde o ponto.",
+      "↑ ↓ ou W S movem; no celular, a raquete segue o seu dedo.",
+      "Quanto mais longe do meio da raquete, mais inclinada a bola volta. A cada rebatida ela acelera.",
+      "Quem fizer 7 pontos vence. Esc pausa (contra o computador) ou abre o menu (online).",
+    ],
+    pongYou: "VOCÊ",
+    pongRival: "RIVAL",
+    pongCpu: "COMPUTADOR",
+    pongWin: "VOCÊ VENCEU",
+    pongLose: "VOCÊ PERDEU",
+    pongAgain: "Espaço ou toque para jogar de novo",
+    pongWaitingAgain: "AGUARDANDO O RIVAL",
+    pongOver: (a: number, b: number) => `Pong: ${a} a ${b}.`,
+    tetrisDesc: touch
+      ? "as peças que caem. Toque gira, arraste move, deslize rápido para baixo derruba."
+      : "as peças que caem. ← → movem, ↑ gira, Espaço derruba.",
+    tetrisSoloDesc: "sozinho, valendo ranking.",
+    tetrisVersusDesc: "versus online: limpe linhas e mande lixo para o rival.",
+    tetrisHelp: [
+      "← → movem a peça (segure para repetir), ↑ ou X giram, Z gira para o outro lado.",
+      "↓ desce mais rápido, Espaço derruba de vez, C ou Shift guarda a peça para depois.",
+      "No celular: toque gira, arraste move, arraste para baixo acelera, deslize rápido derruba.",
+      "Complete linhas para limpá-las. A cada 10 linhas o nível sobe e as peças caem mais rápido.",
+      "No versus, limpar 2, 3 ou 4 linhas de uma vez manda 1, 2 ou 4 linhas de lixo para o rival.",
+    ],
+    tetrisScore: "PONTOS",
+    tetrisLines: "LINHAS",
+    tetrisLevel: "NÍVEL",
+    tetrisNext: "PRÓXIMAS",
+    tetrisHold: "GUARDADA",
+    tetrisOver: "FIM DE JOGO",
+    tetrisOverLine: (n: number) => `Tetris: melhor partida ${n}.`,
+    versusShare: "mande o link {link}",
+    versusLink:
+      "Sala criada. Mande este link para quem vai jogar com você (já copiado):",
+    modeCoop: "Co-op",
+    modeVersus: "Versus",
+    roomCreate: "Criar sala",
+    roomCreateDesc: "cria a sala e copia o link para você mandar.",
+    roomJoin: "Entrar com código",
+    wallsLabel: "Paredes",
+    wallsKill: "matam",
+    wallsWrap: "atravessam (fácil)",
     languagesTitle: "Idiomas",
   },
   en: {
@@ -220,11 +263,7 @@ export const ui = {
     download: "Download",
     gamesTitle: "Games",
     modeClassic: "Classic",
-    modeEasy: "Easy",
     modeOnline: "Online",
-    modeSolo: "Solo",
-    modeCoopCreate: "Co-op: create a room",
-    modeCoopJoin: "Co-op: join with a code",
     coopJoinDesc: "got a 4-letter code? Type it to join the room.",
     nicknamePlaceholder: "your nickname (optional), Enter to play",
     roomPlaceholder: "room code, e.g. ABCD",
@@ -239,8 +278,6 @@ export const ui = {
     snakeDesc: touch
       ? "the classic snake. Swipe to turn."
       : "the classic snake. Arrows, WASD or swipe; Esc pauses.",
-    snakeEasyDesc:
-      "the same snake, but the walls wrap around: good to start with.",
     snakeEasyTitle: "Snake (easy)",
     invadersDesc: touch
       ? "the little ship against the invasion. Drag to move; it fires on its own."
@@ -347,7 +384,7 @@ export const ui = {
     email: "Email",
     opening: "Opening",
     sectionEducation: "Education",
-    nickRanking: "nickname for the leaderboard (optional), Enter to play",
+    nickRanking: "nickname for the leaderboard (optional)",
     rankPlaced: (today: number | null, all: number | null) =>
       all !== null
         ? `You made the all-time leaderboard at #${all}${today !== null ? ` (and #${today} today)` : ""}!`
@@ -358,6 +395,56 @@ export const ui = {
     rankingAll: "All time",
     rankingEmpty: "Nobody yet. Be the first.",
     rankingOffline: "Couldn't fetch the leaderboard right now.",
+    pongDesc: touch
+      ? "the classic paddle game. Drag to move; first to 7 wins."
+      : "the classic paddle game. ↑ ↓ or W S move; first to 7 wins.",
+    pongCpuDesc: "against the computer, for practice.",
+    pongOnlineDesc: "1v1 online: create a room and send the link.",
+    pongHelp: [
+      "Hit the ball back with your paddle (on the left). Let it past and you lose the point.",
+      "↑ ↓ or W S move; on a phone, the paddle follows your finger.",
+      "The further from the paddle's middle, the steeper the ball comes off. It speeds up with every hit.",
+      "First to 7 wins. Esc pauses (against the computer) or opens the menu (online).",
+    ],
+    pongYou: "YOU",
+    pongRival: "RIVAL",
+    pongCpu: "COMPUTER",
+    pongWin: "YOU WIN",
+    pongLose: "YOU LOSE",
+    pongAgain: "Space or tap to play again",
+    pongWaitingAgain: "WAITING FOR YOUR RIVAL",
+    pongOver: (a: number, b: number) => `Pong: ${a} to ${b}.`,
+    tetrisDesc: touch
+      ? "the falling blocks. Tap rotates, drag moves, flick down drops."
+      : "the falling blocks. ← → move, ↑ rotates, Space drops.",
+    tetrisSoloDesc: "on your own, for the leaderboard.",
+    tetrisVersusDesc:
+      "versus online: clear lines to send garbage to your rival.",
+    tetrisHelp: [
+      "← → move the piece (hold to repeat), ↑ or X rotate, Z rotates the other way.",
+      "↓ drops faster, Space drops at once, C or Shift holds the piece for later.",
+      "On a phone: tap rotates, drag moves, drag down speeds up, a quick flick drops.",
+      "Fill a row to clear it. Every 10 lines the level goes up and pieces fall faster.",
+      "In versus, clearing 2, 3 or 4 lines at once sends 1, 2 or 4 garbage lines to your rival.",
+    ],
+    tetrisScore: "SCORE",
+    tetrisLines: "LINES",
+    tetrisLevel: "LEVEL",
+    tetrisNext: "NEXT",
+    tetrisHold: "HOLD",
+    tetrisOver: "GAME OVER",
+    tetrisOverLine: (n: number) => `Tetris: best game ${n}.`,
+    versusShare: "send the link {link}",
+    versusLink:
+      "Room created. Send this link to whoever plays with you (already copied):",
+    modeCoop: "Co-op",
+    modeVersus: "Versus",
+    roomCreate: "Create a room",
+    roomCreateDesc: "creates the room and copies the link for you to send.",
+    roomJoin: "Join with a code",
+    wallsLabel: "Walls",
+    wallsKill: "kill",
+    wallsWrap: "wrap around (easy)",
     languagesTitle: "Languages",
   },
 } satisfies Record<Lang, unknown>;

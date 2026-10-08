@@ -1,5 +1,6 @@
 // Messages between the browser and the game server (/ws), shared by both sides. JSON, one object per frame.
 import type { InvadersView, ShipInput } from "./invaders-sim.ts";
+import type { PongView } from "./pong-sim.ts";
 
 /** Snake arena: a fixed grid, the same for everyone; clients scale it to their screen. */
 export const ARENA_COLS = 64;
@@ -84,7 +85,23 @@ export type ClientMessage =
   /** `resume`: the token from `coop.room`, to take the same seat back after a dropped connection. */
   | { t: "coop.join"; room: string; resume?: string }
   | { t: "coop.ready" }
-  | { t: "coop.input"; input: CoopInput | ShipInput };
+  | { t: "coop.input"; input: CoopInput | ShipInput }
+  // Pong 1v1: the paddle's centre (moved in the browser, followed by the server) and the round trip.
+  | { t: "pong.create" }
+  | { t: "pong.join"; room: string; resume?: string }
+  | { t: "pong.ready" }
+  | { t: "pong.input"; y: number; rtt?: number }
+  | { t: "pong.again" }
+  // Tetris versus: each browser runs its own game; the server passes boards and attacks along.
+  | { t: "tetris.create" }
+  | { t: "tetris.join"; room: string; resume?: string }
+  | { t: "tetris.ready" }
+  /** The visible well (200 digits) and the score, a few times a second, for the other player's view. */
+  | { t: "tetris.board"; cells: string; score: number; lines: number }
+  /** Garbage lines for the other player (from clearing 2 or more lines at once). */
+  | { t: "tetris.attack"; lines: number }
+  | { t: "tetris.over" }
+  | { t: "tetris.again" };
 
 export type ServerMessage =
   | { t: "pong"; n: number }
@@ -104,7 +121,36 @@ export type ServerMessage =
   | { t: "coop.start" }
   | { t: "coop.state"; view: InvadersView }
   | { t: "coop.left" }
-  | { t: "coop.error"; reason: "full" | "not-found" };
+  | { t: "coop.error"; reason: "full" | "not-found" }
+  | {
+      t: "pong.room";
+      room: string;
+      you: number;
+      players: number;
+      token: string;
+    }
+  | { t: "pong.start" }
+  | { t: "pong.state"; view: PongView }
+  | { t: "pong.away" }
+  | { t: "pong.back" }
+  | { t: "pong.left" }
+  | { t: "pong.error"; reason: "full" | "not-found" }
+  | {
+      t: "tetris.room";
+      room: string;
+      you: number;
+      players: number;
+      token: string;
+    }
+  /** A match begins: both games use this seed, so both get the same pieces. */
+  | { t: "tetris.start"; seed: number }
+  | { t: "tetris.opponent"; cells: string; score: number; lines: number }
+  | { t: "tetris.garbage"; lines: number; hole: number }
+  | { t: "tetris.result"; won: boolean }
+  | { t: "tetris.away" }
+  | { t: "tetris.back" }
+  | { t: "tetris.left" }
+  | { t: "tetris.error"; reason: "full" | "not-found" };
 
 /** How long a dropped player's snake or co-op seat is kept for them to come back. */
 export const RESUME_MS = 15_000;

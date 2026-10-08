@@ -24,7 +24,22 @@ import {
   playInvadersCoop,
   type InvadersTexts,
 } from "./games/invaders.ts";
-import { openGameMenu } from "./games/menu.ts";
+import {
+  openGameMenu,
+  type MenuField,
+  type MenuOption,
+} from "./games/menu.ts";
+import {
+  playPongCpu,
+  playPongOnline,
+  type PongTexts,
+  type VersusTexts,
+} from "./games/pong.ts";
+import {
+  playTetris,
+  playTetrisVersus,
+  type TetrisTexts,
+} from "./games/tetris.ts";
 import { cleanName, isRoomCode } from "./games/protocol.ts";
 import {
   board,
@@ -120,7 +135,11 @@ function leaderboardRun(game: Game, nick: string) {
     /** The line for the terminal, or nothing if no place was reached. */
     report({ t, lang }: Ctx): Child {
       if (today === null && all === null) return null;
-      return line(t.rankPlaced(today, all), " ", cmd(`ranking ${game}`, name("ranking", lang)));
+      return line(
+        t.rankPlaced(today, all),
+        " ",
+        cmd(`ranking ${game}`, name("ranking", lang)),
+      );
     },
   };
 }
@@ -188,11 +207,25 @@ function startInvaders(ctx: Ctx, nick = savedNick.get()) {
   );
 }
 
-/** The nickname field on a solo mode's start screen: optional, filled with the last one used. */
-const nickInput = (t: UI) => ({
+type TextField = Extract<MenuField, { kind: "text" }>;
+
+/** The nickname field on a mode's start screen: optional, filled with the last one used. */
+const nickField = (t: UI): TextField => ({
+  kind: "text",
+  key: "nick",
   placeholder: t.nickRanking,
   maxLength: 12,
   value: savedNick.get(),
+});
+/** The room code field: four letters, required. */
+const roomField = (t: UI): TextField => ({
+  kind: "text",
+  key: "code",
+  placeholder: t.roomPlaceholder,
+  maxLength: 4,
+  required: true,
+  valid: isRoomCode,
+  invalid: t.coopNotFound,
 });
 /** Cleans and remembers a nickname typed on a start screen. */
 const takeNick = (raw: string) => {
@@ -276,7 +309,22 @@ function startArena({ t, print, focus, replaying }: Ctx, name = "") {
   );
 }
 
-/** Snake's start screen: classic, easy or the online arena (with an optional nickname). */
+/** A versus or co-op mode's second list: create a room (its link is printed) or join one by its code. */
+const roomChoices = (
+  t: UI,
+  create: () => void,
+  join: (code: string) => void,
+): MenuOption[] => [
+  { label: t.roomCreate, hint: t.roomCreateDesc, start: create },
+  {
+    label: t.roomJoin,
+    hint: t.coopJoinDesc,
+    fields: [roomField(t)],
+    start: (v) => join(v.code.toUpperCase()),
+  },
+];
+
+/** Snake's start screen: Classic (nickname, and whether the walls kill or wrap) or the online arena. */
 function snakeMenu(ctx: Ctx) {
   if (ctx.replaying) return;
   const { t } = ctx;
@@ -286,20 +334,25 @@ function snakeMenu(ctx: Ctx) {
       {
         label: t.modeClassic,
         hint: t.snakeDesc,
-        input: nickInput(t),
-        start: (nick) => startSnake(ctx, false, takeNick(nick)),
-      },
-      {
-        label: t.modeEasy,
-        hint: t.snakeEasyDesc,
-        input: nickInput(t),
-        start: (nick) => startSnake(ctx, true, takeNick(nick)),
+        fields: [
+          nickField(t),
+          {
+            kind: "choice",
+            key: "walls",
+            label: t.wallsLabel,
+            options: [
+              { label: t.wallsKill, value: "kill" },
+              { label: t.wallsWrap, value: "wrap" },
+            ],
+          },
+        ],
+        start: (v) => startSnake(ctx, v.walls === "wrap", takeNick(v.nick)),
       },
       {
         label: t.modeOnline,
         hint: t.arenaDesc,
-        input: { ...nickInput(t), placeholder: t.nicknamePlaceholder },
-        start: (nick) => startArena(ctx, takeNick(nick)),
+        fields: [{ ...nickField(t), placeholder: t.nicknamePlaceholder }],
+        start: (v) => startArena(ctx, takeNick(v.nick)),
       },
     ],
     { keys: t.gameMenuKeys, exit: t.gameExit },
@@ -307,7 +360,7 @@ function snakeMenu(ctx: Ctx) {
   );
 }
 
-/** Space Invaders' start screen: solo, or co-op by creating a room or joining one with its code. */
+/** Space Invaders' start screen: Classic (with a nickname) or Co-op (create a room or join one). */
 function invadersMenu(ctx: Ctx) {
   if (ctx.replaying) return;
   const { t } = ctx;
@@ -315,32 +368,209 @@ function invadersMenu(ctx: Ctx) {
     "Space Invaders",
     [
       {
-        label: t.modeSolo,
+        label: t.modeClassic,
         hint: t.invadersDesc,
-        input: nickInput(t),
-        start: (nick) => startInvaders(ctx, takeNick(nick)),
+        fields: [nickField(t)],
+        start: (v) => startInvaders(ctx, takeNick(v.nick)),
       },
       {
-        label: t.modeCoopCreate,
+        label: t.modeCoop,
         hint: t.coopDesc,
-        start: () => startCoop(ctx),
-      },
-      {
-        label: t.modeCoopJoin,
-        hint: t.coopJoinDesc,
-        input: {
-          placeholder: t.roomPlaceholder,
-          maxLength: 4,
-          required: true,
-          valid: isRoomCode,
-          invalid: t.coopNotFound,
-        },
-        start: (code) => startCoop(ctx, code.toUpperCase()),
+        submenu: roomChoices(
+          t,
+          () => startCoop(ctx),
+          (code) => startCoop(ctx, code),
+        ),
       },
     ],
     { keys: t.gameMenuKeys, exit: t.gameExit },
     ctx.focus,
   );
+}
+
+const pongTexts = (t: UI, paused = t.gamePaused): PongTexts => ({
+  title: "Pong",
+  help: t.pongHelp,
+  start: t.gameStart,
+  exit: t.gameExit,
+  paused,
+  resume: t.gameResume,
+  you: t.pongYou,
+  rival: t.pongRival,
+  cpu: t.pongCpu,
+  win: t.pongWin,
+  lose: t.pongLose,
+  again: t.pongAgain,
+  waitingAgain: t.pongWaitingAgain,
+});
+
+const tetrisTexts = (t: UI, paused = t.gamePaused): TetrisTexts => ({
+  title: "Tetris",
+  help: t.tetrisHelp,
+  start: t.gameStart,
+  exit: t.gameExit,
+  paused,
+  resume: t.gameResume,
+  score: t.tetrisScore,
+  lines: t.tetrisLines,
+  level: t.tetrisLevel,
+  next: t.tetrisNext,
+  hold: t.tetrisHold,
+  over: t.tetrisOver,
+  again: t.pongAgain,
+  rival: t.pongRival,
+  win: t.pongWin,
+  lose: t.pongLose,
+  waitingAgain: t.pongWaitingAgain,
+});
+
+const versusTexts = (t: UI): VersusTexts => ({
+  waiting: t.coopWaiting,
+  share: t.versusShare,
+  partnerAway: t.coopPartnerAway,
+  partnerLeft: t.coopPartnerLeft,
+  reconnecting: t.netReconnecting,
+  disconnected: t.netDisconnected,
+  unreachable: t.netUnreachable,
+  full: t.coopFull,
+  notFound: t.coopNotFound,
+});
+
+/** Prints a versus room's invite link (and copies it) when the room is created. */
+const announceRoom =
+  ({ t, print }: Ctx, game: "pong" | "tetris") =>
+  (code: string) => {
+    const url = `${location.origin}/#${game}-${code}`;
+    navigator.clipboard?.writeText(url).catch(() => {});
+    print(line(t.versusLink, " ", link(url)));
+  };
+
+function startPong(ctx: Ctx, mode: "cpu" | "online", room?: string) {
+  const { t, print, focus, replaying } = ctx;
+  if (replaying) return;
+  if (mode === "cpu")
+    return playPongCpu(pongTexts(t), ([a, b]) => {
+      print(muted(t.pongOver(a, b)));
+      focus();
+    });
+  playPongOnline(pongTexts(t, t.gameLiveMenu), versusTexts(t), {
+    room: room?.toUpperCase(),
+    onRoom: announceRoom(ctx, "pong"),
+    onExit(note) {
+      if (note) print(muted(note));
+      focus();
+    },
+  });
+}
+
+function startTetris(ctx: Ctx, mode: "solo" | "versus", nickOrRoom?: string) {
+  const { t, print, focus, replaying } = ctx;
+  if (replaying) return;
+  if (mode === "versus")
+    return playTetrisVersus(tetrisTexts(t, t.gameLiveMenu), versusTexts(t), {
+      room: nickOrRoom?.toUpperCase(),
+      onRoom: announceRoom(ctx, "tetris"),
+      onExit(note) {
+        if (note) print(muted(note));
+        focus();
+      },
+    });
+  const ranked = leaderboardRun("tetris", nickOrRoom ?? savedNick.get());
+  playTetris(
+    tetrisTexts(t),
+    (best) => {
+      print(muted(t.tetrisOverLine(best)));
+      setTimeout(() => print(ranked.report(ctx)), 600);
+      focus();
+    },
+    ranked.round,
+  );
+}
+
+function pongMenu(ctx: Ctx) {
+  if (ctx.replaying) return;
+  const { t } = ctx;
+  openGameMenu(
+    "Pong",
+    [
+      {
+        label: t.modeClassic,
+        hint: t.pongCpuDesc,
+        start: () => startPong(ctx, "cpu"),
+      },
+      {
+        label: t.modeVersus,
+        hint: t.pongOnlineDesc,
+        submenu: roomChoices(
+          t,
+          () => startPong(ctx, "online"),
+          (code) => startPong(ctx, "online", code),
+        ),
+      },
+    ],
+    { keys: t.gameMenuKeys, exit: t.gameExit },
+    ctx.focus,
+  );
+}
+
+function tetrisMenu(ctx: Ctx) {
+  if (ctx.replaying) return;
+  const { t } = ctx;
+  openGameMenu(
+    "Tetris",
+    [
+      {
+        label: t.modeClassic,
+        hint: t.tetrisSoloDesc,
+        fields: [nickField(t)],
+        start: (v) => startTetris(ctx, "solo", takeNick(v.nick)),
+      },
+      {
+        label: t.modeVersus,
+        hint: t.tetrisVersusDesc,
+        submenu: roomChoices(
+          t,
+          () => startTetris(ctx, "versus"),
+          (code) => startTetris(ctx, "versus", code),
+        ),
+      },
+    ],
+    { keys: t.gameMenuKeys, exit: t.gameExit },
+    ctx.focus,
+  );
+}
+
+function playPongMode(ctx: Ctx, mode?: string, extra?: string) {
+  const m = normalize(mode ?? "");
+  if (["cpu", "computador", "computer", "solo", "treino"].includes(m))
+    return startPong(ctx, "cpu");
+  if (isOnline(m) || isCoop(m) || m === "versus" || m === "1x1" || m === "1v1")
+    return startPong(
+      ctx,
+      "online",
+      extra && isRoomCode(extra) ? extra : undefined,
+    );
+  pongMenu(ctx);
+}
+
+function playTetrisMode(ctx: Ctx, mode?: string, extra?: string) {
+  const m = normalize(mode ?? "");
+  if (["solo", "single", "classico", "classic"].includes(m))
+    return startTetris(ctx, "solo");
+  if (
+    isOnline(m) ||
+    isCoop(m) ||
+    m === "versus" ||
+    m === "vs" ||
+    m === "1x1" ||
+    m === "1v1"
+  )
+    return startTetris(
+      ctx,
+      "versus",
+      extra && isRoomCode(extra) ? extra : undefined,
+    );
+  tetrisMenu(ctx);
 }
 
 /** Without a mode, the game's start screen; a mode typed in the command (or an invite) goes straight in. */
@@ -851,9 +1081,12 @@ export const commands: Command[] = [
   {
     id: "game",
     names: { pt: ["jogos", "game", "games", "jogo"], en: ["games", "game"] },
-    desc: { pt: "jogos (snake, invaders)", en: "games (snake, invaders)" },
+    desc: {
+      pt: "jogos (snake, invaders, pong, tetris)",
+      en: "games (snake, invaders, pong, tetris)",
+    },
     icon: "terminal",
-    args: () => ["snake", "invaders"],
+    args: () => ["snake", "invaders", "pong", "tetris"],
     run([arg, mode, extra], ctx) {
       const game = normalize(arg ?? "");
       if (!game) {
@@ -868,6 +1101,10 @@ export const commands: Command[] = [
             h("dd", null, ctx.t.snakeDesc),
             h("dt", null, cmd(`${g} invaders`, "invaders")),
             h("dd", null, ctx.t.invadersDesc),
+            h("dt", null, cmd(`${g} pong`, "pong")),
+            h("dd", null, ctx.t.pongDesc),
+            h("dt", null, cmd(`${g} tetris`, "tetris")),
+            h("dd", null, ctx.t.tetrisDesc),
           ),
         );
       }
@@ -875,6 +1112,8 @@ export const commands: Command[] = [
         return playSnakeMode(ctx, mode, extra);
       if (["invaders", "space", "spaceinvaders", "nave"].includes(game))
         return playInvadersMode(ctx, mode, extra);
+      if (game === "pong") return playPongMode(ctx, mode, extra);
+      if (game === "tetris") return playTetrisMode(ctx, mode, extra);
       ctx.print(muted(ctx.t.gameUsage(arg)));
     },
   },
@@ -889,6 +1128,16 @@ export const commands: Command[] = [
     run: ([mode, extra], ctx) => playInvadersMode(ctx, mode, extra),
   },
   {
+    id: "pong",
+    names: { pt: ["pong"], en: ["pong"] },
+    run: ([mode, extra], ctx) => playPongMode(ctx, mode, extra),
+  },
+  {
+    id: "tetris",
+    names: { pt: ["tetris"], en: ["tetris"] },
+    run: ([mode, extra], ctx) => playTetrisMode(ctx, mode, extra),
+  },
+  {
     id: "ranking",
     names: {
       pt: ["ranking", "placar", "recordes"],
@@ -899,7 +1148,7 @@ export const commands: Command[] = [
       en: "best game scores (today and all time)",
     },
     icon: "terminal",
-    args: () => ["snake", "invaders", "facil"],
+    args: () => ["snake", "invaders", "tetris", "facil"],
     run([arg], ctx) {
       const a = normalize(arg ?? "");
       const games: Game[] =
@@ -909,7 +1158,9 @@ export const commands: Command[] = [
             ? ["snake-easy"]
             : ["invaders", "nave"].includes(a)
               ? ["invaders"]
-              : ["snake", "invaders"];
+              : a === "tetris"
+                ? ["tetris"]
+                : ["snake", "invaders", "tetris"];
       void Promise.all(games.map((g) => board(g))).then((boards) => {
         const { t } = ctx;
         if (boards.every((b) => b === null))
@@ -920,7 +1171,12 @@ export const commands: Command[] = [
                 "ol",
                 { class: "ranking-list" },
                 ...entries.map((e) =>
-                  h("li", null, h("span", null, e.name), h("span", { class: "muted" }, String(e.score))),
+                  h(
+                    "li",
+                    null,
+                    h("span", null, e.name),
+                    h("span", { class: "muted" }, String(e.score)),
+                  ),
                 ),
               )
             : muted(t.rankingEmpty);
@@ -933,8 +1189,18 @@ export const commands: Command[] = [
               h(
                 "div",
                 { class: "ranking" },
-                h("div", null, h("p", { class: "stack-title" }, t.rankingToday), list(b.today)),
-                h("div", null, h("p", { class: "stack-title" }, t.rankingAll), list(b.all)),
+                h(
+                  "div",
+                  null,
+                  h("p", { class: "stack-title" }, t.rankingToday),
+                  list(b.today),
+                ),
+                h(
+                  "div",
+                  null,
+                  h("p", { class: "stack-title" }, t.rankingAll),
+                  list(b.all),
+                ),
               ),
             ];
           }),
@@ -974,6 +1240,17 @@ export const commands: Command[] = [
       setTheme(theme);
     },
   },
+  // A theme's name typed alone switches to it (`dracula`, `escuro`…); `matrix` alone is the rain.
+  ...THEMES.filter((th) => th !== "matrix").map(
+    (th): Command => ({
+      id: `theme-${th}`,
+      names: {
+        pt: [normalize(ui.pt.themeNames[th])],
+        en: [ui.en.themeNames[th]],
+      },
+      run: (_, { setTheme }) => setTheme(th),
+    }),
+  ),
   {
     id: "simple",
     names: { pt: ["simples", "gui"], en: ["simple", "gui"] },

@@ -972,6 +972,40 @@ html:not(.js) .back {
   font-size: 16px;
   outline: none;
 }
+/* A choice in a mode's settings: its name, then the values as a segmented switch (← → or a click). */
+.game-menu-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 6px 0;
+  border-radius: 6px;
+  outline: none;
+}
+.game-menu-choice:focus-visible,
+.game-menu-choice:focus {
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.game-menu-choice .choice-label {
+  color: #b9b5ad;
+  font-size: 14px;
+  margin-right: 4px;
+}
+.game-menu-choice button {
+  padding: 6px 12px;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  background: #0b0b0b;
+  color: #b9b5ad;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.game-menu-choice button[aria-checked="true"] {
+  border-color: var(--accent);
+  color: #f2f2f2;
+  background: color-mix(in srgb, var(--accent) 14%, #0b0b0b);
+}
 .game-menu-input .error {
   min-height: 1em;
   color: var(--accent);
@@ -1179,4 +1213,22 @@ html:not(.js) .back {
   display: flex;
   justify-content: space-between;
   max-width: 260px;
+}
+
+/* The Matrix theme's rain, faint and behind everything (the terminal itself has no background). */
+.matrix-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100vw;
+  height: 100vh;
+  opacity: 0.18;
+  pointer-events: none;
+}
+.term {
+  z-index: 1;
+}
+.static {
+  position: relative;
+  z-index: 1;
 }

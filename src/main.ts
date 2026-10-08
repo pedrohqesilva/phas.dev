@@ -4,6 +4,7 @@ import { banner } from "./banner.ts";
 import { resolve, tabIds, THEMES, type Theme } from "./commands.ts";
 import { profile, type Lang } from "./content.ts";
 import { cmd, h } from "./dom.ts";
+import { matrixBackdrop } from "./fun.ts";
 import { ui } from "./i18n.ts";
 import { icon } from "./icons.ts";
 import { pageTitle, pathFor } from "./seo.ts";
@@ -139,6 +140,7 @@ function applyThemeLabel() {
 
 function setTheme(theme: Theme) {
   root.dataset.theme = theme;
+  matrixBackdrop(theme === "matrix");
   store.set("theme", theme);
   applyThemeLabel();
 }
@@ -253,6 +255,8 @@ const GAME_PATHS: Record<string, string> = {
   "/snake": "snake",
   "/cobrinha": "snake",
   "/invaders": "invaders",
+  "/pong": "pong",
+  "/tetris": "tetris",
 };
 const gameFromPath = () => GAME_PATHS[currentPath()];
 
@@ -297,12 +301,18 @@ async function boot() {
  */
 function runHash(): boolean {
   const hash = decodeURIComponent(location.hash.slice(1));
-  const invite = /^coop-([a-z]{4})$/i.exec(hash);
+  // Invites: #coop-ABCD (Space Invaders co-op), #pong-ABCD, #tetris-ABCD.
+  const invite = /^(coop|pong|tetris)-([a-z]{4})$/i.exec(hash);
   if (invite) {
     // An invite is used once: a reload must not try to join the same room again.
     history.replaceState(null, "", location.pathname);
+    const games = term.lang === "pt" ? "jogos" : "games";
+    const room = invite[2].toUpperCase();
+    const kind = invite[1].toLowerCase();
     term.run(
-      `${term.lang === "pt" ? "jogos" : "games"} invaders coop ${invite[1].toUpperCase()}`,
+      kind === "coop"
+        ? `${games} invaders coop ${room}`
+        : `${games} ${kind} ${kind === "pong" ? "online" : "versus"} ${room}`,
     );
     return true;
   }
@@ -351,6 +361,7 @@ if (viewport) {
 }
 
 root.dataset.theme = initialTheme;
+matrixBackdrop(initialTheme === "matrix");
 // /simples opens straight on the simple version; the terminal boots behind it.
 if (isSimplePath()) setSimple(true, false);
 applyLang(initialLang);
