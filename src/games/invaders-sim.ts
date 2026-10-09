@@ -725,6 +725,8 @@ export function stepInvaders(
  * two machines don't need synchronised clocks.
  */
 export interface InvadersView {
+  /** The game clock (ms) when the snapshot was taken: browsers play it forward from there. */
+  at: number;
   wave: number;
   score: number;
   best: number;
@@ -765,6 +767,7 @@ const r1 = (n: number) => Math.round(n * 10) / 10;
 
 export function viewInvaders(st: InvadersState, now: number): InvadersView {
   return {
+    at: now,
     wave: st.wave,
     score: st.score,
     best: Math.max(st.best, st.score),

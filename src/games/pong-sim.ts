@@ -149,6 +149,8 @@ export function cpuPaddle(st: PongState, side: 0 | 1, dt: number): number {
 
 /** What travels to the browsers: the ball with its speed (to play it forward), paddles, score, serve. */
 export interface PongView {
+  /** The game clock (ms) when the snapshot was taken: browsers play it forward from there. */
+  at: number;
   ball: [number, number, number, number];
   paddles: [number, number];
   score: [number, number];
@@ -160,6 +162,7 @@ export interface PongView {
 const r1 = (n: number) => Math.round(n * 10) / 10;
 
 export const viewPong = (st: PongState, now: number): PongView => ({
+  at: now,
   ball: [r1(st.ball.x), r1(st.ball.y), r1(st.ball.vx), r1(st.ball.vy)],
   paddles: [r1(st.paddles[0]), r1(st.paddles[1])],
   score: [...st.score] as [number, number],

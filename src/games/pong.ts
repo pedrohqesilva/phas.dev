@@ -5,7 +5,7 @@
 // ball is drawn where it is now, played forward from the last snapshot with the same physics (bouncing
 // off the walls and the paddles as they are on your screen), and the other paddle glides between snapshots.
 import { unlock } from "../achievements.ts";
-import { connect, pingLabel } from "./net.ts";
+import { connect, pingLabel, remoteTrack, serverClock } from "./net.ts";
 import {
   BALL,
   clampPaddle,
@@ -261,6 +261,8 @@ export function playPongOnline(
   let firePrev = false;
   let askedAgain = false;
 
+  const serverTime = serverClock();
+  const rival = remoteTrack();
   const net = connect({
     open: () =>
       net.send(
@@ -287,6 +289,8 @@ export function playPongOnline(
       } else if (msg.t === "pong.state") {
         view = msg.view;
         viewAt = performance.now();
+        serverTime.sample(msg.view.at, net.rtt() / 2, viewAt);
+        rival.push(msg.view.at, msg.view.paddles[1 - you]);
         if (msg.view.winner === you) unlock("champion");
       } else if (msg.t === "pong.away") overlay = [versus.partnerAway];
       else if (msg.t === "pong.back") overlay = [];
@@ -327,13 +331,8 @@ export function playPongOnline(
     if (active && v && v.winner === null) myY = controls.move(myY, dt);
     const vy = dt > 0 ? ((myY - before) * 1000) / dt : 0;
     const dir = Math.abs(vy) < 1 ? 0 : Math.sign(vy);
-    if (v) {
-      const target = v.paddles[1 - you];
-      theirY =
-        theirY === null
-          ? target
-          : theirY + (target - theirY) * Math.min(1, dt / 50);
-    }
+    // The other paddle, a few snapshots back, at an even pace.
+    if (v) theirY = rival.at(serverTime.now(t) - net.rtt() / 2) ?? v.paddles[1 - you];
     // Your paddle's place and speed, up to 30 times a second, and at once when it stops or turns: the
     // server reckons where it is from them until the next.
     const key = String(Math.round(myY * 10));
@@ -368,7 +367,7 @@ export function playPongOnline(
         // The ball now: the snapshot played forward with the paddles as they are on this screen.
         const lead = overlay.length
           ? 0
-          : Math.min(250, net.rtt() / 2 + (t - viewAt));
+          : Math.max(0, Math.min(250, serverTime.now(t) - v.at));
         const sim: PongState = {
           ball: { x: v.ball[0], y: v.ball[1], vx: v.ball[2], vy: v.ball[3] },
           paddles:

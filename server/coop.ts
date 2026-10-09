@@ -12,6 +12,7 @@ import {
   W,
   type ShipInput,
 } from "../src/games/invaders-sim.ts";
+import { startTicker } from "./ticker.ts";
 import {
   RESUME_MS,
   ROOM_ALPHABET,
@@ -38,7 +39,8 @@ interface Room {
   /** The last position report per seat (null: an older page sending keys instead). */
   reports: (Report | null)[];
   sim: ReturnType<typeof createInvaders>;
-  timer: ReturnType<typeof setInterval> | null;
+  /** Stops the room's loop, while it runs. */
+  timer: (() => void) | null;
   /** Game time in ms: it only advances while both players are connected. */
   clock: number;
   expiry: ReturnType<typeof setTimeout> | null;
@@ -136,21 +138,24 @@ export function createCoop() {
     room.sim.best = 0;
     for (const send of room.players) send?.({ t: "coop.start" });
     let n = 0;
-    room.timer = setInterval(() => {
+    room.timer = startTicker(
+      STEP_MS,
+      () => {
+        step(room);
+        if (++n % SEND_EVERY) return;
+        const msg: ServerMessage = {
+          t: "coop.state",
+          view: viewInvaders(room.sim, room.clock),
+        };
+        for (const send of room.players) send?.(msg);
+      },
       // Paused while someone is reconnecting.
-      if (room.away.some((a) => a !== null)) return;
-      step(room);
-      if (++n % SEND_EVERY) return;
-      const msg: ServerMessage = {
-        t: "coop.state",
-        view: viewInvaders(room.sim, room.clock),
-      };
-      for (const send of room.players) send?.(msg);
-    }, STEP_MS);
+      () => room.away.some((a) => a !== null),
+    );
   }
 
   function close(room: Room) {
-    if (room.timer) clearInterval(room.timer);
+    room.timer?.();
     if (room.expiry) clearTimeout(room.expiry);
     rooms.delete(room.code);
   }

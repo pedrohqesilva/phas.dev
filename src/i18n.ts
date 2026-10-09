@@ -20,7 +20,8 @@ export const ui = {
         : " ou clique em um ícone abaixo.",
     ],
     helpTitle: "Comandos disponíveis",
-    helpHidden: "Há alguns comandos escondidos. Boa caça.",
+    helpHidden:
+      "Há alguns comandos escondidos. Boa caça (ou, com pressa, eastereggs).",
     helpKeys: touch
       ? "Toque num comando para rodá-lo."
       : "Tab completa, ↑ ↓ navegam no histórico (ou rolam a saída enquanto ela aparece), Shift+↑ ↓ e PageUp/PageDown rolam, Esc mostra tudo, Ctrl+L limpa a tela.",
@@ -254,7 +255,8 @@ export const ui = {
       touch ? " or tap an icon below." : " or click an icon below.",
     ],
     helpTitle: "Available commands",
-    helpHidden: "A few commands are hidden. Happy hunting.",
+    helpHidden:
+      "A few commands are hidden. Happy hunting (or, in a hurry, eastereggs).",
     helpKeys: touch
       ? "Tap a command to run it."
       : "Tab completes, ↑ ↓ browse history (or scroll the output while it streams), Shift+↑ ↓ and PageUp/PageDown scroll, Esc shows everything, Ctrl+L clears the screen.",

@@ -32,7 +32,7 @@ import {
   W,
   type VersusView,
 } from "./invaders-versus-sim.ts";
-import { connect, pingLabel } from "./net.ts";
+import { connect, pingLabel, remoteTrack, serverClock } from "./net.ts";
 import type { VersusTexts } from "./pong.ts";
 import { openGame } from "./shell.ts";
 
@@ -101,6 +101,8 @@ export function playInvadersVersus(
   let firePrev = false;
   let askedAgain = false;
 
+  const clock = serverClock();
+  const rivalTrack = remoteTrack();
   const net = connect({
     open: () =>
       net.send(
@@ -129,6 +131,8 @@ export function playInvadersVersus(
       } else if (msg.t === "invaders.state") {
         view = msg.view;
         viewAt = performance.now();
+        clock.sample(msg.view.at, net.rtt() / 2, viewAt);
+        rivalTrack.push(msg.view.at, msg.view.players[you === 0 ? 1 : 0].x);
         myX ??= msg.view.players[you].x;
         if (msg.view.winner !== null) ghosts = [];
         if (msg.view.winner === you) unlock("champion");
@@ -171,7 +175,7 @@ export function playInvadersVersus(
   function present(v: VersusView, t: number): VersusView {
     const lead = overlay.length
       ? 0
-      : Math.min(0.3, (net.rtt() / 2 + (t - viewAt)) / 1000);
+      : Math.max(0, Math.min(0.3, (clock.now(t) - v.at) / 1000));
     const shots: number[] = [];
     const claimed = new Set<number>();
     for (let i = 0; i < v.shots.length; i += STRIDE) {
@@ -399,12 +403,8 @@ export function playInvadersVersus(
       before !== null && myX !== null && dt > 0
         ? ((myX - before) * 1000) / dt
         : 0;
-    const rival = v?.players[you === 0 ? 1 : 0];
-    if (rival)
-      rivalX =
-        rivalX === null
-          ? rival.x
-          : rivalX + (rival.x - rivalX) * Math.min(1, dt / 50);
+    // The rival's ship, a few snapshots back, at an even pace.
+    rivalX = rivalTrack.at(clock.now(t) - net.rtt() / 2);
 
     if (v && playing && myX !== null && active && fire) {
       // The volley shows at once, under the server's pacing (cooldown, volleys on screen).

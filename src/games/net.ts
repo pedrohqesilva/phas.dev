@@ -89,6 +89,58 @@ export function connect(handlers: {
   };
 }
 
+/**
+ * The server's game clock, as seen from here: each snapshot carries its game time (`at`) and arrives half a
+ * round trip later, give or take the network's jitter. The estimate follows those samples slowly, so the
+ * game is drawn on a steady clock instead of jumping a few ms with every arrival; a big change (a pause,
+ * a new match) is taken at once.
+ */
+export function serverClock() {
+  let offset: number | null = null;
+  return {
+    sample(at: number, oneWay: number, t = performance.now()) {
+      const o = at + oneWay - t;
+      if (offset === null || Math.abs(o - offset) > 120) offset = o;
+      else offset += (o - offset) * 0.05;
+    },
+    /** The server's game time now (performance.now() → game ms). */
+    now: (t = performance.now()) => t + (offset ?? 0),
+  };
+}
+
+/**
+ * Another player's position (a paddle, a ship), drawn a little in the past: between the two snapshots
+ * around that moment, so it moves at an even pace instead of stepping with each one and catching up.
+ */
+export function remoteTrack(delayMs = 50) {
+  const points: { at: number; v: number }[] = [];
+  return {
+    push(at: number, v: number) {
+      if (points.length && at <= points[points.length - 1].at)
+        points.length = 0;
+      points.push({ at, v });
+      if (points.length > 12) points.shift();
+    },
+    /**
+     * Where it was `delayMs` before `received`: the server time of the snapshots arriving now (the
+     * server's time minus half a round trip), so there is always a newer one to move towards.
+     */
+    at(received: number): number | null {
+      if (!points.length) return null;
+      const time = received - delayMs;
+      for (let k = points.length - 1; k > 0; k--) {
+        const a = points[k - 1];
+        const b = points[k];
+        if (time >= a.at)
+          return time >= b.at
+            ? b.v
+            : a.v + ((b.v - a.v) * (time - a.at)) / (b.at - a.at);
+      }
+      return points[0].v;
+    },
+  };
+}
+
 /** The round trip as a short label and a colour: grey when fine, yellow when slow, red when bad. */
 export function pingLabel(rtt: number): { text: string; color: string } {
   return {

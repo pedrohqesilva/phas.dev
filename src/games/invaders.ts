@@ -35,7 +35,7 @@ import {
   type PowerKind,
   type ShipInput,
 } from "./invaders-sim.ts";
-import { connect, pingLabel } from "./net.ts";
+import { connect, pingLabel, remoteTrack, serverClock } from "./net.ts";
 import { openGame, type GameTexts, type Shell } from "./shell.ts";
 
 export type { PowerKind } from "./invaders-sim.ts";
@@ -509,6 +509,8 @@ export function playInvadersCoop(
   let sentFire = false;
   let sentAt = 0;
 
+  const clock = serverClock();
+  const partnerTrack = remoteTrack();
   const net = connect({
     open: () =>
       net.send(
@@ -530,6 +532,9 @@ export function playInvadersCoop(
       else if (msg.t === "coop.state") {
         view = msg.view;
         viewAt = performance.now();
+        clock.sample(msg.view.at, net.rtt() / 2, viewAt);
+        const other = msg.view.ships[1 - you];
+        if (other) partnerTrack.push(msg.view.at, other.x);
         best = Math.max(best, msg.view.best);
         myX ??= msg.view.ships[you]?.x ?? null;
         if (msg.view.wave >= 3) unlock("defender");
@@ -574,7 +579,7 @@ export function playInvadersCoop(
     // game waits (a message over the field: someone reconnecting, waiting for the partner), nothing moves.
     const lead = overlay.length
       ? 0
-      : Math.min(0.3, (net.rtt() / 2 + (t - viewAt)) / 1000);
+      : Math.max(0, Math.min(0.3, (clock.now(t) - v.at) / 1000));
     const shots: number[] = [];
     const claimed = new Set<number>();
     for (let i = 0; i < v.shots.length; i += SHOT_STRIDE) {
@@ -646,12 +651,8 @@ export function playInvadersCoop(
       before !== null && myX !== null && dt > 0
         ? ((myX - before) * 1000) / dt
         : 0;
-    const partner = v?.ships[1 - you];
-    if (partner)
-      partnerX =
-        partnerX === null
-          ? partner.x
-          : partnerX + (partner.x - partnerX) * Math.min(1, dt / 50);
+    // Your partner's ship, a few snapshots back, at an even pace.
+    partnerX = partnerTrack.at(clock.now(t) - net.rtt() / 2);
 
     // Fire: the volley shows at once, under the same pacing the server uses (cooldown, volleys on screen).
     if (v && myX !== null && active && fire && !v.over) {

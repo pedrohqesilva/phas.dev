@@ -1,6 +1,6 @@
 // The frame every game runs in: a full-screen black overlay with one canvas, an always-visible exit
 // button, and a short tutorial that holds the game until the first key or tap. Esc pauses (and resumes);
-// on the pause panel Q or "Sair" leaves. Game time stops while paused, so timed power-ups wait too.
+// on the pause panel ← → pick Continue or Quit, Q or "Sair" leaves. Game time stops while paused, so timed power-ups wait too.
 
 import { gameLayer } from "../back.ts";
 
@@ -153,9 +153,16 @@ export function openGame(options: Options): Shell {
     e.preventDefault();
     e.stopPropagation();
     if (shell.paused) {
+      // ← → (or ↑ ↓, Tab) move between Continue and Quit; Enter or Space presses the one in focus.
+      const onQuit = document.activeElement === quitBtn;
       if (key === "q") close();
-      else if (key === "Escape" || key === " " || key === "Enter")
-        setPaused(false);
+      else if (key === "Escape") setPaused(false);
+      else if (
+        ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Tab"].includes(key)
+      )
+        (onQuit ? resumeBtn : quitBtn).focus({ preventScroll: true });
+      else if (key === " " || key === "Enter")
+        onQuit ? close() : setPaused(false);
       return;
     }
     if (key === "Escape") return shell.started ? setPaused(true) : close();

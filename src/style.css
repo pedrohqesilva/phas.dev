@@ -1250,7 +1250,10 @@ html:not(.js) .back {
   border-radius: 8px;
   background: var(--bg);
   color: var(--fg);
-  font: 14px/1.4 "Geist Mono Variable", ui-monospace, monospace;
+  font:
+    14px/1.4 "Geist Mono Variable",
+    ui-monospace,
+    monospace;
   text-align: center;
   box-shadow: 0 6px 24px rgb(0 0 0 / 0.35);
   transform: translateX(-50%);

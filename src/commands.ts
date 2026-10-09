@@ -968,12 +968,9 @@ export const commands: Command[] = [
     },
   },
   {
+    // The icons alone (the first command, run by itself after boot); `inicio` also clears the screen.
     id: "menu",
-    names: { pt: ["inicio", "menu", "start"], en: ["start", "menu"] },
-    desc: {
-      pt: "ícones para navegar sem saber os comandos",
-      en: "icons to browse without knowing the commands",
-    },
+    names: { pt: ["menu"], en: ["menu"] },
     icon: "simple",
     run(_, { lang, t, print }) {
       // Navigation only (no theme, language or view switches): each tile is a command, typed on click.
@@ -1242,6 +1239,63 @@ export const commands: Command[] = [
     },
   },
   {
+    id: "eastereggs",
+    names: {
+      pt: ["eastereggs", "easter", "segredos", "escondidos"],
+      en: ["eastereggs", "easter", "secrets", "hidden"],
+    },
+    run(_, { lang, print }) {
+      const eggs: [string, string, string][] = [
+        ["neofetch", "a ficha do sistema", "system info, terminal style"],
+        [
+          lang === "pt" ? "sudo contratar pedro" : "sudo hire pedro",
+          "o processo seletivo mais rápido",
+          "the fastest hiring process",
+        ],
+        ["matrix", "a chuva verde", "the green rain"],
+        [lang === "pt" ? "sorte" : "fortune", "uma frase", "a quote"],
+        [
+          lang === "pt" ? "cowsay muuu" : "cowsay moo",
+          "a vaca fala o que você digitar",
+          "the cow says what you type",
+        ],
+        ["vim", "boa sorte para sair (:q)", "good luck getting out (:q)"],
+        [lang === "pt" ? "cafe" : "coffee", "um café", "a coffee"],
+        ["make", "compila alguma coisa", "builds something"],
+        ["whoami", "quem é você aqui", "who you are here"],
+        [lang === "pt" ? "oi" : "hello", "um oi de volta", "a hello back"],
+        ["date", "data e hora", "date and time"],
+        ["rm -rf /", "não faça isso", "don't"],
+        [
+          "cat, cd, pwd, echo",
+          "como num terminal de verdade",
+          "like a real terminal",
+        ],
+        [
+          "dracula, gruvbox…",
+          "o nome de um tema troca o tema",
+          "a theme's name switches to it",
+        ],
+        [
+          lang === "pt" ? "conquistas" : "achievements",
+          "o que você já desbloqueou",
+          "what you've unlocked",
+        ],
+      ];
+      print(
+        title(lang === "pt" ? "Comandos escondidos" : "Hidden commands"),
+        h(
+          "dl",
+          { class: "pairs" },
+          ...eggs.flatMap(([c, pt, en]) => [
+            h("dt", null, c.includes(",") || c.includes("…") ? c : cmd(c)),
+            h("dd", null, lang === "pt" ? pt : en),
+          ]),
+        ),
+      );
+    },
+  },
+  {
     id: "ranking",
     names: {
       pt: ["ranking", "placar", "recordes"],
@@ -1362,10 +1416,13 @@ export const commands: Command[] = [
   },
   {
     id: "home",
-    names: { pt: ["home", "reset"], en: ["home", "reset"] },
+    names: {
+      pt: ["inicio", "home", "reset", "start"],
+      en: ["start", "home", "reset"],
+    },
     desc: {
-      pt: "volta ao início, com a tela limpa",
-      en: "back to the start, screen cleared",
+      pt: "volta ao início: tela limpa e os ícones para navegar",
+      en: "back to the start: a clean screen and the icons to browse",
     },
     icon: "terminal",
     run: (_, { home }) => home(),

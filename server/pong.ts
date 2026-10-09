@@ -14,6 +14,7 @@ import {
 } from "../src/games/pong-sim.ts";
 import type { ServerMessage } from "../src/games/protocol.ts";
 import { createRooms, type Room } from "./rooms.ts";
+import { startTicker } from "./ticker.ts";
 
 const STEP_MS = 16;
 const SEND_EVERY = 2;
@@ -29,7 +30,7 @@ interface Match {
   clock: number;
   reports: (Report | null)[];
   again: [boolean, boolean];
-  timer: ReturnType<typeof setInterval>;
+  stop: () => void;
 }
 
 const finite = (n: unknown): n is number =>
@@ -59,19 +60,22 @@ export function createPongRooms() {
           clock: 0,
           reports: [null, null],
           again: [false, false],
-          timer: setInterval(() => {
-            if (rooms.paused(room)) return;
-            step(match);
-            if (++n % SEND_EVERY === 0)
-              rooms.broadcast(room, {
-                t: "pong.state",
-                view: viewPong(match.st, match.clock),
-              });
-          }, STEP_MS),
+          stop: startTicker(
+            STEP_MS,
+            () => {
+              step(match);
+              if (++n % SEND_EVERY === 0)
+                rooms.broadcast(room, {
+                  t: "pong.state",
+                  view: viewPong(match.st, match.clock),
+                });
+            },
+            () => rooms.paused(room),
+          ),
         };
         return match;
       },
-      stop: (match) => clearInterval(match.timer),
+      stop: (match) => match.stop(),
       resumed: (room, seat) =>
         room.game && room.players[seat]?.({ t: "pong.start" }),
     },

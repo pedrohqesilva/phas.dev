@@ -261,7 +261,7 @@ function home() {
 
 /** The first command runs by itself, so a visitor sees the icons without knowing any command. */
 function startMenu() {
-  term.run(term.lang === "pt" ? "inicio" : "start");
+  term.run("menu");
 }
 
 /** /snake and /invaders (and /cobrinha) open straight on that game's start screen. */

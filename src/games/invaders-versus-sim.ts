@@ -442,6 +442,8 @@ export function stepVersus(
 
 /** What each browser draws, in field coordinates (ship 0 at the bottom); the page flips it for ship 1. */
 export interface VersusView {
+  /** The game clock (ms) when the snapshot was taken: browsers play it forward from there. */
+  at: number;
   wave: number;
   gridX: number;
   animFrame: number;
@@ -473,6 +475,7 @@ const r1 = (n: number) => Math.round(n * 10) / 10;
 
 export function viewVersus(st: VersusState, now: number): VersusView {
   return {
+    at: now,
     wave: st.wave,
     gridX: st.gridX,
     animFrame: st.animFrame,
