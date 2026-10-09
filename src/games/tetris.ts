@@ -394,12 +394,15 @@ export function playTetrisVersus(
   {
     room,
     quick,
+    listed,
     onRoom,
     onExit,
   }: {
     room?: string;
     /** The lobby: play whoever else is looking (no link to send). */
     quick?: boolean;
+    /** A new room shown among the lobby's open rooms. */
+    listed?: boolean;
     onRoom: (code: string) => void;
     onExit: (note?: string) => void;
   },
@@ -428,7 +431,9 @@ export function playTetrisVersus(
       net.send(
         code
           ? { t: "tetris.join", room: code, resume: token }
-          : { t: quick ? "tetris.quick" : "tetris.create" },
+          : quick
+            ? { t: "tetris.quick" }
+            : { t: "tetris.create", listed },
       ),
     message(msg) {
       if (msg.t === "tetris.room") {

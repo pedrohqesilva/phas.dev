@@ -30,6 +30,10 @@ export interface MenuOption {
   hint: string;
   /** A second list (Co-op → create a room / join one). */
   submenu?: MenuOption[];
+  /** A second list read from the server (the lobby's open rooms), refreshed while it is open. */
+  load?: () => Promise<MenuOption[]>;
+  /** Shown, but nothing to pick (an empty lobby). */
+  disabled?: boolean;
   /** Settings shown under the mode before it starts. */
   fields?: MenuField[];
   start?(values: Record<string, string>): void;
@@ -75,8 +79,14 @@ export function openGameMenu(
   document.body.append(overlay);
   (document.activeElement as HTMLElement | null)?.blur();
 
-  /** The lists open, the top one on screen; each remembers its title. */
-  const stack: { title: string; options: MenuOption[] }[] = [];
+  /** The lists open, the top one on screen; each remembers its title (and how to reload it). */
+  type Level = {
+    title: string;
+    options: MenuOption[];
+    load?: () => Promise<MenuOption[]>;
+  };
+  const stack: Level[] = [];
+  let refresh: ReturnType<typeof setInterval> | null = null;
   let rows: HTMLButtonElement[] = [];
   let selected = 0;
   /** The settings form open under an option, if any. */
@@ -93,17 +103,39 @@ export function openGameMenu(
     error: HTMLElement;
   } | null = null;
 
-  function show(level: { title: string; options: MenuOption[] }, at = 0) {
+  function show(level: Level, at = 0) {
     closeForm();
+    if (refresh) clearInterval(refresh);
+    refresh = null;
+    if (level.load) {
+      // Loaded now and every few seconds while on screen, keeping the highlighted row.
+      const reload = () =>
+        level.load!()
+          .then((options) => {
+            if (stack.at(-1) !== level || form) return;
+            const keep = selected;
+            level.options = options;
+            render(level, Math.min(keep, options.length - 1));
+          })
+          .catch(() => {});
+      reload();
+      refresh = setInterval(reload, 3000);
+    }
+    render(level, at);
+  }
+
+  function render(level: Level, at: number) {
     heading.textContent = level.title;
     list.replaceChildren();
     rows = level.options.map((option, i) => {
       const row = document.createElement("button");
       row.type = "button";
       row.className = "game-menu-option";
+      if (option.disabled) row.setAttribute("aria-disabled", "true");
       const label = document.createElement("span");
       label.className = "label";
-      label.textContent = option.label + (option.submenu ? " ›" : "");
+      label.textContent =
+        option.label + (option.submenu || option.load ? " ›" : "");
       const hint = document.createElement("span");
       hint.className = "hint";
       hint.textContent = option.hint;
@@ -120,19 +152,21 @@ export function openGameMenu(
     select(at);
   }
 
-  function push(level: { title: string; options: MenuOption[] }) {
+  function push(level: Level) {
     stack.push(level);
     show(level);
   }
 
   function select(i: number, focus = true) {
     const n = rows.length;
+    if (!n) return;
     selected = (i + n) % n;
     rows.forEach((row, k) => row.classList.toggle("selected", k === selected));
     if (focus && !form) rows[selected].focus();
   }
 
   function close() {
+    if (refresh) clearInterval(refresh);
     removeEventListener("keydown", onKey, true);
     overlay.remove();
   }
@@ -158,6 +192,13 @@ export function openGameMenu(
 
   function pick() {
     const option = stack.at(-1)!.options[selected];
+    if (!option || option.disabled) return;
+    if (option.load)
+      return push({
+        title: `${stack[0].title} · ${option.label}`,
+        options: [],
+        load: option.load,
+      });
     if (option.submenu)
       return push({
         title: `${stack[0].title} · ${option.label}`,
@@ -294,7 +335,11 @@ export function openGameMenu(
         const level = stack.at(-1)!;
         return show(
           level,
-          level.options.findIndex((o) => o.submenu === closed.options),
+          level.options.findIndex(
+            (o) =>
+              (o.submenu && o.submenu === closed.options) ||
+              (o.load && o.load === closed.load),
+          ),
         );
       }
       return leave();

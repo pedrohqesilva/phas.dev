@@ -187,6 +187,17 @@ function serveStatic(req: IncomingMessage, res: ServerResponse) {
   }
   // The leaderboards' small API; the rest is files, read only.
   if (handleScores(req, res, path, visitorAddress(req))) return;
+  // The lobby: rooms waiting for a second player (never cached: it changes by the second).
+  if (path === "/api/lobby" && req.method === "GET") {
+    res
+      .writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        ...SECURITY_HEADERS,
+      })
+      .end(JSON.stringify(games?.lobby() ?? {}));
+    return;
+  }
   if (req.method !== "GET" && req.method !== "HEAD") {
     res.writeHead(405, { Allow: "GET, HEAD" }).end();
     return;
@@ -262,6 +273,9 @@ function serveStatic(req: IncomingMessage, res: ServerResponse) {
 
 // Last line of defence: whatever slips through a handler is answered with a 500 and logged; the process,
 // with everyone's games in it, keeps running.
+/** The game rooms (attached below), for the lobby API. */
+let games: ReturnType<typeof attachGames> | null = null;
+
 const server = createServer((req, res) => {
   try {
     serveStatic(req, res);
@@ -271,7 +285,7 @@ const server = createServer((req, res) => {
     res.end();
   }
 });
-attachGames(server);
+games = attachGames(server);
 
 server.listen(PORT, () =>
   console.log(`phas.dev on :${PORT} (${files.size} static files)`),

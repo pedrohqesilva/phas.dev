@@ -43,8 +43,10 @@ interface Room {
   sim: ReturnType<typeof createInvaders>;
   /** Stops the room's loop, while it runs. */
   timer: (() => void) | null;
-  /** Opened from the lobby: the next player looking for a partner takes the free seat. */
+  /** In the lobby: listed, and taken by the next player looking for a partner. */
   open?: boolean;
+  /** When the room was created (Date.now()), for how long it has been waiting. */
+  since: number;
   /** Game time in ms: it only advances while both players are connected. */
   clock: number;
   expiry: ReturnType<typeof setTimeout> | null;
@@ -183,12 +185,20 @@ export function createCoop() {
   const others = (room: Room, you: number) =>
     room.players.filter((_, i) => i !== you);
 
+  const waitingInLobby = (r: Room) =>
+    !!r.open &&
+    !r.timer &&
+    r.away.every((a) => a === null) &&
+    r.players.filter(Boolean).length === 1;
+
   const api = {
     /** A new room with this player as P1; null when the server is at its room limit. */
-    create(send: Send): { code: string; you: number } | null {
+    create(send: Send, listed = false): { code: string; you: number } | null {
       if (rooms.size >= MAX_ROOMS) return null;
       const room: Room = {
         code: newCode(),
+        open: listed,
+        since: Date.now(),
         players: [send, null],
         tokens: [randomUUID(), randomUUID()],
         away: [null, null],
@@ -292,21 +302,15 @@ export function createCoop() {
     },
     /** The lobby: the free seat of someone waiting for a partner, or a new room to wait in. */
     quick(send: Send): { code: string; you: number } | null {
-      const waiting = [...rooms.values()].find(
-        (r) =>
-          r.open &&
-          !r.timer &&
-          r.away.every((a) => a === null) &&
-          r.players.filter(Boolean).length === 1,
-      );
-      if (waiting) {
-        waiting.open = false;
-        return api.join(waiting.code, send);
-      }
-      const seat = api.create(send);
-      if (seat) rooms.get(seat.code)!.open = true;
-      return seat;
+      const waiting = [...rooms.values()].find(waitingInLobby);
+      if (waiting) return api.join(waiting.code, send);
+      return api.create(send, true);
     },
+    /** The lobby: open rooms with someone waiting for a partner, the longest waiting first. */
+    list: () =>
+      [...rooms.values()]
+        .filter(waitingInLobby)
+        .map((r) => ({ code: r.code, waiting: Date.now() - r.since })),
     /** A connection dropped: the seat waits RESUME_MS for its player; then the room closes. */
     leave(code: string, you: number) {
       const room = rooms.get(code);

@@ -237,12 +237,15 @@ export function playPongOnline(
   {
     room,
     quick,
+    listed,
     onRoom,
     onExit,
   }: {
     room?: string;
     /** The lobby: play whoever else is looking (no link to send). */
     quick?: boolean;
+    /** A new room shown among the lobby's open rooms. */
+    listed?: boolean;
     onRoom: (code: string) => void;
     onExit: (note?: string) => void;
   },
@@ -273,7 +276,9 @@ export function playPongOnline(
       net.send(
         code
           ? { t: "pong.join", room: code, resume: token }
-          : { t: quick ? "pong.quick" : "pong.create" },
+          : quick
+            ? { t: "pong.quick" }
+            : { t: "pong.create", listed },
       ),
     message(msg) {
       if (msg.t === "pong.room") {

@@ -15,8 +15,13 @@ export interface Room<M, G> {
   ready: boolean[];
   /** The game running in the room, once both are in and ready. */
   game: G | null;
-  /** Opened from the lobby ("find a match"): the next player looking for one takes the free seat. */
+  /**
+   * In the lobby: listed among the open rooms and taken by the next player who looks for a match (rooms
+   * from "find a match", and the ones their creator chose to list).
+   */
   open?: boolean;
+  /** When the room was created (ms, Date.now()), for how long it has been waiting. */
+  since: number;
   expiry: ReturnType<typeof setTimeout> | null;
 }
 
@@ -80,14 +85,25 @@ export function createRooms<M, G>(
     room.game = hooks.start(room);
   }
 
+  const waitingInLobby = (r: Room<M, G>) =>
+    !!r.open &&
+    !r.game &&
+    r.away.every((a) => a === null) &&
+    r.players.filter(Boolean).length === 1;
+
   const api = {
     get: (code: string) => rooms.get(code),
     /** True while a seat of the room is reconnecting: the game should hold still. */
     paused: (room: Room<M, G>) => room.away.some((a) => a !== null),
-    create(send: Send<M>): { code: string; you: number } | null {
+    create(
+      send: Send<M>,
+      listed = false,
+    ): { code: string; you: number } | null {
       if (rooms.size >= MAX_ROOMS) return null;
       const room: Room<M, G> = {
         code: newCode(),
+        open: listed,
+        since: Date.now(),
         players: [send, null],
         tokens: [randomUUID(), randomUUID()],
         away: [null, null],
@@ -163,21 +179,15 @@ export function createRooms<M, G>(
      * waiting first), or a new room to wait in for the next one.
      */
     quick(send: Send<M>): { code: string; you: number } | null {
-      const waiting = [...rooms.values()].find(
-        (r) =>
-          r.open &&
-          !r.game &&
-          r.away.every((a) => a === null) &&
-          r.players.filter(Boolean).length === 1,
-      );
-      if (waiting) {
-        waiting.open = false;
-        return api.join(waiting.code, send);
-      }
-      const seat = api.create(send);
-      if (seat) rooms.get(seat.code)!.open = true;
-      return seat;
+      const waiting = [...rooms.values()].find(waitingInLobby);
+      if (waiting) return api.join(waiting.code, send);
+      return api.create(send, true);
     },
+    /** The lobby: open rooms with someone waiting in them, the longest waiting first. */
+    list: () =>
+      [...rooms.values()]
+        .filter(waitingInLobby)
+        .map((r) => ({ code: r.code, waiting: Date.now() - r.since })),
     /** Sends to both seats. */
     broadcast(room: Room<M, G>, msg: M) {
       for (const send of room.players) send?.(msg);

@@ -952,6 +952,10 @@ html:not(.js) .back {
   /* The highlight below already marks the focused mode. */
   outline: none;
 }
+.game-menu-option[aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.6;
+}
 .game-menu-option.selected {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, transparent);

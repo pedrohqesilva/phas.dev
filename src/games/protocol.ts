@@ -84,7 +84,8 @@ export type ClientMessage =
   | { t: "arena.join"; name: string; resume?: string }
   /** A turn, numbered, meant for server tick `at` (what the browser showed when it was pressed). */
   | { t: "arena.dir"; dir: Dir; seq: number; at: number }
-  | { t: "coop.create" }
+  /** `listed`: shown among the lobby's open rooms (anyone can take the seat). */
+  | { t: "coop.create"; listed?: boolean }
   /** The lobby: a seat next to whoever is waiting for a partner, or a new room to wait in. */
   | { t: "coop.quick" }
   /** `resume`: the token from `coop.room`, to take the same seat back after a dropped connection. */
@@ -97,14 +98,14 @@ export type ClientMessage =
    */
   | { t: "coop.shoot"; x: number; at: number; special?: boolean }
   // Pong 1v1: the paddle's centre (moved in the browser, followed by the server) and the round trip.
-  | { t: "pong.create" }
+  | { t: "pong.create"; listed?: boolean }
   | { t: "pong.quick" }
   | { t: "pong.join"; room: string; resume?: string }
   | { t: "pong.ready" }
   | { t: "pong.input"; y: number; vy?: number; rtt?: number }
   | { t: "pong.again" }
   // Space Invaders versus: the same room flow; the ship is reported like in co-op.
-  | { t: "invaders.create" }
+  | { t: "invaders.create"; listed?: boolean }
   | { t: "invaders.quick" }
   | { t: "invaders.join"; room: string; resume?: string }
   | { t: "invaders.ready" }
@@ -112,7 +113,7 @@ export type ClientMessage =
   | { t: "invaders.shoot"; x: number; at: number; special?: boolean }
   | { t: "invaders.again" }
   // Tetris versus: each browser runs its own game; the server passes boards and attacks along.
-  | { t: "tetris.create" }
+  | { t: "tetris.create"; listed?: boolean }
   | { t: "tetris.quick" }
   | { t: "tetris.join"; room: string; resume?: string }
   | { t: "tetris.ready" }

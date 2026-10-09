@@ -510,12 +510,15 @@ export function playInvadersCoop(
   {
     room,
     quick,
+    listed,
     onRoom,
     onExit,
   }: {
     room?: string;
     /** The lobby: play whoever else is looking (no link to send). */
     quick?: boolean;
+    /** A new room shown among the lobby's open rooms. */
+    listed?: boolean;
     onRoom: (code: string) => void;
     onExit: (best: number, note?: string) => void;
   },
@@ -556,7 +559,9 @@ export function playInvadersCoop(
       net.send(
         code
           ? { t: "coop.join", room: code, resume: token }
-          : { t: quick ? "coop.quick" : "coop.create" },
+          : quick
+            ? { t: "coop.quick" }
+            : { t: "coop.create", listed },
       ),
     message(msg) {
       if (msg.t === "coop.room") {

@@ -29,6 +29,9 @@ const swap = (html: string, name: string, inner: string) =>
     block(name, inner),
   );
 
+/** The dev server's game rooms, for the lobby API. */
+let games: ReturnType<typeof attachGames> | null = null;
+
 export default defineConfig({
   // 5173 is Vittz's web, 5000 its API and 5174 iFleetHub's: a port of its own keeps their logins and storage apart (same origin).
   server: { port: 5001, strictPort: true },
@@ -112,10 +115,17 @@ export default defineConfig({
             res.end(manifest());
             return;
           }
+          if (path === "/api/lobby") {
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify(games?.lobby() ?? {}));
+            return;
+          }
           if (!handleScores(req, res, path, "dev")) next();
         });
         if (server.httpServer)
-          attachGames(server.httpServer as Server, { exclusive: false });
+          games = attachGames(server.httpServer as Server, {
+            exclusive: false,
+          });
       },
     },
   ],

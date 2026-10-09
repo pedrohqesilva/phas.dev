@@ -164,7 +164,8 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
             );
           break;
         case "coop.create":
-          if (!session.room) session.room = coop.create(send);
+          if (!session.room)
+            session.room = coop.create(send, msg.listed === true);
           if (!session.room) send({ t: "coop.error", reason: "full" });
           break;
         // The lobby: next to whoever is waiting, or a new room to wait in.
@@ -213,7 +214,7 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
           break;
         // Pong and Tetris versus: the same room flow as co-op (create, join by code or link, resume).
         case "pong.create":
-          session.pong ??= pong.create(send);
+          session.pong ??= pong.create(send, msg.listed === true);
           if (!session.pong) send({ t: "pong.error", reason: "full" });
           break;
         case "pong.join":
@@ -243,7 +244,7 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
           if (session.pong) pong.again(session.pong.code, session.pong.you);
           break;
         case "invaders.create":
-          session.duel ??= duel.create(send);
+          session.duel ??= duel.create(send, msg.listed === true);
           if (!session.duel) send({ t: "invaders.error", reason: "full" });
           break;
         case "invaders.join":
@@ -277,7 +278,7 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
           if (session.duel) duel.again(session.duel.code, session.duel.you);
           break;
         case "tetris.create":
-          session.tetris ??= tetris.create(send);
+          session.tetris ??= tetris.create(send, msg.listed === true);
           if (!session.tetris) send({ t: "tetris.error", reason: "full" });
           break;
         case "tetris.join":
@@ -342,4 +343,14 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
       ws.ping();
     }
   }, 25_000);
+
+  return {
+    /** The lobby: rooms waiting for a second player, per game, for GET /api/lobby. */
+    lobby: () => ({
+      coop: coop.list(),
+      invaders: duel.list(),
+      pong: pong.list(),
+      tetris: tetris.list(),
+    }),
+  };
 }

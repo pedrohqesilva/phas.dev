@@ -103,7 +103,9 @@ export function createPongRooms() {
   }
 
   return {
-    create: (send: (m: ServerMessage) => void) => rooms.create(send),
+    create: (send: (m: ServerMessage) => void, listed = false) =>
+      rooms.create(send, listed),
+    list: () => rooms.list(),
     quick: (send: (m: ServerMessage) => void) => rooms.quick(send),
     join: (code: string, send: (m: ServerMessage) => void, resume?: string) =>
       rooms.join(code, send, resume),

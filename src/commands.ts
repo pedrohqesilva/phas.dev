@@ -244,7 +244,7 @@ const takeNick = (raw: string) => {
 function startCoop(
   { t, print, focus, replaying, lang }: Ctx,
   room?: string,
-  quick = false,
+  how: Seat = "private",
 ) {
   if (replaying) return;
   unlock("social");
@@ -270,7 +270,8 @@ function startCoop(
     },
     {
       room: room?.toUpperCase(),
-      quick,
+      quick: how === "quick",
+      listed: how === "listed",
       onRoom(code) {
         // The link goes to the clipboard when the browser allows it, and stays printed in the terminal.
         const url = inviteUrl(lang, "coop", code);
@@ -324,14 +325,66 @@ function startArena({ t, print, focus, replaying }: Ctx, name = "") {
 }
 
 /** A versus or co-op mode's second list: create a room (its link is printed) or join one by its code. */
+/** How an online mode finds its second player: the lobby's queue, a room listed in it, or a link. */
+type Seat = "quick" | "listed" | "private";
+
+/** How long a room has been waiting, short: "40 s", "3 min". */
+const waited = (ms: number) =>
+  ms < 60_000
+    ? `${Math.max(1, Math.round(ms / 1000))} s`
+    : `${Math.round(ms / 60_000)} min`;
+
+/**
+ * A versus or co-op mode's second list: find a match (the lobby's queue), the open rooms waiting for
+ * someone (read from the server, refreshed while open), create a room (listed in the lobby or not; its
+ * link is printed) or join one by its code.
+ */
 const roomChoices = (
   t: UI,
-  quick: () => void,
-  create: () => void,
+  game: "coop" | "invaders" | "pong" | "tetris",
+  start: (how: Seat) => void,
   join: (code: string) => void,
 ): MenuOption[] => [
-  { label: t.roomQuick, hint: t.roomQuickDesc, start: quick },
-  { label: t.roomCreate, hint: t.roomCreateDesc, start: create },
+  { label: t.roomQuick, hint: t.roomQuickDesc, start: () => start("quick") },
+  {
+    label: t.roomLobby,
+    hint: t.roomLobbyDesc,
+    async load() {
+      const res = await fetch("/api/lobby", { cache: "no-store" });
+      const rooms =
+        (
+          (await res.json()) as Record<
+            string,
+            { code: string; waiting: number }[]
+          >
+        )[game] ?? [];
+      if (!rooms.length)
+        return [
+          { label: t.lobbyEmpty, hint: t.lobbyEmptyDesc, disabled: true },
+        ];
+      return rooms.map((r) => ({
+        label: t.lobbyRoom(r.code),
+        hint: t.lobbyWaiting(waited(r.waiting)),
+        start: () => join(r.code),
+      }));
+    },
+  },
+  {
+    label: t.roomCreate,
+    hint: t.roomCreateDesc,
+    fields: [
+      {
+        kind: "choice",
+        key: "listed",
+        label: t.listedLabel,
+        options: [
+          { label: t.listedYes, value: "yes" },
+          { label: t.listedNo, value: "no" },
+        ],
+      },
+    ],
+    start: (v) => start(v.listed === "no" ? "private" : "listed"),
+  },
   {
     label: t.roomJoin,
     hint: t.coopJoinDesc,
@@ -394,8 +447,8 @@ function invadersMenu(ctx: Ctx) {
         hint: t.coopDesc,
         submenu: roomChoices(
           t,
-          () => startCoop(ctx, undefined, true),
-          () => startCoop(ctx),
+          "coop",
+          (how) => startCoop(ctx, undefined, how),
           (code) => startCoop(ctx, code),
         ),
       },
@@ -404,8 +457,8 @@ function invadersMenu(ctx: Ctx) {
         hint: t.invadersVersusDesc,
         submenu: roomChoices(
           t,
-          () => startInvadersVersus(ctx, undefined, true),
-          () => startInvadersVersus(ctx),
+          "invaders",
+          (how) => startInvadersVersus(ctx, undefined, how),
           (code) => startInvadersVersus(ctx, code),
         ),
       },
@@ -481,7 +534,7 @@ const announceRoom =
   };
 
 /** Space Invaders versus on the server: creates a room (and prints its link) or joins `room`. */
-function startInvadersVersus(ctx: Ctx, room?: string, quick = false) {
+function startInvadersVersus(ctx: Ctx, room?: string, how: Seat = "private") {
   const { t, print, focus, replaying } = ctx;
   if (replaying) return;
   unlock("social");
@@ -500,7 +553,8 @@ function startInvadersVersus(ctx: Ctx, room?: string, quick = false) {
     versusTexts(t),
     {
       room: room?.toUpperCase(),
-      quick,
+      quick: how === "quick",
+      listed: how === "listed",
       onRoom: announceRoom(ctx, "invaders"),
       onExit(note) {
         if (note) print(muted(note));
@@ -514,7 +568,7 @@ function startPong(
   ctx: Ctx,
   mode: "cpu" | "online",
   room?: string,
-  quick = false,
+  how: Seat = "private",
 ) {
   const { t, print, focus, replaying } = ctx;
   if (replaying) return;
@@ -526,7 +580,8 @@ function startPong(
   unlock("social");
   playPongOnline(pongTexts(t, t.gameLiveMenu), versusTexts(t), {
     room: room?.toUpperCase(),
-    quick,
+    quick: how === "quick",
+    listed: how === "listed",
     onRoom: announceRoom(ctx, "pong"),
     onExit(note) {
       if (note) print(muted(note));
@@ -539,7 +594,7 @@ function startTetris(
   ctx: Ctx,
   mode: "solo" | "versus",
   nickOrRoom?: string,
-  quick = false,
+  how: Seat = "private",
 ) {
   const { t, print, focus, replaying } = ctx;
   if (replaying) return;
@@ -547,7 +602,8 @@ function startTetris(
   if (mode === "versus")
     return playTetrisVersus(tetrisTexts(t, t.gameLiveMenu), versusTexts(t), {
       room: nickOrRoom?.toUpperCase(),
-      quick,
+      quick: how === "quick",
+      listed: how === "listed",
       onRoom: announceRoom(ctx, "tetris"),
       onExit(note) {
         if (note) print(muted(note));
@@ -582,8 +638,8 @@ function pongMenu(ctx: Ctx) {
         hint: t.pongOnlineDesc,
         submenu: roomChoices(
           t,
-          () => startPong(ctx, "online", undefined, true),
-          () => startPong(ctx, "online"),
+          "pong",
+          (how) => startPong(ctx, "online", undefined, how),
           (code) => startPong(ctx, "online", code),
         ),
       },
@@ -610,8 +666,8 @@ function tetrisMenu(ctx: Ctx) {
         hint: t.tetrisVersusDesc,
         submenu: roomChoices(
           t,
-          () => startTetris(ctx, "versus", undefined, true),
-          () => startTetris(ctx, "versus"),
+          "tetris",
+          (how) => startTetris(ctx, "versus", undefined, how),
           (code) => startTetris(ctx, "versus", code),
         ),
       },
