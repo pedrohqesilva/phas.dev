@@ -5,6 +5,8 @@
 import { randomUUID } from "node:crypto";
 import {
   createInvaders,
+  fire,
+  fireSpecial,
   idleInput,
   restartInvaders,
   stepInvaders,
@@ -123,7 +125,12 @@ export function createCoop() {
       ship.hitX = clamp(report.x + (report.vx * ahead) / 1000, 8, W - 8);
     });
     room.clock += STEP_MS;
-    stepInvaders(room.sim, room.inputs, room.clock, STEP_MS);
+    // Volleys come as `shoot` messages (fired where the player fired them); the fire button only
+    // restarts a finished game. Older pages without position reports still fire with it.
+    const inputs = room.inputs.map((input, i) =>
+      room.reports[i] && !room.sim.over ? { ...input, fire: false } : input,
+    );
+    stepInvaders(room.sim, inputs, room.clock, STEP_MS);
   }
 
   function start(room: Room) {
@@ -255,6 +262,31 @@ export function createCoop() {
             : 0;
       room.reports[you] = report && { ...report, at };
       if (!report) room.sim.ships[you].hitX = undefined;
+    },
+    /** A volley or the special, fired in the browser at `x` and game time `at`. */
+    shoot(
+      code: string,
+      you: number,
+      x: unknown,
+      at: unknown,
+      special: unknown,
+    ) {
+      const room = rooms.get(code);
+      const ship = room?.sim.ships[you];
+      if (!room || !ship || !room.timer || !finite(x) || !finite(at)) return;
+      if (room.sim.over || room.away.some((a) => a !== null)) return;
+      // Close to where the server has the ship (it follows the reports), and at most a moment ago.
+      const from = clamp(
+        x,
+        Math.max(8, ship.x - 24),
+        Math.min(W - 8, ship.x + 24),
+      );
+      const lag = clamp(room.clock - at, 0, MAX_PROJECT_MS);
+      if (special === true) {
+        if (!ship.special) return;
+        ship.special = false;
+        fireSpecial(room.sim, you, { x: from, lag });
+      } else fire(room.sim, you, room.clock, { x: from, lag, slack: 60 });
     },
     /** A connection dropped: the seat waits RESUME_MS for its player; then the room closes. */
     leave(code: string, you: number) {

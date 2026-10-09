@@ -332,7 +332,9 @@ export function playPongOnline(
     const vy = dt > 0 ? ((myY - before) * 1000) / dt : 0;
     const dir = Math.abs(vy) < 1 ? 0 : Math.sign(vy);
     // The other paddle, a few snapshots back, at an even pace.
-    if (v) theirY = rival.at(serverTime.now(t) - net.rtt() / 2) ?? v.paddles[1 - you];
+    if (v)
+      theirY =
+        rival.at(serverTime.now(t) - net.rtt() / 2) ?? v.paddles[1 - you];
     // Your paddle's place and speed, up to 30 times a second, and at once when it stops or turns: the
     // server reckons where it is from them until the next.
     const key = String(Math.round(myY * 10));

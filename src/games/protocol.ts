@@ -89,6 +89,11 @@ export type ClientMessage =
   | { t: "coop.join"; room: string; resume?: string }
   | { t: "coop.ready" }
   | { t: "coop.input"; input: CoopInput | ShipInput }
+  /**
+   * A volley (or the special) fired in the browser: from `x`, at server game time `at` (the page's
+   * estimate). The server fires it from there and lets it catch up, so it flies where it was seen.
+   */
+  | { t: "coop.shoot"; x: number; at: number; special?: boolean }
   // Pong 1v1: the paddle's centre (moved in the browser, followed by the server) and the round trip.
   | { t: "pong.create" }
   | { t: "pong.join"; room: string; resume?: string }
@@ -100,6 +105,7 @@ export type ClientMessage =
   | { t: "invaders.join"; room: string; resume?: string }
   | { t: "invaders.ready" }
   | { t: "invaders.input"; input: CoopInput }
+  | { t: "invaders.shoot"; x: number; at: number; special?: boolean }
   | { t: "invaders.again" }
   // Tetris versus: each browser runs its own game; the server passes boards and attacks along.
   | { t: "tetris.create" }

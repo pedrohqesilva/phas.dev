@@ -184,6 +184,16 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
           if (session.room)
             coop.input(session.room.code, session.room.you, msg.input);
           break;
+        case "coop.shoot":
+          if (session.room)
+            coop.shoot(
+              session.room.code,
+              session.room.you,
+              msg.x,
+              msg.at,
+              msg.special,
+            );
+          break;
         // Pong and Tetris versus: the same room flow as co-op (create, join by code or link, resume).
         case "pong.create":
           session.pong ??= pong.create(send);
@@ -235,6 +245,16 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
         case "invaders.input":
           if (session.duel)
             duel.input(session.duel.code, session.duel.you, msg.input);
+          break;
+        case "invaders.shoot":
+          if (session.duel)
+            duel.shoot(
+              session.duel.code,
+              session.duel.you,
+              msg.x,
+              msg.at,
+              msg.special,
+            );
           break;
         case "invaders.again":
           if (session.duel) duel.again(session.duel.code, session.duel.you);

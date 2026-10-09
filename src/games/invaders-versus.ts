@@ -11,7 +11,9 @@ import {
   drawSpecial,
   INVADER,
   POWER_LETTER,
+  claimGhost,
   SHIP,
+  type Ghost,
   type InvadersTexts,
 } from "./invaders.ts";
 import {
@@ -19,6 +21,7 @@ import {
   idleInput,
   moveShip,
   SHIELD_CELL,
+  SHOT_STRIDE,
   shotSpeed,
   SPECIAL_HOLD_MS,
   SPECIAL_SPEED,
@@ -32,6 +35,7 @@ import {
   W,
   type VersusView,
 } from "./invaders-versus-sim.ts";
+import { gridAfter, pendingHits } from "./invaders-predict.ts";
 import { connect, pingLabel, remoteTrack, serverClock } from "./net.ts";
 import type { VersusTexts } from "./pong.ts";
 import { openGame } from "./shell.ts";
@@ -46,19 +50,9 @@ export interface DuelTexts extends InvadersTexts {
 }
 
 const SHIELDS = shieldCells();
-const STRIDE = 6;
+const STRIDE = SHOT_STRIDE;
 
 type Fit = { scale: number; ox: number; oy: number };
-
-/** A shot fired here, drawn from the press until the server's copy is gone (see invaders.ts, co-op). */
-type Ghost = {
-  x: number;
-  vx: number;
-  vy: number;
-  at: number;
-  seen: number;
-  special?: boolean;
-};
 
 export function playInvadersVersus(
   texts: DuelTexts,
@@ -103,6 +97,7 @@ export function playInvadersVersus(
 
   const clock = serverClock();
   const rivalTrack = remoteTrack();
+  const pending = pendingHits();
   const net = connect({
     open: () =>
       net.send(
@@ -177,41 +172,38 @@ export function playInvadersVersus(
       ? 0
       : Math.max(0, Math.min(0.3, (clock.now(t) - v.at) / 1000));
     const shots: number[] = [];
-    const claimed = new Set<number>();
     for (let i = 0; i < v.shots.length; i += STRIDE) {
-      const [x, y, kind, vx, vy, ship] = v.shots.slice(i, i + STRIDE);
+      const [x, y, kind, vx, vy, ship, id] = v.shots.slice(i, i + STRIDE);
       const px = x + vx * lead;
       const py = y + vy * lead;
-      if (ship === you) {
-        // Your server shot confirms the ghost just ahead of it on its line, and is not drawn itself.
-        const gh = ghosts.find((g, k) => {
-          const along = (ghostY(g, t) - py) * SHOT_DIR[you];
-          return (
-            !claimed.has(k) &&
-            !!g.special === (kind === 2) &&
-            Math.abs(g.x + g.vx * age(g, t) - px) < 6 &&
-            along > -10 &&
-            along < (45 * Math.abs(g.vy)) / 260
-          );
-        });
-        if (gh) {
-          claimed.add(ghosts.indexOf(gh));
-          gh.seen = t;
-          continue;
-        }
-      }
-      shots.push(px, py, kind, vx, vy, ship);
+      // Your server shot is drawn as its ghost (or not at all, if the ghost already hit something).
+      if (
+        ship === you &&
+        claimGhost(
+          ghosts,
+          id,
+          kind === 2,
+          px,
+          py,
+          (g) => [g.x + g.vx * age(g, t), ghostY(g, t)],
+          t,
+        )
+      )
+        continue;
+      shots.push(px, py, kind, vx, vy, ship, id);
     }
     const me = v.players[you];
     for (const gh of ghosts)
-      shots.push(
-        gh.x + gh.vx * age(gh, t),
-        ghostY(gh, t),
-        gh.special ? 2 : me.pierceLeft > 0 ? 1 : 0,
-        gh.vx,
-        gh.vy,
-        you,
-      );
+      if (!gh.dead)
+        shots.push(
+          gh.x + gh.vx * age(gh, t),
+          ghostY(gh, t),
+          gh.special ? 2 : me.pierceLeft > 0 ? 1 : 0,
+          gh.vx,
+          gh.vy,
+          you,
+          -1,
+        );
     const bombs: number[] = [];
     for (let i = 0; i < v.bombs.length; i += 3)
       bombs.push(
@@ -231,6 +223,11 @@ export function playInvadersVersus(
         ...d,
         y: d.y + (d.to === 0 ? 1 : -1) * 45 * lead,
       })),
+      // The invaders where they are now (the march played forward), less the hits seen here.
+      ...(({ gridX, march, animFrame }) => ({ gridX, march, animFrame }))(
+        gridAfter(v, lead * 1000, 0),
+      ),
+      hp: pending.apply(v.hp, t),
     };
   }
 
@@ -414,12 +411,21 @@ export function playInvadersVersus(
         if (v.shots[i + 5] === you && v.shots[i + 2] !== 2) mine++;
       const volleys =
         Math.ceil(mine / me.shotCount) +
-        new Set(ghosts.filter((gh) => !gh.special).map((gh) => gh.at)).size;
+        new Set(
+          ghosts
+            .filter((gh) => !gh.special && gh.id === undefined)
+            .map((gh) => gh.at),
+        ).size;
       if (
         t - lastVolley >= fireCooldownMs(me.rapidLevel) &&
         volleys < 1 + Math.ceil(me.rapidLevel / 2)
       ) {
         lastVolley = t;
+        net.send({
+          t: "invaders.shoot",
+          x: Math.round(myX * 10) / 10,
+          at: Math.round(clock.now(t)),
+        });
         for (let i = 0; i < me.shotCount; i++) {
           const k = i - (me.shotCount - 1) / 2;
           ghosts.push({
@@ -438,6 +444,12 @@ export function playInvadersVersus(
       heldSince ??= t;
       if (v.players[you].special && t - heldSince >= SPECIAL_HOLD_MS) {
         heldSince = Infinity;
+        net.send({
+          t: "invaders.shoot",
+          x: Math.round(myX * 10) / 10,
+          at: Math.round(clock.now(t)),
+          special: true,
+        });
         unlock("special");
         ghosts.push({
           x: myX,
@@ -449,20 +461,36 @@ export function playInvadersVersus(
         });
       }
     }
-    if (v)
+    // A ghost hits what is drawn now: the invaders (the hit shows at once, the server confirms it a moment
+    // later; it stops at the first, the second when piercing, the third for the special) and the rival's
+    // ship. It is forgotten once its server copy is gone too.
+    const shown = v ? present(v, t) : null;
+    if (v && shown)
       ghosts = ghosts.filter((gh) => {
         const y = ghostY(gh, t);
         const x = gh.x + gh.vx * age(gh, t);
-        const hitInvader =
-          !gh.special &&
-          v.players[you].pierceLeft <= 0 &&
-          v.hp.some((hp, k) => {
-            if (!hp) return false;
-            const b = versusSlotBox(v.gridX, k);
+        const other = you === 0 ? 1 : 0;
+        const rx = rivalX ?? v.players[other].x;
+        if (
+          y < -6 ||
+          y > VH + 6 ||
+          (Math.abs(x - rx) <= 7 && Math.abs(y - SHIP_YS[other]) <= 5)
+        )
+          gh.dead = true;
+        if (!gh.dead) {
+          const k = shown.hp.findIndex((hp, k) => {
+            if (!hp || gh.hit?.includes(k)) return false;
+            const b = versusSlotBox(shown.gridX, k);
             return x >= b.x && x <= b.x + 11 && y >= b.y && y <= b.y + 8;
           });
-        const alive = gh.seen ? t - gh.seen < 90 : t - gh.at < net.rtt() + 250;
-        return y > -6 && y < VH + 6 && !hitInvader && alive;
+          if (k >= 0) {
+            (gh.hit ??= []).push(k);
+            pending.add(k, v.hp[k], gh.special ? 2 : 1, t + net.rtt() + 200);
+            const most = gh.special ? 3 : v.players[you].pierceLeft > 0 ? 2 : 1;
+            if (gh.hit.length >= most) gh.dead = true;
+          }
+        }
+        return gh.seen ? t - gh.seen < 150 : t - gh.at < net.rtt() + 250;
       });
 
     // Report the ship: up to 30 times a second, at once on a fire press or release, a start or a stop.
@@ -491,6 +519,6 @@ export function playInvadersVersus(
     }
     firePrev = fire;
 
-    draw(v ? present(v, t) : null, now);
+    draw(shown, now);
   });
 }

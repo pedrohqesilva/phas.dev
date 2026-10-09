@@ -13,6 +13,8 @@ import {
   dropChance,
   fireCooldownMs,
   holdSpecial,
+  marchStep,
+  marchTiming,
   MAX_ARMOUR,
   MAX_LIVES,
   MAX_RAPID,
@@ -65,6 +67,13 @@ export interface Player {
   shieldUntil: number;
   banner: Banner | null;
   bannerUntil: number;
+  /** The ship's x on each of the last steps (newest last), to see it where the other player saw it. */
+  trail: number[];
+  /**
+   * Online: how many steps behind this player sees the other ship (their latency plus the smoothing),
+   * so their shots are checked against the other ship where it was on their screen.
+   */
+  rewind: number;
 }
 
 /** A power-up flies towards the player who freed it, and only that one can catch it. */
@@ -85,6 +94,7 @@ export interface VersusState {
   bombTimer: number;
   shields: Cell[];
   volleySeq: number;
+  shotSeq: number;
   /** Volleys that hit an invader or the other ship (towards the special). */
   volleyScored: Set<number>;
   winner: 0 | 1 | null;
@@ -100,6 +110,8 @@ const newPlayer = (): Player => ({
   shieldUntil: 0,
   banner: null,
   bannerUntil: 0,
+  trail: [],
+  rewind: 0,
 });
 
 export function createVersus(now = 0): VersusState {
@@ -117,6 +129,7 @@ export function createVersus(now = 0): VersusState {
     bombTimer: 1500,
     shields: shieldCells().map((c) => ({ ...c, alive: true })),
     volleySeq: 0,
+    shotSeq: 0,
     volleyScored: new Set(),
     winner: null,
   };
@@ -175,6 +188,13 @@ export function restartVersus(st: VersusState, now: number) {
 }
 
 const alive = (st: VersusState) => st.invaders.filter((i) => i.alive);
+/** Time between two steps of the march: the fewer left, the faster. */
+const marchInterval = (st: VersusState) =>
+  Math.max(
+    40,
+    Math.max(110, 520 * 0.86 ** (st.wave - 1)) *
+      (alive(st).length / (COLS * ROWS)),
+  );
 const invaderBox = (st: VersusState, i: Invader): Box => ({
   x: st.gridX + i.col * GAP_X,
   y: GRID_TOP + i.row * GAP_Y,
@@ -212,20 +232,31 @@ function chip(st: VersusState, p: { x: number; y: number }) {
   return true;
 }
 
-function fire(st: VersusState, side: 0 | 1, now: number) {
+/**
+ * A volley from `side`. Online the browser says where and when it fired (`x`, `lag` ms ago): the shots
+ * start there and catch up on the next step; `slack` allows for the network's jitter on the pacing.
+ */
+export function fireVersus(
+  st: VersusState,
+  side: 0 | 1,
+  now: number,
+  { x = st.players[side].ship.x, lag = 0, slack = 0 } = {},
+): boolean {
   const p = st.players[side];
-  if (now < p.ship.fireCooldown) return;
+  if (st.winner !== null || now + slack < p.ship.fireCooldown) return false;
   const volleysOnScreen = new Set(
     st.shots.filter((s) => s.ship === side && !s.special).map((s) => s.volley),
   ).size;
-  if (volleysOnScreen >= 1 + Math.ceil(p.rapidLevel / 2)) return;
+  if (volleysOnScreen >= 1 + Math.ceil(p.rapidLevel / 2) + (slack ? 1 : 0))
+    return false;
   const volley = ++st.volleySeq;
   const pierce = now < p.pierceUntil;
   for (let i = 0; i < p.shotCount; i++) {
     const k = i - (p.shotCount - 1) / 2;
     st.shots.push({
+      id: ++st.shotSeq,
       ship: side,
-      x: p.ship.x + k * 3,
+      x: x + k * 3,
       y: shotStartY(side),
       vx: k * 34,
       vy: SHOT_DIR[side] * shotSpeed(p.rapidLevel),
@@ -233,15 +264,24 @@ function fire(st: VersusState, side: 0 | 1, now: number) {
       pierce,
       pierceLeft: pierce ? 1 : 0,
       hits: new Set(),
+      lag,
     });
   }
-  p.ship.fireCooldown = now + fireCooldownMs(p.rapidLevel);
+  p.ship.fireCooldown = now - lag + fireCooldownMs(p.rapidLevel);
+  return true;
 }
 
-function fireSpecial(st: VersusState, side: 0 | 1) {
+/** The special from `side` (online: from where and when the browser fired it). */
+export function fireVersusSpecial(
+  st: VersusState,
+  side: 0 | 1,
+  { x = st.players[side].ship.x, lag = 0 } = {},
+) {
   st.shots.push({
+    id: ++st.shotSeq,
+    lag,
     ship: side,
-    x: st.players[side].ship.x,
+    x,
     y: shotStartY(side),
     vx: 0,
     vy: SHOT_DIR[side] * SPECIAL_SPEED,
@@ -303,36 +343,40 @@ export function stepVersus(
     if (!input) continue;
     p.ship.x = moveShip(p.ship.x, input, dt);
     const pressed = input.fire || input.touchX !== null;
-    if (pressed) fire(st, side, now);
-    holdSpecial(p.ship, pressed, now, () => fireSpecial(st, side));
+    if (pressed) fireVersus(st, side, now);
+    holdSpecial(p.ship, pressed, now, () => fireVersusSpecial(st, side));
+  }
+
+  for (const p of st.players) {
+    p.trail.push(p.ship.x);
+    if (p.trail.length > 16) p.trail.shift();
   }
 
   // The invaders march side to side (never towards anyone); the fewer left, the faster.
   const living = alive(st);
-  const interval = Math.max(
-    40,
-    Math.max(110, 520 * 0.86 ** (st.wave - 1)) *
-      (living.length / (COLS * ROWS)),
-  );
   st.marchTimer += dt;
-  if (st.marchTimer >= interval && living.length) {
+  if (st.marchTimer >= marchInterval(st) && living.length) {
     st.marchTimer = 0;
-    st.animFrame ^= 1;
-    const xs = living.map((i) => st.gridX + i.col * GAP_X);
-    const edge =
-      st.march > 0
-        ? Math.max(...xs) + 11 + 3 >= W - 4
-        : Math.min(...xs) - 3 <= 4;
-    if (edge) st.march = -st.march;
-    else st.gridX += 3 * st.march;
+    const g = { ...st, gridY: 0 };
+    marchStep(
+      g,
+      living.map((i) => i.col),
+      0,
+    );
+    st.gridX = g.gridX;
+    st.march = g.march;
+    st.animFrame = g.animFrame;
   }
 
   // Shots: plain ones in one move, the special in short hops so it cannot skip over anything.
   const gone = new Map<number, 0 | 1>();
   st.shots = st.shots.filter((shot) => {
-    const hops = shot.special ? Math.ceil((Math.abs(shot.vy) * s) / 6) : 1;
+    // Hops of 6 units at most: the special, or a shot catching up on its press's trip, skips nothing.
+    const span = s + (shot.lag ?? 0) / 1000;
+    shot.lag = 0;
+    const hops = Math.max(1, Math.ceil((Math.abs(shot.vy) * span) / 6));
     for (let k = 0; k < hops; k++)
-      if (moveShot(shot, s / hops) === "gone") return false;
+      if (moveShot(shot, span / hops) === "gone") return false;
     return true;
   });
   for (const [volley, side] of gone)
@@ -376,9 +420,13 @@ export function stepVersus(
       }
       return stop();
     }
-    // The other ship, where it is on its player's screen.
-    const ship = st.players[other].ship;
-    if (inside(shot, versusShipBox(other, ship.hitX ?? ship.x))) {
+    // The other ship, where the shooter saw it (online they see it a little in the past; favour them).
+    const target = st.players[other];
+    const seenX =
+      target.trail[target.trail.length - 1 - st.players[side].rewind] ??
+      target.ship.hitX ??
+      target.ship.x;
+    if (inside(shot, versusShipBox(other, seenX))) {
       if (hurt(st, other, now)) {
         st.volleyScored.add(shot.volley);
         st.players[side].score += HIT_POINTS * st.wave;
@@ -447,6 +495,10 @@ export interface VersusView {
   wave: number;
   gridX: number;
   animFrame: number;
+  /** The march: which way, ms to its next step, ms between steps. */
+  march: number;
+  marchIn: number;
+  marchEvery: number;
   hp: number[];
   flash: number[];
   players: {
@@ -462,7 +514,7 @@ export interface VersusView {
     special: boolean;
     banner: Banner | null;
   }[];
-  /** Flat [x, y, kind (0 plain, 1 piercing, 2 special), vx, vy, ship, …]. */
+  /** Flat [x, y, kind (0 plain, 1 piercing, 2 special), vx, vy, ship, id, …]. */
   shots: number[];
   /** Flat [x, y, vy, …]. */
   bombs: number[];
@@ -479,6 +531,10 @@ export function viewVersus(st: VersusState, now: number): VersusView {
     wave: st.wave,
     gridX: st.gridX,
     animFrame: st.animFrame,
+    ...(() => {
+      const m = marchTiming(st.marchTimer, marchInterval(st));
+      return { march: st.march, marchIn: m.next, marchEvery: m.every };
+    })(),
     hp: st.invaders.map((i) => (i.alive ? i.hp : 0)),
     flash: st.invaders.flatMap((i, k) =>
       i.alive && now - i.hitAt < 90 ? [k] : [],
@@ -503,6 +559,7 @@ export function viewVersus(st: VersusState, now: number): VersusView {
       r1(s.vx),
       r1(s.vy),
       s.ship,
+      s.id,
     ]),
     bombs: st.bombs.flatMap((b) => [r1(b.x), r1(b.y), r1(b.vy)]),
     drops: st.drops.map((d) => ({

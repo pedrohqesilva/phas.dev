@@ -35,6 +35,7 @@ import {
   type PowerKind,
   type ShipInput,
 } from "./invaders-sim.ts";
+import { gridAfter, pendingHits } from "./invaders-predict.ts";
 import { connect, pingLabel, remoteTrack, serverClock } from "./net.ts";
 import { openGame, type GameTexts, type Shell } from "./shell.ts";
 
@@ -449,20 +450,53 @@ export function playInvaders(
 }
 
 /**
- * A shot fired here, drawn from the moment you press. The server fires it a little later (when the press
- * arrives), so its copy trails behind: that copy only confirms the shot, and the one drawn stays this one,
- * until the server's is gone (it hit something) or this one reaches an invader.
+ * A shot fired here, drawn from the moment you press. The page tells the server where and when it fired,
+ * and the server's copy flies on the same path at the same time; the first snapshot that has it pairs it
+ * with this one by its id. The one drawn stays this one. When it reaches an invader here it stops being
+ * drawn, and its server copy stays hidden, so a shot never disappears and comes back further on.
  */
-type Ghost = {
+export type Ghost = {
   x: number;
   vx: number;
   vy: number;
   at: number;
   /** When the server's copy was last seen; 0 until it first shows up. */
   seen: number;
+  /** The server shot it is paired with. */
+  id?: number;
+  /** It hit something here: no longer drawn (its server copy stays hidden too). */
+  dead?: boolean;
+  /** Invader slots it has hit here (a piercing shot or the special goes through some). */
+  hit?: number[];
   /** The special: fast, and drills through what it hits. */
   special?: boolean;
 };
+
+/**
+ * Pairs your server shot (field `id`, at `px`, `py` now) with the ghost drawn for it. True when it has
+ * one: then the server copy is not drawn.
+ */
+export function claimGhost(
+  ghosts: Ghost[],
+  id: number,
+  special: boolean,
+  px: number,
+  py: number,
+  ghostAt: (gh: Ghost) => [number, number],
+  t: number,
+): boolean {
+  let gh = ghosts.find((g) => g.id === id);
+  if (!gh)
+    gh = ghosts.find((g) => {
+      if (g.id !== undefined || !!g.special !== special) return false;
+      const [gx, gy] = ghostAt(g);
+      return Math.abs(gx - px) < 5 && Math.abs(gy - py) < 18;
+    });
+  if (!gh) return false;
+  gh.id = id;
+  gh.seen = t;
+  return true;
+}
 
 /**
  * Co-op: two ships, simulated on the server. `room` joins an existing room (from a shared link);
@@ -511,6 +545,7 @@ export function playInvadersCoop(
 
   const clock = serverClock();
   const partnerTrack = remoteTrack();
+  const pending = pendingHits();
   const net = connect({
     open: () =>
       net.send(
@@ -581,40 +616,41 @@ export function playInvadersCoop(
       ? 0
       : Math.max(0, Math.min(0.3, (clock.now(t) - v.at) / 1000));
     const shots: number[] = [];
-    const claimed = new Set<number>();
     for (let i = 0; i < v.shots.length; i += SHOT_STRIDE) {
-      const [x, y, pierce, vx, vy, ship] = v.shots.slice(i, i + SHOT_STRIDE);
+      const [x, y, pierce, vx, vy, ship, id] = v.shots.slice(
+        i,
+        i + SHOT_STRIDE,
+      );
       const px = x + vx * lead;
       const py = y + vy * lead;
       if (py < -6) continue;
-      // Your server shot confirms the ghost just ahead of it on the same line, and is not drawn itself
-      // (a faster shot trails further behind its ghost).
-      if (ship === you) {
-        const gh = ghosts.find(
-          (g, k) =>
-            !claimed.has(k) &&
-            !!g.special === (pierce === 2) &&
-            Math.abs(g.x + g.vx * age(g, t) - px) < 6 &&
-            py - ghostY(g, t) > -10 &&
-            py - ghostY(g, t) < (45 * Math.abs(g.vy)) / 260,
-        );
-        if (gh) {
-          claimed.add(ghosts.indexOf(gh));
-          gh.seen = t;
-          continue;
-        }
-      }
-      shots.push(px, py, pierce, vx, vy, ship);
+      // Your server shot is drawn as its ghost (or not at all, if the ghost already hit something).
+      if (
+        ship === you &&
+        claimGhost(
+          ghosts,
+          id,
+          pierce === 2,
+          px,
+          py,
+          (g) => [g.x + g.vx * age(g, t), ghostY(g, t)],
+          t,
+        )
+      )
+        continue;
+      shots.push(px, py, pierce, vx, vy, ship, id);
     }
     for (const gh of ghosts)
-      shots.push(
-        gh.x + gh.vx * age(gh, t),
-        ghostY(gh, t),
-        gh.special ? 2 : v.pierceLeft > 0 ? 1 : 0,
-        gh.vx,
-        gh.vy,
-        you,
-      );
+      if (!gh.dead)
+        shots.push(
+          gh.x + gh.vx * age(gh, t),
+          ghostY(gh, t),
+          gh.special ? 2 : v.pierceLeft > 0 ? 1 : 0,
+          gh.vx,
+          gh.vy,
+          you,
+          -1,
+        );
     const bombs: number[] = [];
     for (let i = 0; i < v.bombs.length; i += BOMB_STRIDE)
       bombs.push(
@@ -632,6 +668,9 @@ export function playInvadersCoop(
       bombs,
       drops: v.drops.map((d) => ({ ...d, y: d.y + DROP_SPEED * lead })),
       ufoX: v.ufoX === null ? null : v.ufoX + v.ufoDir * UFO_SPEED * lead,
+      // The invaders where they are now (the march played forward), less the hits seen here.
+      ...gridAfter(v, lead * 1000, 6),
+      hp: pending.apply(v.hp, t),
     };
   }
 
@@ -659,14 +698,24 @@ export function playInvadersCoop(
       const myShots = v.shots.filter(
         (_, i) => i % SHOT_STRIDE === 5 && v.shots[i] === you,
       ).length;
+      // Your volleys in flight: the server's, plus the ones it has not shown yet.
       const volleys =
         Math.ceil(myShots / v.shotCount) +
-        new Set(ghosts.filter((gh) => !gh.special).map((gh) => gh.at)).size;
+        new Set(
+          ghosts
+            .filter((gh) => !gh.special && gh.id === undefined)
+            .map((gh) => gh.at),
+        ).size;
       if (
         t - lastVolley >= fireCooldownMs(v.rapidLevel) &&
         volleys < 1 + Math.ceil(v.rapidLevel / 2)
       ) {
         lastVolley = t;
+        net.send({
+          t: "coop.shoot",
+          x: Math.round(myX * 10) / 10,
+          at: Math.round(clock.now(t)),
+        });
         for (let i = 0; i < v.shotCount; i++) {
           const k = i - (v.shotCount - 1) / 2;
           ghosts.push({
@@ -686,6 +735,12 @@ export function playInvadersCoop(
       if (v.ships[you]?.special && t - heldSince >= SPECIAL_HOLD_MS) {
         heldSince = Infinity;
         unlock("special");
+        net.send({
+          t: "coop.shoot",
+          x: Math.round(myX * 10) / 10,
+          at: Math.round(clock.now(t)),
+          special: true,
+        });
         ghosts.push({
           x: myX,
           vx: 0,
@@ -696,22 +751,30 @@ export function playInvadersCoop(
         });
       }
     }
-    // A ghost goes when its server copy is gone (the shot hit something), when it reaches an invader (unless
-    // piercing), or, never confirmed, after a round trip and a bit (the server did not fire it).
-    if (v)
+    // A ghost hits the invaders as they are drawn now: the hit shows at once (the server confirms it a
+    // moment later). It stops being drawn at its last invader (the first; the second when piercing; the
+    // third for the special) or out of the field, and is forgotten once its server copy is gone too (or,
+    // never paired, after a round trip and a bit).
+    const shown = v ? present(v, t) : null;
+    if (v && shown)
       ghosts = ghosts.filter((gh) => {
         const y = ghostY(gh, t);
         const x = gh.x + gh.vx * age(gh, t);
-        const hitInvader =
-          v.pierceLeft <= 0 &&
-          !gh.special &&
-          v.hp.some((hp, k) => {
-            if (!hp) return false;
-            const b = slotBox(v, k);
+        if (!gh.dead && y < -6) gh.dead = true;
+        if (!gh.dead) {
+          const k = shown.hp.findIndex((hp, k) => {
+            if (!hp || gh.hit?.includes(k)) return false;
+            const b = slotBox(shown, k);
             return x >= b.x && x <= b.x + 11 && y >= b.y && y <= b.y + 8;
           });
-        const alive = gh.seen ? t - gh.seen < 90 : t - gh.at < net.rtt() + 250;
-        return y > -6 && !hitInvader && alive;
+          if (k >= 0) {
+            (gh.hit ??= []).push(k);
+            pending.add(k, v.hp[k], gh.special ? 2 : 1, t + net.rtt() + 200);
+            const most = gh.special ? 3 : v.pierceLeft > 0 ? 2 : 1;
+            if (gh.hit.length >= most) gh.dead = true;
+          }
+        }
+        return gh.seen ? t - gh.seen < 150 : t - gh.at < net.rtt() + 250;
       });
 
     // Report the ship's place up to 30 times a second; a fire press or release goes at once.
@@ -734,7 +797,7 @@ export function playInvadersCoop(
       }
     }
 
-    draw(shell, f, v ? present(v, t) : placeholder, texts, now, {
+    draw(shell, f, shown ?? placeholder, texts, now, {
       you,
       coop,
       overlay,

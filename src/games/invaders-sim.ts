@@ -118,6 +118,8 @@ export type Invader = {
  * `special` shot is fast, drills through shields, and is no volley (it never counts as a miss).
  */
 export type Shot = {
+  /** Unique in the game: the browser that fired it pairs it with the shot it drew. */
+  id: number;
   ship: number;
   x: number;
   y: number;
@@ -128,6 +130,8 @@ export type Shot = {
   pierceLeft: number;
   hits: Set<Invader>;
   special?: boolean;
+  /** Online: ms it was fired before the server learnt of it, to catch up on its next step. */
+  lag?: number;
 };
 type Bomb = { x: number; y: number; vy: number };
 type Drop = { x: number; y: number; kind: PowerKind };
@@ -177,6 +181,7 @@ export interface InvadersState {
   pierceUntil: number;
   shieldUntil: number;
   volleySeq: number;
+  shotSeq: number;
   volleyHit: Set<number>;
   /** Volleys that hit an invader or the saucer (a shield does not count for the special). */
   volleyScored: Set<number>;
@@ -226,6 +231,7 @@ export function createInvaders(players = 1): InvadersState {
     pierceUntil: 0,
     shieldUntil: 0,
     volleySeq: 0,
+    shotSeq: 0,
     volleyHit: new Set(),
     volleyScored: new Set(),
     misses: 0,
@@ -317,15 +323,26 @@ export const shipBox = (x: number): Box => ({
   h: 8,
 });
 
-function fire(st: InvadersState, index: number, now: number) {
+/**
+ * A volley from ship `index`. Online, the browser says where and when it fired (`x`, `lag` ms ago):
+ * the shots start there and catch up on the next step, so they fly where the player saw them fly, and
+ * `slack` allows for the network's jitter on the pacing.
+ */
+export function fire(
+  st: InvadersState,
+  index: number,
+  now: number,
+  { x = st.ships[index].x, lag = 0, slack = 0 } = {},
+): boolean {
   const ship = st.ships[index];
-  if (st.over || now < ship.fireCooldown) return;
+  if (st.over || now + slack < ship.fireCooldown) return false;
   // Base: one volley per ship on screen at a time, like the arcade. Rapid nudges the gun a little per
   // level: slightly faster shots and cooldown, one more volley on screen every two levels.
   const volleysOnScreen = new Set(
-    st.shots.filter((s) => s.ship === index).map((s) => s.volley),
+    st.shots.filter((s) => s.ship === index && !s.special).map((s) => s.volley),
   ).size;
-  if (volleysOnScreen >= 1 + Math.ceil(st.rapidLevel / 2)) return;
+  if (volleysOnScreen >= 1 + Math.ceil(st.rapidLevel / 2) + (slack ? 1 : 0))
+    return false;
   const volley = ++st.volleySeq;
   const vy = -shotSpeed(st.rapidLevel);
   const pierce = piercing(st, now);
@@ -333,8 +350,9 @@ function fire(st: InvadersState, index: number, now: number) {
   for (let i = 0; i < st.shotCount; i++) {
     const k = i - (st.shotCount - 1) / 2;
     st.shots.push({
+      id: ++st.shotSeq,
       ship: index,
-      x: ship.x + k * 3,
+      x: x + k * 3,
       y: SHOT_START_Y,
       vx: k * 34,
       vy,
@@ -342,16 +360,25 @@ function fire(st: InvadersState, index: number, now: number) {
       pierce,
       pierceLeft: pierce ? 1 : 0,
       hits: new Set(),
+      lag,
     });
   }
-  ship.fireCooldown = now + fireCooldownMs(st.rapidLevel);
+  ship.fireCooldown = now - lag + fireCooldownMs(st.rapidLevel);
+  return true;
 }
 
-function fireSpecial(st: InvadersState, index: number) {
+/** The special, from ship `index` (online: from where and when the browser fired it). */
+export function fireSpecial(
+  st: InvadersState,
+  index: number,
+  { x = st.ships[index].x, lag = 0 } = {},
+) {
   st.shots.push({
+    id: ++st.shotSeq,
     ship: index,
-    x: st.ships[index].x,
+    x,
     y: SHOT_START_Y,
+    lag,
     vx: 0,
     vy: -SPECIAL_SPEED,
     volley: 0,
@@ -504,6 +531,42 @@ export function moveShip(x: number, input: ShipInput, dt: number): number {
   return Math.max(8, Math.min(W - 8, x));
 }
 
+/** Time between two steps of the march: the fewer left, the faster; each wave starts quicker. */
+const marchInterval = (st: InvadersState) =>
+  Math.max(30, marchBaseMs(st.wave) * (alive(st).length / (COLS * ROWS)));
+
+/**
+ * One step of the march, for the grid of invaders in columns `cols` (the living ones): 3 units sideways,
+ * or at an edge, `drop` units down and the other way. Shared with the browsers, which play the march
+ * forward from a snapshot.
+ */
+export function marchStep(
+  g: { gridX: number; gridY: number; march: number; animFrame: number },
+  cols: number[],
+  drop: number,
+) {
+  g.animFrame ^= 1;
+  const xs = cols.map((c) => g.gridX + c * GAP_X);
+  const edge =
+    g.march > 0 ? Math.max(...xs) + 11 + 3 >= W - 4 : Math.min(...xs) - 3 <= 4;
+  if (edge) {
+    g.gridY += drop;
+    g.march = -g.march;
+  } else g.gridX += 3 * g.march;
+}
+
+/**
+ * When the next march steps come, for a snapshot: the step lands on the first 16 ms tick at or past the
+ * interval, so `next` ms from now and then every `every` ms.
+ */
+export function marchTiming(timer: number, interval: number) {
+  const tick = 16;
+  return {
+    next: Math.max(tick, Math.ceil((interval - timer) / tick) * tick),
+    every: Math.ceil(interval / tick) * tick,
+  };
+}
+
 /** Pause between volleys of one ship, by rapid-fire level. */
 export const fireCooldownMs = (rapidLevel: number) =>
   Math.max(130, 220 - rapidLevel * 18);
@@ -512,7 +575,7 @@ export const shotSpeed = (rapidLevel: number) => 260 + rapidLevel * 20;
 /** Where a ship's shot starts. */
 export const SHOT_START_Y = SHIP_Y - 6;
 /** Fields per entry in `InvadersView.shots` and `.bombs`. */
-export const SHOT_STRIDE = 6;
+export const SHOT_STRIDE = 7;
 export const BOMB_STRIDE = 3;
 /** How fast power-ups fall. */
 export const DROP_SPEED = 45;
@@ -549,23 +612,14 @@ export function stepInvaders(
 
   // March: the fewer left, the faster; each wave starts quicker.
   const living = alive(st);
-  const interval = Math.max(
-    30,
-    marchBaseMs(st.wave) * (living.length / (COLS * ROWS)),
-  );
   st.marchTimer += dt;
-  if (st.marchTimer >= interval && living.length) {
+  if (st.marchTimer >= marchInterval(st) && living.length) {
     st.marchTimer = 0;
-    st.animFrame ^= 1;
-    const xs = living.map((i) => st.gridX + i.col * GAP_X);
-    const edge =
-      st.march > 0
-        ? Math.max(...xs) + 11 + 3 >= W - 4
-        : Math.min(...xs) - 3 <= 4;
-    if (edge) {
-      st.gridY += 6;
-      st.march = -st.march;
-    } else st.gridX += 3 * st.march;
+    marchStep(
+      st,
+      living.map((i) => i.col),
+      6,
+    );
   }
 
   // The saucer: crosses the top every 15 to 25 s.
@@ -579,12 +633,15 @@ export function stepInvaders(
     }
   }
 
-  // Player shots. The special moves in short hops, so it cannot skip over an invader.
+  // Player shots, in hops of 6 units at most (the special, or a shot catching up on the time its press
+  // took to arrive), so none can skip over an invader.
   const gone = new Map<number, number>();
   st.shots = st.shots.filter((shot) => {
-    const hops = shot.special ? Math.ceil((Math.abs(shot.vy) * s) / 6) : 1;
+    const span = s + (shot.lag ?? 0) / 1000;
+    shot.lag = 0;
+    const hops = Math.max(1, Math.ceil((Math.abs(shot.vy) * span) / 6));
     for (let k = 0; k < hops; k++) {
-      const result = moveShot(shot, s / hops);
+      const result = moveShot(shot, span / hops);
       if (result === "gone") return false;
     }
     return true;
@@ -740,6 +797,10 @@ export interface InvadersView {
   gridX: number;
   gridY: number;
   animFrame: number;
+  /** The march: which way (1 right, -1 left), ms to its next step, ms between steps. */
+  march: number;
+  marchIn: number;
+  marchEvery: number;
   /** One entry per invader slot (row-major): hits left, 0 when dead. */
   hp: number[];
   /** Slots hit in the last 90 ms (they flash white). */
@@ -747,7 +808,7 @@ export interface InvadersView {
   /** `streak`: volleys in a row that hit (towards the special); `special`: charged. */
   ships: { x: number; blink: boolean; streak: number; special: boolean }[];
   /**
-   * Flat [x, y, kind, vx, vy, ship, …] (SHOT_STRIDE per shot); kind 0 plain, 1 piercing, 2 the special;
+   * Flat [x, y, kind, vx, vy, ship, id, …] (SHOT_STRIDE per shot); kind 0 plain, 1 piercing, 2 the special;
    * speeds in units per second.
    */
   shots: number[];
@@ -781,6 +842,10 @@ export function viewInvaders(st: InvadersState, now: number): InvadersView {
     gridX: st.gridX,
     gridY: st.gridY,
     animFrame: st.animFrame,
+    ...(() => {
+      const m = marchTiming(st.marchTimer, marchInterval(st));
+      return { march: st.march, marchIn: m.next, marchEvery: m.every };
+    })(),
     hp: st.invaders.map((i) => (i.alive ? i.hp : 0)),
     flash: st.invaders.flatMap((i, k) =>
       i.alive && now - i.hitAt < 90 ? [k] : [],
@@ -798,6 +863,7 @@ export function viewInvaders(st: InvadersState, now: number): InvadersView {
       r1(s.vx),
       r1(s.vy),
       s.ship,
+      s.id,
     ]),
     bombs: st.bombs.flatMap((b) => [r1(b.x), r1(b.y), r1(b.vy)]),
     drops: st.drops.map((d) => ({ x: r1(d.x), y: r1(d.y), kind: d.kind })),

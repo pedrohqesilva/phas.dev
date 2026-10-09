@@ -6,6 +6,8 @@
 import { idleInput, W, type ShipInput } from "../src/games/invaders-sim.ts";
 import {
   createVersus,
+  fireVersus,
+  fireVersusSpecial,
   restartVersus,
   stepVersus,
   viewVersus,
@@ -93,6 +95,8 @@ export function createInvadersVersus() {
       // Hits are checked where the ship is on its player's screen now: the report carried forward.
       const ahead = Math.min(MAX_PROJECT_MS, r.oneWay + (wall - r.at));
       ship.hitX = clamp(r.x + (r.vx * ahead) / 1000, 8, W - 8);
+      // This player sees the other ship half a round trip late, plus the page's smoothing (about 50 ms).
+      m.st.players[i].rewind = Math.round((r.oneWay + 50) / STEP_MS);
     });
     m.clock += STEP_MS;
     stepVersus(m.st, m.inputs, m.clock, STEP_MS);
@@ -109,13 +113,40 @@ export function createInvadersVersus() {
       const m = rooms.get(code)?.game;
       const r = (raw ?? {}) as Record<string, unknown>;
       if (!m || !finite(r.x)) return;
-      m.inputs[you] = { ...idleInput(), fire: r.fire === true };
+      // Volleys and the special come as `shoot` messages: the ship here only moves.
+      m.inputs[you] = idleInput();
       m.reports[you] = {
         x: clamp(r.x, 8, W - 8),
         vx: finite(r.vx) ? clamp(r.vx, -MAX_SHIP_SPEED, MAX_SHIP_SPEED) : 0,
         oneWay: finite(r.rtt) ? clamp(r.rtt / 2, 0, 150) : 0,
         at: performance.now(),
       };
+    },
+    /** A volley or the special, fired in the browser at `x` and game time `at`. */
+    shoot(
+      code: string,
+      you: number,
+      x: unknown,
+      at: unknown,
+      special: unknown,
+    ) {
+      const room = rooms.get(code);
+      const m = room?.game;
+      if (!room || !m || rooms.paused(room) || !finite(x) || !finite(at))
+        return;
+      const side = you === 1 ? 1 : 0;
+      const ship = m.st.players[side].ship;
+      const from = clamp(
+        x,
+        Math.max(8, ship.x - 24),
+        Math.min(W - 8, ship.x + 24),
+      );
+      const lag = clamp(m.clock - at, 0, MAX_PROJECT_MS);
+      if (special === true) {
+        if (!ship.special || m.st.winner !== null) return;
+        ship.special = false;
+        fireVersusSpecial(m.st, side, { x: from, lag });
+      } else fireVersus(m.st, side, m.clock, { x: from, lag, slack: 60 });
     },
     /** After a win: once both press, a new match. */
     again(code: string, you: number) {
