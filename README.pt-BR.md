@@ -106,7 +106,7 @@
   </tr>
 </table>
 
-As salas online são compartilhadas por link, como `phas.dev/pong/ABCD`, que aparece no chat como um cartão com o jogo e a sala.
+Online, **Procurar partida** junta você com quem também estiver procurando, sem link. Ou crie uma sala e mande o link, como `phas.dev/pong/ABCD`, que aparece no chat como um cartão com o jogo e a sala.
 
 ### 🎨 Temas
 

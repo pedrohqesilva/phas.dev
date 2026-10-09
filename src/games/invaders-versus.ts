@@ -59,10 +59,13 @@ export function playInvadersVersus(
   versus: VersusTexts,
   {
     room,
+    quick,
     onRoom,
     onExit,
   }: {
     room?: string;
+    /** The lobby: play whoever else is looking (no link to send). */
+    quick?: boolean;
     onRoom: (code: string) => void;
     onExit: (note?: string) => void;
   },
@@ -82,7 +85,7 @@ export function playInvadersVersus(
   let view: VersusView | null = null;
   let viewAt = 0;
   let note: string | undefined;
-  let overlay: string[] = [versus.waiting];
+  let overlay: string[] = [quick ? versus.searching : versus.waiting];
   let myX: number | null = null;
   let myVx = 0;
   let rivalX: number | null = null;
@@ -103,18 +106,18 @@ export function playInvadersVersus(
       net.send(
         code
           ? { t: "invaders.join", room: code, resume: token }
-          : { t: "invaders.create" },
+          : { t: quick ? "invaders.quick" : "invaders.create" },
       ),
     message(msg) {
       if (msg.t === "invaders.room") {
         you = msg.you === 1 ? 1 : 0;
         token = msg.token;
-        if (!code) onRoom(msg.room);
+        if (!code && !quick) onRoom(msg.room);
         code = msg.room;
         overlay =
           msg.players < 2
             ? [
-                versus.waiting,
+                quick ? versus.searching : versus.waiting,
                 versus.share.replace("{link}", `phas.dev/invaders/${msg.room}`),
               ]
             : [];

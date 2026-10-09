@@ -167,6 +167,23 @@ export function attachGames(server: Server, { exclusive = true } = {}) {
           if (!session.room) session.room = coop.create(send);
           if (!session.room) send({ t: "coop.error", reason: "full" });
           break;
+        // The lobby: next to whoever is waiting, or a new room to wait in.
+        case "coop.quick":
+          if (!session.room) session.room = coop.quick(send);
+          if (!session.room) send({ t: "coop.error", reason: "full" });
+          break;
+        case "pong.quick":
+          session.pong ??= pong.quick(send);
+          if (!session.pong) send({ t: "pong.error", reason: "full" });
+          break;
+        case "tetris.quick":
+          session.tetris ??= tetris.quick(send);
+          if (!session.tetris) send({ t: "tetris.error", reason: "full" });
+          break;
+        case "invaders.quick":
+          session.duel ??= duel.quick(send);
+          if (!session.duel) send({ t: "invaders.error", reason: "full" });
+          break;
         case "coop.join":
           if (!session.room && isRoomCode(String(msg.room ?? "")))
             session.room = coop.join(

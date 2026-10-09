@@ -37,6 +37,8 @@ export interface PongTexts extends GameTexts {
 /** What the online mode needs to say about the room and the connection. */
 export interface VersusTexts {
   waiting: string;
+  /** In the lobby, waiting for whoever looks for a match next. */
+  searching: string;
   /** "{link}" is replaced with the invite link. */
   share: string;
   partnerAway: string;
@@ -234,10 +236,13 @@ export function playPongOnline(
   versus: VersusTexts,
   {
     room,
+    quick,
     onRoom,
     onExit,
   }: {
     room?: string;
+    /** The lobby: play whoever else is looking (no link to send). */
+    quick?: boolean;
     onRoom: (code: string) => void;
     onExit: (note?: string) => void;
   },
@@ -250,7 +255,7 @@ export function playPongOnline(
   let view: PongView | null = null;
   let viewAt = 0;
   let note: string | undefined;
-  let overlay: string[] = [versus.waiting];
+  let overlay: string[] = [quick ? versus.searching : versus.waiting];
   /** Your paddle (moved here) and the other's (eased towards each snapshot), in server coordinates. */
   let myY = H / 2;
   let theirY: number | null = null;
@@ -268,18 +273,18 @@ export function playPongOnline(
       net.send(
         code
           ? { t: "pong.join", room: code, resume: token }
-          : { t: "pong.create" },
+          : { t: quick ? "pong.quick" : "pong.create" },
       ),
     message(msg) {
       if (msg.t === "pong.room") {
         you = msg.you;
         token = msg.token;
-        if (!code) onRoom(msg.room);
+        if (!code && !quick) onRoom(msg.room);
         code = msg.room;
         overlay =
           msg.players < 2
             ? [
-                versus.waiting,
+                quick ? versus.searching : versus.waiting,
                 versus.share.replace("{link}", `phas.dev/pong/${msg.room}`),
               ]
             : [];

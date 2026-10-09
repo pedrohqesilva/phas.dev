@@ -85,6 +85,8 @@ export type ClientMessage =
   /** A turn, numbered, meant for server tick `at` (what the browser showed when it was pressed). */
   | { t: "arena.dir"; dir: Dir; seq: number; at: number }
   | { t: "coop.create" }
+  /** The lobby: a seat next to whoever is waiting for a partner, or a new room to wait in. */
+  | { t: "coop.quick" }
   /** `resume`: the token from `coop.room`, to take the same seat back after a dropped connection. */
   | { t: "coop.join"; room: string; resume?: string }
   | { t: "coop.ready" }
@@ -96,12 +98,14 @@ export type ClientMessage =
   | { t: "coop.shoot"; x: number; at: number; special?: boolean }
   // Pong 1v1: the paddle's centre (moved in the browser, followed by the server) and the round trip.
   | { t: "pong.create" }
+  | { t: "pong.quick" }
   | { t: "pong.join"; room: string; resume?: string }
   | { t: "pong.ready" }
   | { t: "pong.input"; y: number; vy?: number; rtt?: number }
   | { t: "pong.again" }
   // Space Invaders versus: the same room flow; the ship is reported like in co-op.
   | { t: "invaders.create" }
+  | { t: "invaders.quick" }
   | { t: "invaders.join"; room: string; resume?: string }
   | { t: "invaders.ready" }
   | { t: "invaders.input"; input: CoopInput }
@@ -109,6 +113,7 @@ export type ClientMessage =
   | { t: "invaders.again" }
   // Tetris versus: each browser runs its own game; the server passes boards and attacks along.
   | { t: "tetris.create" }
+  | { t: "tetris.quick" }
   | { t: "tetris.join"; room: string; resume?: string }
   | { t: "tetris.ready" }
   /** The visible well (200 digits) and the score, a few times a second, for the other player's view. */

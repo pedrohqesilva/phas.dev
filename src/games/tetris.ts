@@ -393,10 +393,13 @@ export function playTetrisVersus(
   versus: VersusTexts,
   {
     room,
+    quick,
     onRoom,
     onExit,
   }: {
     room?: string;
+    /** The lobby: play whoever else is looking (no link to send). */
+    quick?: boolean;
     onRoom: (code: string) => void;
     onExit: (note?: string) => void;
   },
@@ -412,7 +415,7 @@ export function playTetrisVersus(
   let result: boolean | null = null;
   let askedAgain = false;
   let note: string | undefined;
-  let overlay: string[] = [versus.waiting];
+  let overlay: string[] = [quick ? versus.searching : versus.waiting];
   let sentBoard = "";
   let sentAt = 0;
   let firePrev = false;
@@ -425,17 +428,17 @@ export function playTetrisVersus(
       net.send(
         code
           ? { t: "tetris.join", room: code, resume: token }
-          : { t: "tetris.create" },
+          : { t: quick ? "tetris.quick" : "tetris.create" },
       ),
     message(msg) {
       if (msg.t === "tetris.room") {
         token = msg.token;
-        if (!code) onRoom(msg.room);
+        if (!code && !quick) onRoom(msg.room);
         code = msg.room;
         overlay =
           msg.players < 2
             ? [
-                versus.waiting,
+                quick ? versus.searching : versus.waiting,
                 versus.share.replace("{link}", `phas.dev/tetris/${msg.room}`),
               ]
             : [];

@@ -106,7 +106,7 @@
   </tr>
 </table>
 
-Online rooms are shared with a link, like `phas.dev/pong/ABCD`, which shows up in a chat as a card with the game and the room.
+Online, **Find a match** pairs you with whoever else is looking, no link needed. Or create a room and share its link, like `phas.dev/pong/ABCD`, which shows up in a chat as a card with the game and the room.
 
 ### 🎨 Themes
 

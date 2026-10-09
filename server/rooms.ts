@@ -15,6 +15,8 @@ export interface Room<M, G> {
   ready: boolean[];
   /** The game running in the room, once both are in and ready. */
   game: G | null;
+  /** Opened from the lobby ("find a match"): the next player looking for one takes the free seat. */
+  open?: boolean;
   expiry: ReturnType<typeof setTimeout> | null;
 }
 
@@ -78,7 +80,7 @@ export function createRooms<M, G>(
     room.game = hooks.start(room);
   }
 
-  return {
+  const api = {
     get: (code: string) => rooms.get(code),
     /** True while a seat of the room is reconnecting: the game should hold still. */
     paused: (room: Room<M, G>) => room.away.some((a) => a !== null),
@@ -156,10 +158,31 @@ export function createRooms<M, G>(
         close(room);
       }, RESUME_MS);
     },
+    /**
+     * The lobby: the free seat in a room someone opened the same way and is waiting in (the longest
+     * waiting first), or a new room to wait in for the next one.
+     */
+    quick(send: Send<M>): { code: string; you: number } | null {
+      const waiting = [...rooms.values()].find(
+        (r) =>
+          r.open &&
+          !r.game &&
+          r.away.every((a) => a === null) &&
+          r.players.filter(Boolean).length === 1,
+      );
+      if (waiting) {
+        waiting.open = false;
+        return api.join(waiting.code, send);
+      }
+      const seat = api.create(send);
+      if (seat) rooms.get(seat.code)!.open = true;
+      return seat;
+    },
     /** Sends to both seats. */
     broadcast(room: Room<M, G>, msg: M) {
       for (const send of room.players) send?.(msg);
     },
     close,
   };
+  return api;
 }

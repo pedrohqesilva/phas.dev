@@ -144,6 +144,10 @@ export const ui = {
       "O jogo não pausa: Esc abre o menu para sair.",
     ],
     coopWaiting: "AGUARDANDO O PARCEIRO",
+    coopSearching: "PROCURANDO PARCEIRO",
+    versusSearching: "PROCURANDO ADVERSÁRIO",
+    roomQuick: "Procurar partida",
+    roomQuickDesc: "joga com quem também estiver procurando, sem mandar link",
     coopShare: "mande o link phas.dev/coop/{code}",
     coopLink:
       "Sala criada. Mande este link para quem vai jogar com você (já copiei):",
@@ -378,6 +382,10 @@ export const ui = {
       "The game doesn't pause: Esc opens the menu to quit.",
     ],
     coopWaiting: "WAITING FOR YOUR PARTNER",
+    coopSearching: "LOOKING FOR A PARTNER",
+    versusSearching: "LOOKING FOR AN OPPONENT",
+    roomQuick: "Find a match",
+    roomQuickDesc: "plays whoever else is looking, no link to send",
     coopShare: "send the link phas.dev/coop/{code}",
     coopLink:
       "Room created. Send this link to whoever plays with you (already copied):",

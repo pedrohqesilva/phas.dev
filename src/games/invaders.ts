@@ -58,6 +58,8 @@ export interface InvadersTexts extends GameTexts {
 /** Extra lines for co-op: the waiting screen, the ship labels and what can go wrong with the connection. */
 export interface CoopTexts {
   waiting: string;
+  /** In the lobby, waiting for whoever looks for a partner next. */
+  searching: string;
   /** "{code}" is replaced with the room code. */
   share: string;
   partnerLeft: string;
@@ -507,10 +509,13 @@ export function playInvadersCoop(
   coop: CoopTexts,
   {
     room,
+    quick,
     onRoom,
     onExit,
   }: {
     room?: string;
+    /** The lobby: play whoever else is looking (no link to send). */
+    quick?: boolean;
     onRoom: (code: string) => void;
     onExit: (best: number, note?: string) => void;
   },
@@ -527,7 +532,7 @@ export function playInvadersCoop(
   let code = room;
   let token: string | undefined;
   let note: string | undefined;
-  let overlay: string[] = [coop.waiting];
+  let overlay: string[] = [quick ? coop.searching : coop.waiting];
   let best = 0;
   /** Your ship, moved here as you press; the server follows it. Null until a snapshot places it. */
   let myX: number | null = null;
@@ -551,17 +556,20 @@ export function playInvadersCoop(
       net.send(
         code
           ? { t: "coop.join", room: code, resume: token }
-          : { t: "coop.create" },
+          : { t: quick ? "coop.quick" : "coop.create" },
       ),
     message(msg) {
       if (msg.t === "coop.room") {
         you = msg.you;
         token = msg.token;
-        if (!code) onRoom(msg.room);
+        if (!code && !quick) onRoom(msg.room);
         code = msg.room;
         overlay =
           msg.players < 2
-            ? [coop.waiting, coop.share.replace("{code}", msg.room)]
+            ? [
+                quick ? coop.searching : coop.waiting,
+                coop.share.replace("{code}", msg.room),
+              ]
             : [];
       } else if (msg.t === "coop.start") overlay = [];
       else if (msg.t === "coop.state") {

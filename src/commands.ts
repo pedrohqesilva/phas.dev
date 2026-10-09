@@ -241,7 +241,11 @@ const takeNick = (raw: string) => {
 };
 
 /** Co-op Space Invaders on the server: creates a room (and prints its link) or joins `room`. */
-function startCoop({ t, print, focus, replaying, lang }: Ctx, room?: string) {
+function startCoop(
+  { t, print, focus, replaying, lang }: Ctx,
+  room?: string,
+  quick = false,
+) {
   if (replaying) return;
   unlock("social");
   playInvadersCoop(
@@ -252,6 +256,7 @@ function startCoop({ t, print, focus, replaying, lang }: Ctx, room?: string) {
     },
     {
       waiting: t.coopWaiting,
+      searching: t.coopSearching,
       share: t.coopShare,
       partnerLeft: t.coopPartnerLeft,
       partnerAway: t.coopPartnerAway,
@@ -265,6 +270,7 @@ function startCoop({ t, print, focus, replaying, lang }: Ctx, room?: string) {
     },
     {
       room: room?.toUpperCase(),
+      quick,
       onRoom(code) {
         // The link goes to the clipboard when the browser allows it, and stays printed in the terminal.
         const url = inviteUrl(lang, "coop", code);
@@ -320,9 +326,11 @@ function startArena({ t, print, focus, replaying }: Ctx, name = "") {
 /** A versus or co-op mode's second list: create a room (its link is printed) or join one by its code. */
 const roomChoices = (
   t: UI,
+  quick: () => void,
   create: () => void,
   join: (code: string) => void,
 ): MenuOption[] => [
+  { label: t.roomQuick, hint: t.roomQuickDesc, start: quick },
   { label: t.roomCreate, hint: t.roomCreateDesc, start: create },
   {
     label: t.roomJoin,
@@ -386,6 +394,7 @@ function invadersMenu(ctx: Ctx) {
         hint: t.coopDesc,
         submenu: roomChoices(
           t,
+          () => startCoop(ctx, undefined, true),
           () => startCoop(ctx),
           (code) => startCoop(ctx, code),
         ),
@@ -395,6 +404,7 @@ function invadersMenu(ctx: Ctx) {
         hint: t.invadersVersusDesc,
         submenu: roomChoices(
           t,
+          () => startInvadersVersus(ctx, undefined, true),
           () => startInvadersVersus(ctx),
           (code) => startInvadersVersus(ctx, code),
         ),
@@ -443,6 +453,7 @@ const tetrisTexts = (t: UI, paused = t.gamePaused): TetrisTexts => ({
 
 const versusTexts = (t: UI): VersusTexts => ({
   waiting: t.coopWaiting,
+  searching: t.versusSearching,
   share: t.versusShare,
   partnerAway: t.coopPartnerAway,
   partnerLeft: t.coopPartnerLeft,
@@ -470,7 +481,7 @@ const announceRoom =
   };
 
 /** Space Invaders versus on the server: creates a room (and prints its link) or joins `room`. */
-function startInvadersVersus(ctx: Ctx, room?: string) {
+function startInvadersVersus(ctx: Ctx, room?: string, quick = false) {
   const { t, print, focus, replaying } = ctx;
   if (replaying) return;
   unlock("social");
@@ -489,6 +500,7 @@ function startInvadersVersus(ctx: Ctx, room?: string) {
     versusTexts(t),
     {
       room: room?.toUpperCase(),
+      quick,
       onRoom: announceRoom(ctx, "invaders"),
       onExit(note) {
         if (note) print(muted(note));
@@ -498,7 +510,12 @@ function startInvadersVersus(ctx: Ctx, room?: string) {
   );
 }
 
-function startPong(ctx: Ctx, mode: "cpu" | "online", room?: string) {
+function startPong(
+  ctx: Ctx,
+  mode: "cpu" | "online",
+  room?: string,
+  quick = false,
+) {
   const { t, print, focus, replaying } = ctx;
   if (replaying) return;
   if (mode === "cpu")
@@ -509,6 +526,7 @@ function startPong(ctx: Ctx, mode: "cpu" | "online", room?: string) {
   unlock("social");
   playPongOnline(pongTexts(t, t.gameLiveMenu), versusTexts(t), {
     room: room?.toUpperCase(),
+    quick,
     onRoom: announceRoom(ctx, "pong"),
     onExit(note) {
       if (note) print(muted(note));
@@ -517,13 +535,19 @@ function startPong(ctx: Ctx, mode: "cpu" | "online", room?: string) {
   });
 }
 
-function startTetris(ctx: Ctx, mode: "solo" | "versus", nickOrRoom?: string) {
+function startTetris(
+  ctx: Ctx,
+  mode: "solo" | "versus",
+  nickOrRoom?: string,
+  quick = false,
+) {
   const { t, print, focus, replaying } = ctx;
   if (replaying) return;
   if (mode === "versus") unlock("social");
   if (mode === "versus")
     return playTetrisVersus(tetrisTexts(t, t.gameLiveMenu), versusTexts(t), {
       room: nickOrRoom?.toUpperCase(),
+      quick,
       onRoom: announceRoom(ctx, "tetris"),
       onExit(note) {
         if (note) print(muted(note));
@@ -558,6 +582,7 @@ function pongMenu(ctx: Ctx) {
         hint: t.pongOnlineDesc,
         submenu: roomChoices(
           t,
+          () => startPong(ctx, "online", undefined, true),
           () => startPong(ctx, "online"),
           (code) => startPong(ctx, "online", code),
         ),
@@ -585,6 +610,7 @@ function tetrisMenu(ctx: Ctx) {
         hint: t.tetrisVersusDesc,
         submenu: roomChoices(
           t,
+          () => startTetris(ctx, "versus", undefined, true),
           () => startTetris(ctx, "versus"),
           (code) => startTetris(ctx, "versus", code),
         ),
